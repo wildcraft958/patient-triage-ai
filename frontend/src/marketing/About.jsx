@@ -7,7 +7,7 @@ export default function About() {
       <header className="page-hero">
         <div className="wrap">
           <div className="eyebrow">About</div>
-          <h1>Three students, one conviction:<br />the waiting room is part of triage.</h1>
+          <h1>Two students, one conviction:<br />the waiting room is part of triage.</h1>
           <p className="lede">Team NamoFans, IIT Kharagpur. Built for the Accenture Innovation Challenge 2026.</p>
         </div>
       </header>
@@ -15,7 +15,7 @@ export default function About() {
       <section>
         <div className="wrap">
           <div className="eyebrow">Team</div>
-          <div className="phases" style={{ marginTop: 32 }}>
+          <div className="phases" style={{ marginTop: 32, gridTemplateColumns: '1fr 1fr', maxWidth: 720 }}>
             <div className="phase-card">
               <div className="phase-num">TEAM LEADER</div>
               <h3>Monika Kumari</h3>
@@ -24,11 +24,6 @@ export default function About() {
             <div className="phase-card">
               <div className="phase-num">MEMBER</div>
               <h3>Animesh Raj</h3>
-              <p>IIT Kharagpur</p>
-            </div>
-            <div className="phase-card">
-              <div className="phase-num">MEMBER</div>
-              <h3>Anshuman Sharma</h3>
               <p>IIT Kharagpur</p>
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 **AI-assisted emergency department triage that does not stop at the door.** It scores every arriving patient with a dual-path engine (deterministic ESI rules in parallel with LLM clinical reasoning), then keeps watching everyone in the waiting room and tells the nurse who to check on next.
 
-Team **NamoFans** (IIT Kharagpur): Monika Kumari (Team Leader), Animesh Raj, Anshuman Sharma. Accenture Innovation Challenge 2026, Round 2, Problem Track 2.
+Team **NamoFans** (IIT Kharagpur): Monika Kumari (Team Leader) and Animesh Raj. Accenture Innovation Challenge 2026, Round 2, Problem Track 2.
 
 > The system recommends. The clinician decides. Always.
 
