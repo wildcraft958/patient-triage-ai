@@ -1,0 +1,17 @@
+# Large urban trauma center, ~500+ visits/day.
+# Tighter re-assessment limits at high acuity; surge tolerance higher because
+# staffing scales, but the queue is long so checks batch less frequently.
+profile_name: urban_500
+visits_per_day: 500
+max_wait_min:
+  2: 10
+  3: 30
+  4: 60
+  5: 120
+reassess_check_interval_min: 10
+surge_queue_threshold: 40
+deterioration:
+  hr_rise_pct: 15
+  sbp_drop_pct: 15
+  spo2_drop_points: 3
+  temp_rise_c: 0.5

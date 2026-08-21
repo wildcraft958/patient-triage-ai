@@ -1,0 +1,17 @@
+# Small rural emergency department, ~100 visits/day.
+# Fewer parallel resources: longer tolerated waits at low acuity, but the
+# monitor checks more often per patient because the queue is short.
+profile_name: rural_100
+visits_per_day: 100
+max_wait_min:        # per-ESI safe wait before a re-assessment is due
+  2: 10
+  3: 30
+  4: 90
+  5: 150
+reassess_check_interval_min: 5
+surge_queue_threshold: 12    # waiting count that flips the LLM path to async/rules-first
+deterioration:
+  hr_rise_pct: 15
+  sbp_drop_pct: 15
+  spo2_drop_points: 3
+  temp_rise_c: 0.5
