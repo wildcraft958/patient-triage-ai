@@ -17,8 +17,9 @@ def get_service() -> TriageService:
 
 
 def reset_service(**kwargs) -> TriageService:
-    global _service
+    global _service, _player
     _service = TriageService(**kwargs)
+    _player = None
     return _service
 
 
@@ -91,6 +92,35 @@ def advance_clock(body: ClockBody):
 def surge(body: SurgeBody):
     get_service().surge_forced = body.forced
     return get_service().state_view()
+
+
+class ScenarioBody(BaseModel):
+    profile: str = "urban_500"
+    speedup: float = Field(default=1.0, gt=0, le=10)
+    use_llm: bool = True
+
+
+_player = None
+
+
+@router.post("/scenario/load")
+def scenario_load(body: ScenarioBody):
+    from app.scenario import ScenarioPlayer
+    from app.service import CALIBRATION_PATH
+
+    global _player
+    svc = reset_service(profile_name=body.profile, calibration_path=CALIBRATION_PATH)
+    _player = ScenarioPlayer(svc, speedup=body.speedup, use_llm=body.use_llm)
+    return {"events": len(_player.events), "state": svc.state_view()}
+
+
+@router.post("/scenario/step")
+def scenario_step():
+    if _player is None:
+        raise HTTPException(400, "load a scenario first (POST /scenario/load)")
+    result = _player.step()
+    result["state"] = get_service().state_view()
+    return result
 
 
 @router.get("/metrics")
