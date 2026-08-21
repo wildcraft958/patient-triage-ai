@@ -1,6 +1,6 @@
 """Reassessment priority: which waiting patient should the nurse check next?
 
-The POMDP information-gain idea applied to triage —
+The POMDP information-gain idea applied to triage - 
 
     priority = deterioration_risk x wait_pressure x acuity_uncertainty x severity
 

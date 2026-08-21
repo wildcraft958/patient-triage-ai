@@ -27,7 +27,7 @@ def load_esi_eval_cases(sets: list[str] | None = None) -> list[dict]:
         path = eval_dir / f"{name}.json"
         if not path.exists():
             raise FileNotFoundError(
-                f"{path} missing — run scripts/fetch_data.py first"
+                f"{path} missing - run scripts/fetch_data.py first"
             )
         scenarios = json.loads(path.read_text())
         vitals_path = eval_dir / f"{name}_vital_signs_extracted.json"

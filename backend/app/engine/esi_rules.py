@@ -3,7 +3,7 @@
 Follows the four ESI decision points (A: life-saving intervention,
 B: high-risk / shouldn't wait, C: resource count, D: danger-zone vitals)
 with two deliberate design biases required by the Round 2 brief:
-age-banded thresholds, and escalation under uncertainty — missing data
+age-banded thresholds, and escalation under uncertainty - missing data
 never downgrades a patient.
 """
 
@@ -86,7 +86,7 @@ def score(intake: PatientIntake) -> RulesResult:
                            resources_estimate=2)
     if v.pain is not None and v.pain >= 8:
         red_flags.append("severe pain")
-        reasons.append(f"B: severe pain {v.pain}/10 — escalating rather than waiting")
+        reasons.append(f"B: severe pain {v.pain}/10 - escalating rather than waiting")
         return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
                            resources_estimate=_resources(intake))
     reasons.append("B: no high-risk criteria met")
@@ -94,7 +94,7 @@ def score(intake: PatientIntake) -> RulesResult:
     # --- Decision point C: expected resources ---
     resources = _resources(intake)
     if intake.age_years >= thresholds.GERIATRIC_AGE and intake.complaint_category == "fever":
-        red_flags.append("geriatric fever — sepsis watch")
+        red_flags.append("geriatric fever - sepsis watch")
         reasons.append("C: geriatric fever, broadened workup (sepsis watch)")
     reasons.append(f"C: estimated resources = {resources}")
 
@@ -108,14 +108,14 @@ def score(intake: PatientIntake) -> RulesResult:
     # --- Decision point D: danger-zone vitals gate for multi-resource patients ---
     missing_core = v.hr is None or v.rr is None or v.spo2 is None
     if missing_core:
-        reasons.append("D: core vitals missing — escalating under uncertainty")
+        reasons.append("D: core vitals missing - escalating under uncertainty")
         red_flags.append("incomplete vitals")
         return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
                            resources_estimate=resources)
 
     danger, danger_reasons = thresholds.in_danger_zone(intake)
     if danger:
-        reasons.append("D: danger-zone vitals — uptriage to ESI-2 (" +
+        reasons.append("D: danger-zone vitals - uptriage to ESI-2 (" +
                        "; ".join(danger_reasons) + ")")
         return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
                            danger_zone_vitals=True, resources_estimate=resources)

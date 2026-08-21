@@ -76,7 +76,7 @@ class TriageService:
                         "esi": old_esi, "route": ROUTES[old_esi],
                         "notes": fused.notes + [
                             "Re-triage suggested a less acute level; keeping the "
-                            "original — deterioration never downgrades"],
+                            "original - deterioration never downgrades"],
                     })
                 fused = self._apply_calibration(intake, fused)
                 self.room.mark_assessed(patient_id, fused=fused)
@@ -146,6 +146,9 @@ class TriageService:
                 "waited_min": round(self.clock.now_min - e.last_assessed_min, 1),
                 "chief_complaint": e.intake.chief_complaint,
                 "age_years": e.intake.age_years,
+                "age_months": e.intake.age_months,
+                "category": e.intake.complaint_category,
+                "max_wait_min": self.profile.max_wait_min.get(e.fused.esi),
             }
             for e in self.room.queue()
         ]

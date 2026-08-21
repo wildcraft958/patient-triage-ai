@@ -1,9 +1,9 @@
 """Fetch external datasets (not redistributed in this repo).
 
-- MIMIC-IV-ED Demo v2.2 (PhysioNet, Open Database License) — 100-patient
+- MIMIC-IV-ED Demo v2.2 (PhysioNet, Open Database License) - 100-patient
   open-access subset with real triage and vital-sign tables.
 - ED-Triage-Agent eval cases + ESI v4 Handbook (MIT, (c) Karthick T. Sharma,
-  github.com/Karthick47v2/ED-Triage-Agent) — standardized ESI scenario sets
+  github.com/Karthick47v2/ED-Triage-Agent) - standardized ESI scenario sets
   used here as the evaluation benchmark and RAG source.
 
 Run:  cd backend && uv run python ../scripts/fetch_data.py

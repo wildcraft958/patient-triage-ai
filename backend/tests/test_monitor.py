@@ -84,7 +84,7 @@ def test_wait_breach_fires_at_profile_limit():
 
 
 def test_profile_switch_changes_breach_timing():
-    # ESI-4: urban limit 60, rural limit 90 — same wait, different outcome
+    # ESI-4: urban limit 60, rural limit 90 - same wait, different outcome
     for profile_name, minutes, expect in [("urban_500", 70, 1), ("rural_100", 70, 0)]:
         room, clock = make_room(profile_name)
         room.add(intake("P1"), fused(4))

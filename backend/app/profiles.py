@@ -1,7 +1,7 @@
 """Hospital profiles: one config answers the brief's scalability question.
 
 The same assistant flexes from a rural 100-visit ED to an urban 500-visit
-trauma center by swapping a YAML file — wait limits, reassessment cadence,
+trauma center by swapping a YAML file - wait limits, reassessment cadence,
 surge thresholds, and deterioration sensitivity are all profile-driven.
 """
 

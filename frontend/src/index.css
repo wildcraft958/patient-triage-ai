@@ -131,3 +131,71 @@ button.chip.on { color: var(--purple-deep); }
 .footer .stat b { color: var(--purple-deep); }
 
 .empty { color: var(--muted); font-size: 11.5px; font-style: italic; padding: 8px 2px; }
+
+/* start screen */
+.start { max-width: 860px; margin: 40px auto; padding: 0 20px; text-align: center; }
+.start h2 { font-size: 26px; color: var(--ink); letter-spacing: -0.4px; }
+.start > p { color: var(--muted); font-size: 13.5px; margin-top: 10px; }
+.start-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 28px; text-align: left; }
+.scenario-card {
+  background: #fff; border: 1px solid var(--line); border-radius: 12px; padding: 22px;
+  cursor: pointer; transition: all .15s ease;
+}
+.scenario-card:hover { border-color: var(--purple); box-shadow: 0 8px 26px rgba(98,21,184,0.14); }
+.scenario-card .tag { font-size: 10px; font-weight: 800; letter-spacing: 2px; color: var(--purple); }
+.scenario-card h3 { font-size: 17px; margin: 8px 0 6px; color: var(--ink); }
+.scenario-card p { font-size: 12px; color: var(--muted); line-height: 1.6; }
+.start .hint { margin-top: 22px; font-size: 12px; color: var(--muted); }
+.start .hint b { color: var(--purple-deep); }
+
+/* vitals chips + trend */
+.vit-chips { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.vchip {
+  font-size: 10.5px; background: #fff; border: 1px solid var(--line);
+  border-radius: 4px; padding: 3px 7px; color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.vchip b { color: var(--purple-deep); font-weight: 700; margin-right: 3px; }
+.vchip.worse { border-color: var(--purple-deep); background: var(--tint-2); font-weight: 700; }
+.vchip .arrow { font-weight: 800; color: var(--purple-deep); margin-left: 2px; }
+.trend-label { font-size: 10px; font-weight: 800; letter-spacing: 1.5px; color: var(--purple-deep); margin-top: 10px; }
+
+/* confidence meter */
+.conf-meter { display: inline-flex; gap: 3px; vertical-align: middle; margin-left: 4px; }
+.conf-meter i { width: 14px; height: 6px; border-radius: 2px; background: var(--line-soft); }
+.conf-meter i.on { background: var(--purple); }
+
+/* queue wait-pressure bar */
+.wait-bar { height: 5px; border-radius: 3px; background: var(--line-soft); margin-top: 8px; overflow: hidden; }
+.wait-bar i { display: block; height: 100%; border-radius: 3px;
+  background: linear-gradient(90deg, var(--purple-mid), var(--purple-deep)); }
+.wait-bar.over i { background: linear-gradient(90deg, var(--purple-deep), var(--purple-darkest)); }
+.wait-lbl { display: flex; justify-content: space-between; font-size: 9.5px; color: var(--muted); margin-top: 3px; }
+
+/* pulse for urgent queue cards */
+@keyframes pulse-border {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(98,21,184,0.35); }
+  50% { box-shadow: 0 0 0 5px rgba(98,21,184,0); }
+}
+.card.urgent { border: 1.5px dashed var(--purple-deep); animation: pulse-border 2s ease infinite; }
+@media (prefers-reduced-motion: reduce) { .card.urgent { animation: none; } }
+
+/* feed */
+.feed-item .dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--purple); margin-right: 6px; }
+.feed-item .dot.accept { background: #1F845A; }
+.feed-item .dot.override { background: #B65C02; }
+.feed-item .mini-esi { font-size: 9px; font-weight: 800; color: #fff; background: var(--purple-deep);
+  border-radius: 3px; padding: 1px 5px; margin-left: 5px; }
+
+/* audit drawer */
+.audit-drawer { margin-top: 10px; border-top: 1px dashed var(--line); padding-top: 8px; }
+.audit-row { font-size: 10.5px; padding: 4px 0; border-bottom: 1px solid var(--tint-1);
+  display: flex; gap: 8px; }
+.audit-row .et { font-weight: 800; color: var(--purple-deep); min-width: 92px; text-transform: uppercase; font-size: 9.5px; letter-spacing: 0.5px; }
+.audit-row .t { color: var(--muted); min-width: 52px; font-variant-numeric: tabular-nums; }
+.audit-row .pl { color: var(--ink); flex: 1; }
+
+/* autoplay chip */
+button.chip.play { background: #fff; color: var(--purple-deep); font-weight: 800; }
+button.chip.play.on { background: var(--purple-darkest); color: #fff; border-color: transparent; }

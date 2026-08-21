@@ -13,7 +13,7 @@ from app.models import RulesResult
 ROUTES = {
     1: "Resuscitation",
     2: "Acute",
-    3: "Acute — monitored waiting",
+    3: "Acute (monitored waiting)",
     4: "Fast-Track",
     5: "Fast-Track / minor",
 }
@@ -78,7 +78,7 @@ def fuse(rules: RulesResult, llm: LLMResult | None) -> FusedResult:
         llm=llm,
         notes=[
             f"Paths disagree (rules ESI-{rules.esi} vs reasoning ESI-{llm.esi}): "
-            f"taking the more acute level from the {more_acute_path} path — "
+            f"taking the more acute level from the {more_acute_path} path - "
             "uncertainty never downgrades",
         ],
     )

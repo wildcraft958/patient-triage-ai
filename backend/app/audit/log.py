@@ -3,7 +3,7 @@
 Assumed jurisdiction: HIPAA (US). Every recommendation is logged with both
 reasoning chains and confidence; a clinician override must legally record
 the original recommendation, the new level, the clinician identifier, the
-timestamp, and a stated reason — OverrideRecord makes the reason and
+timestamp, and a stated reason - OverrideRecord makes the reason and
 clinician mandatory at the type level, so an incomplete override cannot
 even be constructed.
 """

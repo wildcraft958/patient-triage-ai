@@ -1,5 +1,5 @@
 """Scenario player: step the curated 22-patient timeline through the live
-system one event at a time — the demo driver for the dashboard."""
+system one event at a time - the demo driver for the dashboard."""
 
 from typing import Any
 

@@ -1,6 +1,6 @@
 """Retrieval over the ESI v4 Implementation Handbook.
 
-BM25 keyword retrieval over ~1200-char page chunks — deliberately simple:
+BM25 keyword retrieval over ~1200-char page chunks - deliberately simple:
 fully offline, deterministic, and auditable (each excerpt cites its page).
 Chunks are extracted once and cached under data/cache/.
 """
@@ -26,7 +26,7 @@ def build_chunks() -> list[dict]:
     from pypdf import PdfReader
 
     if not HANDBOOK_PDF.exists():
-        raise FileNotFoundError(f"{HANDBOOK_PDF} missing — run scripts/fetch_data.py first")
+        raise FileNotFoundError(f"{HANDBOOK_PDF} missing - run scripts/fetch_data.py first")
     chunks = []
     for page_no, page in enumerate(PdfReader(HANDBOOK_PDF).pages, start=1):
         text = re.sub(r"\s+", " ", page.extract_text() or "").strip()

@@ -4,7 +4,7 @@ Claude (on AWS Bedrock) reasons over the full clinical picture, grounded
 in retrieved ESI handbook excerpts. Every response is disk-cached by
 prompt hash so demo replays cost zero tokens. On any transport or parse
 failure this path returns None and the FUSE layer falls back to
-rules-only — the LLM is never a single point of failure.
+rules-only - the LLM is never a single point of failure.
 """
 
 import hashlib
@@ -19,6 +19,8 @@ from app.models import PatientIntake
 
 LLM_CACHE_DIR = DATA_DIR / "cache" / "llm"
 
+# NOTE: SYSTEM and build_user_prompt text form the replay-cache key.
+# Do not edit their wording without accepting a full cache re-warm.
 SYSTEM = """You are the clinical reasoning path of a dual-path emergency department \
 triage assistant. A deterministic ESI rules engine runs in parallel; your job is the \
 contextual judgment rules cannot encode. You recommend — a licensed clinician makes \

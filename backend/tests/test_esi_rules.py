@@ -1,4 +1,4 @@
-"""Path A — deterministic ESI v4 rules engine.
+"""Path A - deterministic ESI v4 rules engine.
 
 The cases below encode the brief's mandated behaviors:
 - age-banded vital thresholds (pediatric / adult / geriatric divergence)

@@ -2,12 +2,12 @@
 
 Every clinician action becomes a reward signal (the experience-repository
 pattern from Doctor-R1). Rewards are asymmetric exactly like the brief's
-cost structure: an under-triage override (clinician says MORE acute — the
+cost structure: an under-triage override (clinician says MORE acute - the
 dangerous miss) costs 5x an over-triage one.
 
 The online learner is deliberately conservative: a calibration table over
 (complaint category x age band) cells whose learned adjustment can ONLY
-escalate — the RL layer cannot break the escalation-safety invariant by
+escalate - the RL layer cannot break the escalation-safety invariant by
 construction. Full policy optimization (GRPO per Doctor-R1) is the Round 3
 path once override volume exists.
 """
