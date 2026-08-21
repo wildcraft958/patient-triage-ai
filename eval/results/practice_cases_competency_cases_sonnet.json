@@ -1,0 +1,585 @@
+{
+ "report": {
+  "sets": [
+   "practice_cases",
+   "competency_cases"
+  ],
+  "n": 60,
+  "llm_failures": 15,
+  "age_defaulted": 4,
+  "configs": {
+   "rules": {
+    "n": 60,
+    "exact_acc": 23.333333333333332,
+    "within_1": 68.33333333333333,
+    "under_triage": 41.66666666666667,
+    "sig_under_triage": 23.333333333333332,
+    "over_triage": 35.0,
+    "sig_over_triage": 8.333333333333332,
+    "high_acuity_sens": 46.15384615384615
+   },
+   "llm": {
+    "n": 45,
+    "exact_acc": 71.11111111111111,
+    "within_1": 100.0,
+    "under_triage": 8.88888888888889,
+    "sig_under_triage": 0.0,
+    "over_triage": 20.0,
+    "sig_over_triage": 0.0,
+    "high_acuity_sens": 100.0
+   },
+   "fused": {
+    "n": 60,
+    "exact_acc": 41.66666666666667,
+    "within_1": 85.0,
+    "under_triage": 15.0,
+    "sig_under_triage": 6.666666666666667,
+    "over_triage": 43.333333333333336,
+    "sig_over_triage": 8.333333333333332,
+    "high_acuity_sens": 84.61538461538461
+   }
+  }
+ },
+ "rows": [
+  {
+   "id": "practice_cases-1",
+   "truth": 1,
+   "rules": 1,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-2",
+   "truth": 2,
+   "rules": 2,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-3",
+   "truth": 3,
+   "rules": 4,
+   "llm": 4,
+   "fused": 4,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-4",
+   "truth": 2,
+   "rules": 4,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-5",
+   "truth": 4,
+   "rules": 4,
+   "llm": 5,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-6",
+   "truth": 2,
+   "rules": 4,
+   "llm": null,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-7",
+   "truth": 4,
+   "rules": 4,
+   "llm": 4,
+   "fused": 4,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-8",
+   "truth": 2,
+   "rules": 2,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-9",
+   "truth": 2,
+   "rules": 4,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-10",
+   "truth": 5,
+   "rules": 2,
+   "llm": 4,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-11",
+   "truth": 3,
+   "rules": 2,
+   "llm": null,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-12",
+   "truth": 1,
+   "rules": 2,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-13",
+   "truth": 2,
+   "rules": 4,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-14",
+   "truth": 4,
+   "rules": 4,
+   "llm": 4,
+   "fused": 4,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-15",
+   "truth": 5,
+   "rules": 4,
+   "llm": 5,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-16",
+   "truth": 5,
+   "rules": 4,
+   "llm": 5,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-17",
+   "truth": 5,
+   "rules": 4,
+   "llm": 5,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-18",
+   "truth": 5,
+   "rules": 4,
+   "llm": null,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-19",
+   "truth": 1,
+   "rules": 4,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-20",
+   "truth": 1,
+   "rules": 4,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-21",
+   "truth": 3,
+   "rules": 4,
+   "llm": 4,
+   "fused": 4,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-22",
+   "truth": 5,
+   "rules": 4,
+   "llm": 5,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-23",
+   "truth": 2,
+   "rules": 2,
+   "llm": null,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-24",
+   "truth": 1,
+   "rules": 2,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-25",
+   "truth": 1,
+   "rules": 4,
+   "llm": null,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-26",
+   "truth": 2,
+   "rules": 4,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-27",
+   "truth": 4,
+   "rules": 2,
+   "llm": 4,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-28",
+   "truth": 3,
+   "rules": 2,
+   "llm": 3,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-29",
+   "truth": 3,
+   "rules": 4,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "practice_cases-30",
+   "truth": 3,
+   "rules": 2,
+   "llm": null,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-1",
+   "truth": 1,
+   "rules": 4,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-2",
+   "truth": 3,
+   "rules": 4,
+   "llm": null,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-3",
+   "truth": 4,
+   "rules": 1,
+   "llm": null,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-4",
+   "truth": 5,
+   "rules": 4,
+   "llm": 4,
+   "fused": 4,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-5",
+   "truth": 5,
+   "rules": 4,
+   "llm": 4,
+   "fused": 4,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-6",
+   "truth": 1,
+   "rules": 1,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-7",
+   "truth": 2,
+   "rules": 4,
+   "llm": null,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-8",
+   "truth": 4,
+   "rules": 4,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-9",
+   "truth": 3,
+   "rules": 2,
+   "llm": 3,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-10",
+   "truth": 2,
+   "rules": 4,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": true
+  },
+  {
+   "id": "competency_cases-11",
+   "truth": 4,
+   "rules": 2,
+   "llm": null,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-12",
+   "truth": 1,
+   "rules": 4,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-13",
+   "truth": 5,
+   "rules": 4,
+   "llm": 5,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-14",
+   "truth": 1,
+   "rules": 2,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-15",
+   "truth": 2,
+   "rules": 4,
+   "llm": null,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": true
+  },
+  {
+   "id": "competency_cases-16",
+   "truth": 3,
+   "rules": 2,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-17",
+   "truth": 2,
+   "rules": 4,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": true
+  },
+  {
+   "id": "competency_cases-18",
+   "truth": 4,
+   "rules": 4,
+   "llm": null,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-19",
+   "truth": 2,
+   "rules": 2,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-20",
+   "truth": 4,
+   "rules": 2,
+   "llm": 4,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-21",
+   "truth": 5,
+   "rules": 4,
+   "llm": 5,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-22",
+   "truth": 1,
+   "rules": 1,
+   "llm": 1,
+   "fused": 1,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-23",
+   "truth": 3,
+   "rules": 4,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-24",
+   "truth": 2,
+   "rules": 2,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-25",
+   "truth": 3,
+   "rules": 2,
+   "llm": null,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-26",
+   "truth": 3,
+   "rules": 4,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-27",
+   "truth": 4,
+   "rules": 4,
+   "llm": null,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": true
+  },
+  {
+   "id": "competency_cases-28",
+   "truth": 3,
+   "rules": 4,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-29",
+   "truth": 5,
+   "rules": 4,
+   "llm": 5,
+   "fused": 4,
+   "paths_agree": false,
+   "age_defaulted": false
+  },
+  {
+   "id": "competency_cases-30",
+   "truth": 1,
+   "rules": 2,
+   "llm": null,
+   "fused": 2,
+   "paths_agree": false,
+   "age_defaulted": false
+  }
+ ]
+}

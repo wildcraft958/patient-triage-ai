@@ -137,3 +137,20 @@ def metrics():
 def audit_trail(patient_id: str):
     _require(patient_id)
     return {"events": get_service().audit.events_for(patient_id)}
+
+
+@router.get("/patients/{patient_id}")
+def patient_detail(patient_id: str):
+    _require(patient_id)
+    svc = get_service()
+    e = svc.room.entries[patient_id]
+    return {
+        "intake": e.intake,
+        "fused": e.fused,
+        "status": e.status,
+        "waited_min": round(svc.clock.now_min - e.last_assessed_min, 1),
+        "alerts": e.alerts,
+        "vitals_history": [
+            {"at_min": t, "vitals": v} for t, v in e.vitals_history
+        ],
+    }
