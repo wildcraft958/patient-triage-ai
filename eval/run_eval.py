@@ -13,6 +13,7 @@ LLM responses hit the on-disk replay cache, so re-runs are free.
 """
 
 import argparse
+import hashlib
 import json
 import sys
 from concurrent.futures import ThreadPoolExecutor
@@ -22,18 +23,50 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 
 from app.agent.fuse import fuse  # noqa: E402
 from app.agent.llm_path import assess  # noqa: E402
-from app.data_io import load_esi_eval_cases  # noqa: E402
+from app.data_io import DATA_DIR, load_esi_eval_cases  # noqa: E402
 from app.engine.esi_rules import score  # noqa: E402
 from app.evalmap import case_to_intake  # noqa: E402
 from app.privacy.redact import redact  # noqa: E402
 
 RESULTS_DIR = Path(__file__).resolve().parent / "results"
 
+TRANSPORT = None  # None = Claude on Bedrock (assess's built-in cached default)
+
+
+def local_openai_transport(base_url: str, model: str):
+    """Transport for any OpenAI-compatible local server (mlx_lm.server,
+    Ollama) with its own disk cache, e.g. Doctor-R1 in hospital-local mode."""
+    import urllib.request
+
+    cache_dir = DATA_DIR / "cache" / "llm_local" / model.replace("/", "_")
+    cache_dir.mkdir(parents=True, exist_ok=True)
+
+    def transport(system: str, user: str) -> str:
+        key = hashlib.sha256(f"{model}|{system}|{user}".encode()).hexdigest()
+        cache_file = cache_dir / f"{key}.txt"
+        if cache_file.exists():
+            return cache_file.read_text()
+        body = json.dumps({
+            "model": model, "max_tokens": 2500, "temperature": 0.0,
+            "messages": [{"role": "system", "content": system},
+                         {"role": "user", "content": user}],
+        }).encode()
+        req = urllib.request.Request(
+            f"{base_url.rstrip('/')}/chat/completions", data=body,
+            headers={"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=600) as r:
+            text = json.load(r)["choices"][0]["message"]["content"]
+        cache_file.write_text(text)
+        return text
+
+    return transport
+
 
 def evaluate_case(case: dict) -> dict:
     intake, age_defaulted = case_to_intake(case)
     rules_result = score(intake)
-    llm_result = assess(intake, redact(intake.chief_complaint).text)
+    llm_result = assess(intake, redact(intake.chief_complaint).text,
+                        transport=TRANSPORT)
     fused_result = fuse(rules_result, llm_result)
     return {
         "id": intake.patient_id,
@@ -69,7 +102,16 @@ def main() -> None:
     ap.add_argument("--sets", nargs="+", required=True)
     ap.add_argument("--limit", type=int, default=None)
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--local-url", default=None,
+                    help="OpenAI-compatible server, e.g. http://localhost:8080/v1")
+    ap.add_argument("--local-model", default="doctor-r1-4bit")
+    ap.add_argument("--tag", default=None, help="suffix for the results file")
     args = ap.parse_args()
+
+    global TRANSPORT
+    if args.local_url:
+        TRANSPORT = local_openai_transport(args.local_url, args.local_model)
+        print(f"backend: local {args.local_model} at {args.local_url}")
 
     cases = load_esi_eval_cases(args.sets)
     if args.limit:
@@ -94,7 +136,8 @@ def main() -> None:
             report["configs"][config] = metrics(pairs)
 
     RESULTS_DIR.mkdir(exist_ok=True)
-    out = RESULTS_DIR / f"{'_'.join(args.sets)}.json"
+    suffix = f"_{args.tag}" if args.tag else ""
+    out = RESULTS_DIR / f"{'_'.join(args.sets)}{suffix}.json"
     out.write_text(json.dumps({"report": report, "rows": rows}, indent=1))
 
     header = (f"{'config':7s} {'n':>4s} {'exact':>6s} {'w/in1':>6s} {'under':>6s} "

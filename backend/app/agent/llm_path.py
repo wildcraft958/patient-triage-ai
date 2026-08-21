@@ -87,7 +87,11 @@ def _default_transport(system: str, user: str) -> str:
 
 
 def _parse(raw: str) -> LLMResult:
-    cleaned = re.sub(r"^```(json)?|```$", "", raw.strip(), flags=re.MULTILINE).strip()
+    # reasoning models (Qwen3 family, Doctor-R1) prepend <think>...</think>
+    cleaned = re.sub(r"<think>.*?(</think>|$)", "", raw, flags=re.DOTALL).strip()
+    cleaned = re.sub(r"^```(json)?|```$", "", cleaned, flags=re.MULTILINE).strip()
+    if "{" in cleaned:  # tolerate prose before/after the JSON object
+        cleaned = cleaned[cleaned.index("{"): cleaned.rindex("}") + 1]
     data = json.loads(cleaned)
     data["esi"] = min(5, max(1, int(data["esi"])))
     data["confidence"] = min(1.0, max(0.0, float(data.get("confidence", 0.5))))
