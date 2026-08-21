@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<title>PatientTriage.ai Dashboard Wireframe</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; font-family: Arial, Helvetica, sans-serif; }
+  body { background: #F7F2FD; padding: 16px; color: #241435; }
+  .topbar { background: linear-gradient(90deg, #A100FF, #7B2FBE); color: #fff; padding: 10px 20px;
+            border-radius: 8px; display: flex; justify-content: space-between; align-items: center; }
+  .topbar h1 { font-size: 16px; }
+  .topbar .meta { font-size: 11px; display: flex; gap: 16px; align-items: center; }
+  .surge-toggle { background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.4);
+                  color: #fff; padding: 4px 12px; border-radius: 20px; font-size: 11px; cursor: pointer; }
+  .surge-toggle.on { background: #fff; color: #6215B8; font-weight: 700; }
+  .cols { display: grid; grid-template-columns: 1fr 1.4fr 1fr; gap: 14px; margin-top: 14px; }
+  .panel { background: #fff; border: 1px solid #E4D6F6; border-radius: 10px; padding: 12px; }
+  .panel h2 { font-size: 12px; letter-spacing: 1.5px; text-transform: uppercase; color: #6215B8;
+              border-bottom: 1px solid #EFE3FC; padding-bottom: 8px; margin-bottom: 10px; }
+  .card { border: 1px solid #E4D6F6; border-radius: 8px; padding: 10px; margin-bottom: 8px; background: #FBF8FE; }
+  .card .name { font-weight: 700; font-size: 13px; }
+  .card .sub { font-size: 11px; color: #6B6478; margin-top: 2px; }
+  .esi { display: inline-block; min-width: 44px; text-align: center; padding: 3px 8px; border-radius: 4px;
+         color: #fff; font-weight: 800; font-size: 12px; }
+  .esi-1 { background: #35135E; } .esi-2 { background: #4C0E9E; } .esi-3 { background: #6215B8; }
+  .esi-4 { background: #7B2FBE; } .esi-5 { background: #A88BD4; }
+  .conf { font-size: 10px; padding: 2px 8px; border-radius: 10px; border: 1px solid #C9AEE9; color: #4C0E9E; }
+  .flag { font-size: 10px; padding: 2px 8px; border-radius: 10px; background: #6215B8; color: #fff; font-weight: 700; }
+  .row { display: flex; align-items: center; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .reasoning { font-size: 11px; line-height: 1.5; background: #F7F2FD; border-left: 3px solid #A100FF;
+               padding: 8px 10px; border-radius: 0 6px 6px 0; margin-top: 8px; }
+  .reasoning b { color: #6215B8; }
+  .alert { border: 2px dashed #6215B8; background: linear-gradient(135deg, #FAF6FE, #EFE3FC); }
+  .alert .why { font-size: 10.5px; color: #4C0E9E; margin-top: 4px; font-style: italic; }
+  .prio { float: right; font-size: 10px; color: #6215B8; font-weight: 700; }
+  .btn { display: inline-block; padding: 6px 14px; border-radius: 6px; font-size: 11px; font-weight: 700;
+         cursor: pointer; border: none; }
+  .btn-accept { background: #A100FF; color: #fff; }
+  .btn-override { background: #fff; color: #6215B8; border: 1.5px solid #C9AEE9; }
+  .modal { margin-top: 14px; border: 1px solid #C9AEE9; }
+  .modal input, .modal select, .modal textarea { width: 100%; margin-top: 6px; padding: 6px;
+         border: 1px solid #DFCDF4; border-radius: 5px; font-size: 11px; }
+  .req { color: #A100FF; font-weight: 700; }
+  .note { font-size: 10px; color: #6B6478; margin-top: 10px; text-align: center; }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <h1>PatientTriage.ai — Nurse Console</h1>
+  <div class="meta">
+    <span>Profile: urban_500</span>
+    <span>Waiting: 14</span>
+    <button class="surge-toggle">SURGE MODE: OFF</button>
+  </div>
+</div>
+
+<div class="cols">
+
+  <div class="panel">
+    <h2>Arrivals — Awaiting Triage</h2>
+    <div class="card">
+      <span class="name">P-1042</span> <span class="prio">arrived 2 min ago</span>
+      <div class="sub">Chest pain, radiating to left arm. Age 61.</div>
+    </div>
+    <div class="card">
+      <span class="name">P-1043</span> <span class="prio">arrived 1 min ago</span>
+      <div class="sub">Fever 38.5 C, irritable. Age 3. No prior record.</div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Triage Recommendation</h2>
+    <div class="card">
+      <span class="name">P-1042 — Chest pain, age 61</span>
+      <div class="row">
+        <span class="esi esi-2">ESI-2</span>
+        <span class="conf">Confidence: HIGH — paths agree</span>
+        <span class="flag" style="display:none">PATHS DISAGREE</span>
+      </div>
+      <div class="reasoning">
+        <b>Rules path (ESI v4):</b> high-risk presentation, age &gt; 50 + chest pain → ESI-2.<br>
+        <b>Reasoning path:</b> possible ACS; recommends ESI-2, immediate ECG. Route: Acute.
+      </div>
+      <div class="row">
+        <button class="btn btn-accept">Accept ESI-2</button>
+        <button class="btn btn-override">Override…</button>
+      </div>
+    </div>
+
+    <div class="card modal">
+      <span class="name">Override — P-1042</span>
+      <select><option>New ESI level…</option></select>
+      <textarea rows="2" placeholder="Reason (required — logged to audit trail)"></textarea>
+      <div class="sub">Logged: original rec, new level, clinician ID, timestamp, reason <span class="req">*</span></div>
+      <div class="row"><button class="btn btn-accept">Confirm override</button></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Waiting Room — Reassessment Queue</h2>
+    <div class="card alert">
+      <span class="name">P-1017</span> <span class="prio">PRIORITY 0.91</span>
+      <div class="row"><span class="esi esi-3">ESI-3</span><span class="flag">RE-ASSESS NOW</span></div>
+      <div class="why">Waiting 47 min (limit 30 for ESI-3) + repeat vitals worsening: HR 96 → 118</div>
+    </div>
+    <div class="card">
+      <span class="name">P-1021</span> <span class="prio">priority 0.44</span>
+      <div class="row"><span class="esi esi-3">ESI-3</span><span class="conf">paths disagreed at triage</span></div>
+      <div class="why sub">Waiting 18 min. Next check in ~7 min.</div>
+    </div>
+    <div class="card">
+      <span class="name">P-1025</span> <span class="prio">priority 0.12</span>
+      <div class="row"><span class="esi esi-4">ESI-4</span></div>
+      <div class="why sub">Waiting 9 min. Stable.</div>
+    </div>
+  </div>
+
+</div>
+
+<div class="note">Static wireframe — phase 7 builds this in React. The system recommends; the clinician decides.</div>
+
+</body>
+</html>

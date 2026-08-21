@@ -1,0 +1,24 @@
+# Secrets — this repo is public, nothing sensitive ever gets committed
+.env
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+
+# Data pulled at setup time (not redistributed)
+data/mimic-iv-ed-demo/
+data/cache/
+
+# Local state
+*.duckdb
+*.duckdb.wal
+.DS_Store
