@@ -1,0 +1,90 @@
+"""Audit trail (legal-grade override records) and the override-reward
+learning loop (asymmetric rewards, escalate-only calibration)."""
+
+import pytest
+from pydantic import ValidationError
+
+from app.audit.log import AuditLog, OverrideRecord
+from app.learning.loop import CalibrationTable, compute_reward
+
+
+# --- audit ---
+
+def test_events_append_and_read_back_in_order():
+    log = AuditLog(path=":memory:")
+    log.log("triage", "P1", sim_min=0, payload={"esi": 3, "confidence": "high"})
+    log.log("override", "P1", sim_min=12, payload={"original_esi": 3, "new_esi": 2})
+    events = log.events_for("P1")
+    assert [e["event_type"] for e in events] == ["triage", "override"]
+    assert events[0]["payload"]["esi"] == 3
+    assert events[1]["sim_min"] == 12
+
+
+def test_override_record_requires_all_legal_fields():
+    OverrideRecord(original_esi=3, new_esi=2, clinician_id="RN-07",
+                   reason="patient looks septic", sim_min=12)
+    with pytest.raises(ValidationError):
+        OverrideRecord(original_esi=3, new_esi=2, clinician_id="RN-07",
+                       reason="", sim_min=12)  # empty reason is not a reason
+    with pytest.raises(ValidationError):
+        OverrideRecord(original_esi=3, new_esi=2, reason="x", sim_min=12)  # no clinician
+
+
+# --- reward: asymmetric by design (under-triage costs 5x over-triage) ---
+
+def test_acceptance_rewards_positive():
+    assert compute_reward(recommended_esi=3, clinician_esi=None) == 1.0
+
+
+def test_under_triage_override_penalized_hard():
+    assert compute_reward(recommended_esi=3, clinician_esi=2) == -1.0
+    assert compute_reward(recommended_esi=4, clinician_esi=2) == -2.0
+
+
+def test_over_triage_override_penalized_lightly():
+    assert compute_reward(recommended_esi=3, clinician_esi=4) == pytest.approx(-0.2)
+
+
+# --- calibration: learns to escalate, can never downgrade ---
+
+def test_repeated_under_triage_overrides_teach_escalation():
+    table = CalibrationTable()
+    assert table.adjustment("abdominal_pain", "geriatric") == 0
+    table.record("abdominal_pain", "geriatric", under_triage=True)
+    table.record("abdominal_pain", "geriatric", under_triage=True)
+    assert table.adjustment("abdominal_pain", "geriatric") == 1
+
+
+def test_acceptances_decay_the_signal():
+    table = CalibrationTable()
+    table.record("fever", "adult", under_triage=True)
+    table.record("fever", "adult", under_triage=True)
+    assert table.adjustment("fever", "adult") == 1
+    for _ in range(6):
+        table.record("fever", "adult", under_triage=False)
+    assert table.adjustment("fever", "adult") == 0
+
+
+def test_adjustment_only_escalates():
+    table = CalibrationTable()
+    for _ in range(10):
+        table.record("sprain", "adult", under_triage=False)
+    assert table.adjustment("sprain", "adult") == 0  # never negative
+
+
+def test_applying_adjustment_floors_at_esi_1():
+    table = CalibrationTable()
+    table.record("chest_pain", "adult", under_triage=True)
+    table.record("chest_pain", "adult", under_triage=True)
+    assert table.apply("chest_pain", "adult", esi=3) == 2
+    assert table.apply("chest_pain", "adult", esi=1) == 1
+
+
+def test_table_roundtrips_through_json(tmp_path):
+    path = tmp_path / "calibration.json"
+    table = CalibrationTable(path=path)
+    table.record("fever", "geriatric", under_triage=True)
+    table.record("fever", "geriatric", under_triage=True)
+    table.save()
+    reloaded = CalibrationTable(path=path)
+    assert reloaded.adjustment("fever", "geriatric") == 1
