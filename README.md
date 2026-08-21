@@ -6,6 +6,8 @@ Team **NamoFans** (IIT Kharagpur): Monika Kumari (Team Leader), Animesh Raj, Ans
 
 > The system recommends. The clinician decides. Always.
 
+![Nurse console: SIM-007 after his deterioration alert, both reasoning chains visible, priority queue re-ranked](docs/dashboard.png)
+
 ---
 
 ## Why this exists
