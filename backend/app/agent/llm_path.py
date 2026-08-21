@@ -77,13 +77,15 @@ def _default_transport(system: str, user: str) -> str:
     client = AnthropicBedrockMantle(
         api_key=settings.llm_api_key, aws_region=settings.llm_region
     )
+    # generous budget: thinking-enabled models (Sonnet 5) spend reasoning
+    # tokens inside max_tokens before emitting the JSON
     resp = client.messages.create(
         model=settings.llm_model,
-        max_tokens=700,
+        max_tokens=2048,
         system=system,
         messages=[{"role": "user", "content": user}],
     )
-    return resp.content[0].text
+    return "".join(b.text for b in resp.content if b.type == "text")
 
 
 def _parse(raw: str) -> LLMResult:
