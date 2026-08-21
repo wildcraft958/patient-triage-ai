@@ -113,7 +113,7 @@ flowchart LR
 | Audit + overrides | `backend/app/audit/` | DuckDB append-only, HIPAA-shaped override record |
 | Learning loop | `backend/app/learning/` | Asymmetric rewards, escalate-only calibration |
 | Evaluation harness | `eval/run_eval.py` | Published-benchmark metrics, reproducible |
-| Nurse console | `frontend/` | React + Vite |
+| Product site + nurse console | `frontend/` | React + Vite; landing/evidence/security pages at `/`, the console at `/console` |
 
 ## Quick start
 
@@ -140,7 +140,8 @@ cd frontend
 npm install
 npm run dev                       # http://localhost:5173
 
-# 5. In the dashboard: Load scenario -> Next event, step through the timeline
+# 5. localhost:5173 opens the product site; "Launch console" (or /console)
+#    opens the nurse console: Load scenario -> Next event, step the timeline
 ```
 
 **LLM access.** Set `LLM_API_KEY` (AWS Bedrock API key) and `LLM_REGION` in `.env`; default model is `anthropic.claude-haiku-4-5`. Without a key the system still runs end to end in rules-only mode (every recommendation notes it), and all previously seen prompts are served from the replay cache in `data/cache/`.

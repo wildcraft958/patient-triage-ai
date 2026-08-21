@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
-import * as api from './api'
+import * as api from '../api'
 
 const fmt = (n) => (n == null ? '—' : Number(n).toFixed(0))
 
@@ -8,6 +8,7 @@ function TopBar({ state, busy, onLoad, onStep, onAdvance, onSurge, remaining }) 
     <div className="topbar">
       <h1>PatientTriage.ai — Nurse Console</h1>
       <div className="meta">
+        <a className="chip" href="/" style={{ textDecoration: 'none', color: '#fff' }}>&lsaquo; site</a>
         <span className="chip">Profile: {state?.profile ?? '…'}</span>
         <span className="chip">t = {fmt(state?.sim_min)} min</span>
         <span className="chip">Waiting: {state?.waiting ?? 0}</span>
@@ -172,7 +173,7 @@ function QueueBoard({ queue, selectedId, onSelect }) {
   )
 }
 
-export default function App() {
+export default function Console() {
   const [state, setState] = useState(null)
   const [queue, setQueue] = useState([])
   const [feed, setFeed] = useState([])
