@@ -79,7 +79,16 @@ def accept(patient_id: str, body: ClinicianBody):
 @router.get("/queue")
 def queue():
     svc = get_service()
-    return {"queue": svc.queue_view(), "state": svc.state_view()}
+    return {
+        "queue": svc.queue_view(),
+        "state": svc.state_view(),
+        "scenario_remaining": _player.remaining if _player is not None else None,
+    }
+
+
+@router.get("/audit")
+def audit_recent(limit: int = 80):
+    return {"events": get_service().audit.all_events()[-limit:]}
 
 
 @router.post("/clock/advance")

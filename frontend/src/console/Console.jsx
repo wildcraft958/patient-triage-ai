@@ -349,6 +349,7 @@ export default function Console() {
   const refresh = useCallback(async (selectedId) => {
     const q = await api.getQueue()
     setQueue(q.queue); setState(q.state)
+    if (q.scenario_remaining != null) setRemaining(q.scenario_remaining)
     const m = await api.getMetrics().catch(() => null)
     if (m) setMetrics(m)
     const id = selectedId ?? detail?.intake?.patient_id
@@ -363,11 +364,37 @@ export default function Console() {
       const q = await api.getQueue().catch(() => null)
       if (!q) return
       setQueue(q.queue); setState(q.state)
-      if (q.queue.length) {
-        const d = await api.getPatient(q.queue[0].patient_id).catch(() => null)
-        setDetail(d)
-        setRemaining(0)
-      }
+      if (q.scenario_remaining != null) setRemaining(q.scenario_remaining)
+      if (!q.queue.length) return
+      const d = await api.getPatient(q.queue[0].patient_id).catch(() => null)
+      setDetail(d)
+      if (q.scenario_remaining == null) setRemaining(0)
+      // reload continuity: rebuild the event feed from the audit trail
+      const audit = await api.getRecentAudit().catch(() => null)
+      if (!audit) return
+      const rebuilt = audit.events.map((e) => {
+        const p = e.payload
+        if (e.event_type === 'triage') {
+          if (p.clinician_flag) stats.current.disagreements += 1
+          return { type: 'event', at: e.sim_min, esi: p.esi,
+                   text: `ARRIVE ${e.patient_id} (${p.confidence} confidence)` }
+        }
+        if (e.event_type === 'alert') {
+          stats.current.alerts += 1
+          return { type: 'alert', kind: p.kind, patient_id: e.patient_id,
+                   text: (p.reasons || []).join('; ') }
+        }
+        if (e.event_type === 'reassessment')
+          return { type: 'event', at: e.sim_min,
+                   text: `Re-triage ${e.patient_id} ESI-${p.previous_esi} to ESI-${p.new_esi}` }
+        if (e.event_type === 'override')
+          return { type: 'event', at: e.sim_min, dot: 'override',
+                   text: `OVERRIDE ${e.patient_id} to ESI-${p.new_esi}` }
+        if (e.event_type === 'acceptance')
+          return { type: 'event', at: e.sim_min, dot: 'accept', text: `ACCEPT ${e.patient_id}` }
+        return null
+      }).filter(Boolean).reverse()
+      setFeed(rebuilt.slice(0, 120))
     })()
   }, [])
 

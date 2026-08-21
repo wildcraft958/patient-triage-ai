@@ -15,6 +15,7 @@ async function request(path, options = {}) {
 export const getQueue = () => request('/queue')
 export const getPatient = (id) => request(`/patients/${id}`)
 export const getAudit = (id) => request(`/patients/${id}/audit`)
+export const getRecentAudit = () => request('/audit')
 export const getMetrics = () => request('/metrics')
 
 export const loadScenario = (body) =>
