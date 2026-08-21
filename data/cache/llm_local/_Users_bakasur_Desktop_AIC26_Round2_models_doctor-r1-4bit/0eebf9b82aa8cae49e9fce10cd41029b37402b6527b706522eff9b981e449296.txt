@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.7, "reasoning": ["Patient is alert with stable vitals (HR 72, RR 16, BP 102/60) but has a localized hand infection in a high-risk individual (diabetes, renal failure).", "ESI 3 applies as the infection requires resources (e.g., antibiotics, wound care) and vitals are stable.", "Elderly patients with comorbidities may present atypically; infection risk is elevated but not immediately life-threatening.", "No fever, confusion, or systemic signs of sepsis (e.g., tachycardia, hypotension) to uptriage to ESI 2."], "red_flags": ["Infected wound in diabetic/renal patient (increased sepsis risk)", "Potential for rapid progression to systemic infection", "Need for prompt antibiotic evaluation and wound management"]}

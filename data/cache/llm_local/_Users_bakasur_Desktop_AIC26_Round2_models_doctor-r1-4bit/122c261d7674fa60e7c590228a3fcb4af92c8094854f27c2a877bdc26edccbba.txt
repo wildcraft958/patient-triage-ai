@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.8, "reasoning": ["Stable vitals (HR 74, RR 18, SpO2 96%) and controlled bleeding indicate no immediate life-threatening issues", "Alert and oriented patient without confusion or lethargy", "Elderly patient with potential for atypical presentations (e.g., occult sepsis, silent ACS) but no current signs of systemic illness", "Requires suturing (two resources) but no urgent interventions needed"], "red_flags": ["Elderly patient with recent emotional distress may have atypical vital signs", "Self-inflicted injury could indicate underlying mental health concerns"]}

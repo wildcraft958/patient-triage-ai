@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.7, "reasoning": ["Patient presents with acute neurological symptoms (slurred speech, left arm weakness) suggestive of TIA/stroke, but is currently alert and oriented with resolved symptoms.", "Age-specific norms indicate increased risk of stroke/TIA in elderly patients, but current vitals (unrecorded) are assumed stable per triage context.", "ESI 3 assigned due to need for neurological evaluation and imaging (two resources) while vitals are within expected limits for an alert patient.", "History of stroke elevates risk of recurrent events requiring urgent workup."], "red_flags": ["History of stroke", "Recent neurological symptoms", "Advanced age with atypical presentation risks", "Potential for silent stroke or sepsis in elderly"]}

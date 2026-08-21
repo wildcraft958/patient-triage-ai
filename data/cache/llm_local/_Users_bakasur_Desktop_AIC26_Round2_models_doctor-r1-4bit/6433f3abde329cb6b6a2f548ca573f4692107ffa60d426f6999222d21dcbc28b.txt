@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["Patient presents with severe cast complications (swelling, pain, decreased circulation/sensation/movement) indicating potential compartment syndrome or acute cast syndrome, which are high-risk conditions requiring urgent intervention", "Despite being alert, the risk of progressive ischemia/neurovascular compromise necessitates immediate evaluation per ESI level 2 criteria", "Vital signs not recorded but clinical presentation meets high-risk thresholds for ESI 2"], "red_flags": ["Decreased circulation/sensation/movement", "Uncontrolled pain with cast complications", "Risk of compartment syndrome"]}

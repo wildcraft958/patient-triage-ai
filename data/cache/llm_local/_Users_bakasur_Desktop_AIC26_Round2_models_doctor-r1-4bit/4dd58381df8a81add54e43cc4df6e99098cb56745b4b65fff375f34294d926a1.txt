@@ -1,0 +1,3 @@
+
+
+{"esi": 4, "confidence": 0.5, "reasoning": ["Vitals are not recorded, preventing direct ESI assignment", "Patient is a healthy 9-year-old with no reported acute symptoms", "Camp physical request indicates non-urgent need", "No red flags in maternal report", "ESI 4 is appropriate for stable patients requiring one resource"], "red_flags": ["Missing vital signs", "Anxiety from parent may indicate unmet need", "No prior medical history"]}

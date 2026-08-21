@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["Blood in a 4-day-old's diaper is a red flag for occult sepsis, UTI, or trauma (e.g., circumcision complications).", "Infants present atypically: silent ACS, sepsis, or occult infections lack typical adult symptoms.", "No vital signs recorded, but the presence of blood necessitates urgent evaluation for potential sepsis or hematuria.", "Despite stable behavior, blood in a neonate requires immediate attention per ESI's high-risk criteria for abnormal findings."], "red_flags": ["Blood in diaper (potential sepsis/UTI)", "Newborn age (atypical presentation of sepsis")]}

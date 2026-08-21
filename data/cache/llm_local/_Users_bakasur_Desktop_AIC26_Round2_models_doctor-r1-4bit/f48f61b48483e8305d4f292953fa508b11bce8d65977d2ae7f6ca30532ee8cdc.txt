@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["Gunshot wounds, even if superficial, are high-risk and require immediate evaluation for internal injuries", "Vitals are stable but mechanism of injury (three shots) suggests potential for severe hemorrhage or shock", "Patient is alert and stable vitally, but ESI 2 includes high-risk scenarios with potential for rapid deterioration"], "red_flags": ["Gunshot wounds with multiple shots", "Potential for occult internal bleeding", "Mechanism of injury indicates high-risk trauma"]}

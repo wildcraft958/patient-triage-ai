@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.7, "reasoning": ["Vitals (BP 110/74, HR 72, RR 16) are within normal limits for a 40-year-old adult", "Mechanism of injury (high-speed multicar accident) suggests potential for internal injuries despite stable vitals", "Laceration and abrasion require resource allocation but do not indicate life-threatening instability", "No red flags for high-risk vital signs or altered mental status"], "red_flags": ["High-speed trauma mechanism warrants consideration of occult injuries", "Presence of multiple abrasions/lacerations requiring resource allocation"]}

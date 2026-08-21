@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["Gunshot wound to the chest is a high-risk trauma requiring immediate intervention", "BP 82/palp and HR 130 indicate hypovolemic shock", "Patient is alert but vital signs are critically abnormal for a 17-year-old", "Two large bore IVs inserted suggests rapid fluid resuscitation needed", "ESI 2 criteria include high-risk vital signs and potential for rapid deterioration"], "red_flags": ["Gunshot wound to chest", "Hypotension (82/palp)", "Tachycardia (130 bpm)", "Trauma mechanism", "Need for immediate life-saving interventions"]}

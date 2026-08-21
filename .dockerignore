@@ -1,0 +1,16 @@
+.git
+.env
+local.env
+**/node_modules
+**/.venv
+**/__pycache__
+**/.pytest_cache
+frontend/dist
+data/mimic-iv-ed-demo
+data/esi_eval
+data/esi_handbook
+data/cache/calibration.json
+*.duckdb
+*.duckdb.wal
+docs/*.png
+.DS_Store

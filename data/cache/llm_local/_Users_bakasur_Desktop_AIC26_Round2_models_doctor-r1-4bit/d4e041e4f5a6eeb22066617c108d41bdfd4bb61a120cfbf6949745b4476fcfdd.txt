@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.8, "reasoning": ["Patient presents with leg pain after prolonged immobility and obesity, which are red flags for DVT/PE", "Vitals are stable (BP 148/90, HR 86, RR 16, Temp 98°F) but not within normal limits for age/obese patient", "ESI 3 applies for patients needing two resources (e.g., ultrasound, monitoring) while vitals are stable", "No signs of acute distress or confusion (ESI 2 criteria not met)"], "red_flags": ["Prolonged immobility in obese patient", "Risk factors for DVT/PE", "Vitals borderline for age/obesity"]}

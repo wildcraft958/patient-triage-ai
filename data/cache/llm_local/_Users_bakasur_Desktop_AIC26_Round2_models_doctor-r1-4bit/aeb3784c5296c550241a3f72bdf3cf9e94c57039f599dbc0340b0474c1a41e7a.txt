@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.85, "reasoning": ["Open fracture of the right lower leg requires immediate orthopedic intervention and imaging (resources >1)", "Pedal pulse +2, warm toes, and alert mental status indicate stable circulation and no acute limb-threatening ischemia", "Vitals are normal for age despite traumatic injury, no high-risk vital signs (e.g., tachycardia, hypotension, respiratory distress)", "No signs of shock, confusion, or severe distress warranting ESI 2"], "red_flags": ["Open fracture", "Trauma from fall", "Need for multiple resources (imaging, surgery, orthopedic consult)"]}

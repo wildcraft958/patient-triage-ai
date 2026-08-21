@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["The child presents with concerning symptoms of possible appendicitis (vomiting, abdominal pain, and referral from pediatrician).", "Low BP (88/62) and fever (99.6°F) are red flags for systemic involvement or hypovolemia.", "Despite being alert, the atypical presentation (vomiting, lethargic behavior) and vital abnormalities justify higher acuity.", "ESI 2 is appropriate for high-risk conditions requiring prompt evaluation despite stable vitals."], "red_flags": ["Vomiting with abdominal pain", "Low BP for age", "Fever", "Atypical presentation of appendicitis", "Referral from pediatrician"]}

@@ -1,0 +1,3 @@
+
+
+{"esi": 4, "confidence": 0.6, "reasoning": ["Patient is alert and denies infection or fever, with no acute distress or vital sign abnormalities reported.", "Toenail issue is non-urgent and does not meet ESI 1-3 criteria for life-threatening or high-risk conditions.", "COPD history does not indicate acute exacerbation or respiratory distress.", "Vitals are normal for age, but lack of specific data introduces uncertainty."], "red_flags": ["No signs of sepsis or occult infection", "No acute respiratory distress", "No fever or rash"]}

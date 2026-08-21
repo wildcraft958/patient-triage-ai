@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.8, "reasoning": ["Vitals (T 97ºF, HR 88, RR 18, BP 100/68) are within normal age-specific ranges for a 10-year-old", "Patient is alert and not in distress", "Complaint is localized (ear pain/itching) without systemic signs of infection or sepsis", "No red flags for high-risk vital signs or altered mental status"], "red_flags": []}

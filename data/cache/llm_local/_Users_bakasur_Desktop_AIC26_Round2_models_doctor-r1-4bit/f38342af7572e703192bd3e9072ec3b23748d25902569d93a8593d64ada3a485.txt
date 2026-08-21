@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.8, "reasoning": ["RR 40 is a high-risk vital sign for an adult, exceeding the 24-28 range typically associated with ESI 2", "Patient is working hard to breathe (use of accessory muscles) despite being alert", "History of asthma increases risk of acute exacerbation", "Hoarseness and sore throat suggest potential smoke inhalation injury requiring immediate assessment"], "red_flags": ["Respiratory distress with RR 40", "Work of breathing", "Smoke inhalation risk", "Asthma exacerbation potential"]}

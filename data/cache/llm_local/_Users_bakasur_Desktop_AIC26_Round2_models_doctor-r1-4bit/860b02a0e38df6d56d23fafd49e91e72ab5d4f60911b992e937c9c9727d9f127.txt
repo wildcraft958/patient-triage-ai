@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["High-speed MVC with abdominal pain raises concern for internal bleeding (high-risk trauma)", "Tachypnea (RR 28) and hypoxia (SpO2 96%) suggest respiratory compromise", "BP 102/60 is low for a young adult, possibly indicating occult hemorrhage", "Patient is immobilized and alert, but abdominal pain warrants urgent imaging"], "red_flags": ["Abdominal pain after MVC", "Tachypnea and hypoxia", "Low BP for age", "Immobilization suggests potential spinal injury"]}

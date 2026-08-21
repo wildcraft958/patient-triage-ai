@@ -1,0 +1,3 @@
+
+
+{"esi": 4, "confidence": 0.8, "reasoning": ["Vitals are within normal range for adult (T 97.4°F, HR 78, RR 14, BP 142/70).", "No signs of confusion, lethargy, or severe distress.", "Chief complaint (UTI) is a common, non-urgent condition.", "No red flags for sepsis, ACS, or other high-risk presentations."], "red_flags": []}

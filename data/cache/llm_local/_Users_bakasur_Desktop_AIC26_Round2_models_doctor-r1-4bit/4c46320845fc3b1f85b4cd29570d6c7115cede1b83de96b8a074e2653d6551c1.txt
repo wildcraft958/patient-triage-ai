@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.7, "reasoning": ["Patient presents with post-gastric bypass complications (vomiting, abdominal pain) requiring urgent evaluation for bowel obstruction/leakage", "Vitals are stable (BP 126/70, HR 76, RR 14, T 98°F) but pain is moderate (6/10)", "No high-risk vital signs or altered mental status", "Requires imaging and surgical consultation but not immediate life-saving intervention"], "red_flags": ["Post-gastric bypass patient with acute abdomen", "Vomiting and abdominal pain after surgery", "Obese female with potential surgical emergency"]}

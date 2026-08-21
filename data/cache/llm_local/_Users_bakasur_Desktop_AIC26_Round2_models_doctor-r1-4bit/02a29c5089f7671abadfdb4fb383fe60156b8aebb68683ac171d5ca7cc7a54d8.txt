@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.65, "reasoning": ["Unresponsiveness is a red flag for high-risk status, but patient's history of stroke suggests baseline unresponsiveness", "Feeding tube dislodgement raises concern for aspiration risk but lacks vital sign data to confirm urgency", "No vitals recorded complicates assessment but unresponsiveness alone warrants ESI 3 per handbook guidance"], "red_flags": ["Unresponsiveness", "Feeding tube dislodgement", "No vital signs recorded"]}

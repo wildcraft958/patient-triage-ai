@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.8, "reasoning": ["Patient presents with vomiting, diarrhea, and abdominal cramping but is alert and stable vitals (T 96.8°F, HR 96, RR 16, BP 116/74). No signs of shock, confusion, or severe distress.", "Vitals are within normal limits for an adult, though dehydration risk exists. ESI 3 applies when patient requires two or more resources (e.g., IV fluids, monitoring) but is stable.", "No red flags for sepsis, altered mental status, or acute distress. Patient's age and alertness suggest no urgent life-threatening condition."], "red_flags": ["Vomiting and diarrhea requiring hydration", "Risk of dehydration", "No fever or chills but prolonged vomiting may indicate complications"]}

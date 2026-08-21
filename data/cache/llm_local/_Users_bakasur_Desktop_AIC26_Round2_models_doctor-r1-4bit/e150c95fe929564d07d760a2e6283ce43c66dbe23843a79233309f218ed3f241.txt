@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.8, "reasoning": ["Patient is alert and vitals are within normal range (implied stability)", "Bedridden status with catheter issue raises concern for potential complications (e.g., UTI progression, sepsis)", "No signs of confusion, severe distress, or high-risk vital signs (e.g., tachycardia, hypotension)", "Requires monitoring and resources for catheter management and infection control"], "red_flags": ["Bedridden patient with catheter malfunction", "History of UTI on antibiotics", "No prior medical record for risk stratification"]}

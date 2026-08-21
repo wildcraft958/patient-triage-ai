@@ -1,0 +1,3 @@
+
+
+{"esi": 4, "confidence": 0.8, "reasoning": ["The patient has a 2-cm lip laceration requiring sutures (one resource), but vitals are stable and no acute distress.", "No high-risk vital signs or systemic symptoms (e.g., fever, confusion) noted.", "Age-specific norms: While infants <28 days with fever are high-risk, this 19-month-old has no fever or signs of sepsis.", "Laceration is significant but not life-threatening; requires focused care but not immediate intervention."], "red_flags": ["Laceration size and location may require sutures", "No fever or systemic symptoms", "Stable vitals but injury needs attention"]}

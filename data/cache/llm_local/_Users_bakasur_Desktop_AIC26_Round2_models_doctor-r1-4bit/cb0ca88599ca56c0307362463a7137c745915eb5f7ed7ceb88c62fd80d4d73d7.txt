@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.7, "reasoning": ["Localized paronychia with pus indicates a possible minor infection, but no systemic signs of sepsis or high-risk features", "Vitals are stable (T 37.1°C, HR 62, RR 14, BP 108/70) and within normal range for a young adult", "Requires exam, possible culture, and antibiotics (two resources) per ESI 3 criteria", "No confusion, distress, or high-risk vital signs warranting ESI 2"], "red_flags": ["Presence of pus suggests potential for progression to cellulitis or sepsis", "Localized infection in a young adult may present atypically (e.g., no fever)"]}%

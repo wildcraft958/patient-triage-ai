@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.8, "reasoning": ["Unresponsiveness despite spontaneous breathing indicates potential neurological compromise or hypoxia", "HR 126 and RR 28 are elevated for a 4-year-old (normal HR 80-130, RR 15-30)", "BP 80/64 is hypotensive for a child (normal SBP 90-110 mmHg)", "SpO2 96% is acceptable but other vitals suggest systemic distress", "History of near-drowning and CPR raises concern for secondary drowning or hypovolemic shock"], "red_flags": ["Unresponsiveness", "Hypotension", "Tachycardia", "Tachypnea", "Near-drowning history"]}

@@ -1,0 +1,3 @@
+
+
+{"esi": 4, "confidence": 0.8, "reasoning": ["Patient presents with a localized rash without systemic symptoms or distress", "Vitals are mostly within normal range (T 98°F, RR 16, BP 112/70)", "HR 58 is slightly low but not associated with acute distress or altered mental status", "No red flags for sepsis, shock, or high-risk vital signs per ESI handbook examples"], "red_flags": ["Bradycardia (HR 58)", "Localized rash with potential for fungal infection"]}

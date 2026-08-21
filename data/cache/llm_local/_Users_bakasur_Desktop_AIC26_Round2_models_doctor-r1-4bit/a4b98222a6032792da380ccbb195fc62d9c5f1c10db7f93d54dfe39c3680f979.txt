@@ -1,0 +1,3 @@
+
+
+{"esi": 1, "confidence": 0.85, "reasoning": ["Unresponsiveness and intubation indicate immediate life-saving interventions are required (ESI 1).", "Head trauma from a high-velocity mechanism (skiing accident) with intubation suggests critical neurological impairment.", "Age-specific norms: Adolescents with head trauma and altered mental status require urgent evaluation for intracranial injury.", "Vitals not recorded but clinical presentation (unresponsive, intubated) aligns with ESI 1 criteria."], "red_flags": ["Unresponsiveness", "Intubation", "Head trauma from high-impact mechanism", "Age-specific risk for traumatic brain injury"]}

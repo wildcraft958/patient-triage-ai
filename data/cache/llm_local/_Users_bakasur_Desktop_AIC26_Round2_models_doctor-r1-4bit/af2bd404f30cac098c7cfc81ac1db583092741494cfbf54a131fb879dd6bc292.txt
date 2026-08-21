@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.6, "reasoning": ["Patient is alert with no signs of confusion or severe distress (ESI 2 criteria not met)", "Laceration and possible wrist fracture require two resources (radiograph/CT scan) per ESI 3 criteria", "Vitals not recorded but patient is stable and ambulatory", "No indications of high-risk vital signs or occult injuries requiring immediate intervention"], "red_flags": ["Unrecorded vitals may obscure hidden injuries", "Helmet use suggests potential head trauma despite alertness", "Need for two resources (imaging) for definitive assessment"]}

@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.6, "reasoning": ["The child is alert, active, and well-hydrated with no signs of distress or fever, indicating stable vitals despite unrecorded measurements.", "Vomiting alone without associated high-risk features (e.g., dehydration, lethargy, fever) does not meet ESI 2 criteria.", "No red flags for sepsis, occult illness, or acute distress in an otherwise stable, interactive toddler."], "red_flags": []}

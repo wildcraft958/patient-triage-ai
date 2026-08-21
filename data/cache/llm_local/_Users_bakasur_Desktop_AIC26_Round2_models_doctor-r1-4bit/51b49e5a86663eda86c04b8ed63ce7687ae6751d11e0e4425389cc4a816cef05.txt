@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["HR 178 (irregular) and BP 84/66 are high-risk vitals for an elderly patient", "Fall history raises concern for intracranial injury or internal bleeding", "Irregular pulse suggests potential arrhythmia (e.g., atrial fibrillation with rapid ventricular response)", "Elderly patients may present atypically with sepsis or hypovolemic shock", "Vitals indicate instability requiring immediate attention"], "red_flags": ["Irregular pulse", "Hypotension", "Tachycardia", "History of fall", "Elderly patient with atypical presentation"]}

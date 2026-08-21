@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["Patient presents with abdominal pain, spotting, and history of ectopic pregnancy, raising concern for recurrent ectopic pregnancy or miscarriage. While vitals are stable, the clinical scenario warrants urgent evaluation due to potential life-threatening complications.", "ESI 2 is appropriate for high-risk conditions requiring prompt intervention, even if vitals are normal. The combination of symptoms and history indicates a need for immediate attention to rule out ectopic pregnancy or other critical conditions."], "red_flags": ["History of ectopic pregnancy", "Abdominal pain with spotting", "Potential for life-threatening hemorrhage or rupture"]}

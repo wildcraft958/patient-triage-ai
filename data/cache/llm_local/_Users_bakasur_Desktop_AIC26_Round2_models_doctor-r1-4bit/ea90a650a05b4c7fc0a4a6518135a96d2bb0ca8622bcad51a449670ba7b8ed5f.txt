@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.8, "reasoning": ["Chest pain 10/10 with hypotension (86/50), bradycardia (52), and signs of shock (cool/clammy skin) indicate high-risk cardiac presentation", "Irregular pulse suggests arrhythmia, which could be a life-threatening complication of MI or other cardiac issues", "Patient's age (52), obesity, and exertional trigger align with CAD risk factors", "Vitals meet ESI 2 criteria: high-risk vital signs with potential for rapid decompensation"], "red_flags": ["Chest pain 10/10 with hypotension and bradycardia", "Signs of shock (cool/clammy skin) with alertness", "Irregular pulse suggests arrhythmia", "Exertional trigger in a high-risk patient"]}

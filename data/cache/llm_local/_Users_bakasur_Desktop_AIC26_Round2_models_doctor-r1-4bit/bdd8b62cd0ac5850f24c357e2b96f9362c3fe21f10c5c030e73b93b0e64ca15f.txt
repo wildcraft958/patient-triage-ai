@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.75, "reasoning": ["Hypotension (BP 70/palp), tachycardia (HR 128), and tachypnea (RR 40) meet high-risk vital sign criteria per ESI Handbook p.30", "Maroon stool indicates potential gastrointestinal bleeding, especially in a patient on anticoagulants", "Elderly patients on blood thinners have higher bleeding risk and may present atypically (e.g., silent ACS)", "Despite alertness, combination of vitals and red flags necessitates urgent evaluation"], "red_flags": ["Maroon stool (GI bleed)", "Hypotension/tachycardia/tachypnea", "Anticoagulant use", "Elderly patient with atypical presentation"]}

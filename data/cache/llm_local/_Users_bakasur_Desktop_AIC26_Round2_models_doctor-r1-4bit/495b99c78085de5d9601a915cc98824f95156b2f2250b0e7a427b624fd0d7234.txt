@@ -1,0 +1,3 @@
+
+
+{"esi": 4, "confidence": 0.8, "reasoning": ["The patient has a three-centimeter laceration requiring sutures (one resource), no high-risk vital signs, and is alert. ESI 4 applies as it requires one resource but is not urgent.", "No signs of distress, confusion, or high-risk vital signs (unrecorded but assumed stable)."], "red_flags": ["Unrecorded vitals may obscure potential high-risk indicators", "Child's age may affect presentation of injuries"]}

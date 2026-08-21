@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.8, "reasoning": ["The patient is a 3-week-old infant with a rectal temperature of 38.3°C, which exceeds the pediatric red flag threshold of >38°C for children <90 days old (ESI Handbook p.30).", "Despite being alert and active, infants this age present atypically with sepsis (e.g., occult sepsis, silent ACS), necessitating higher acuity triage.", "ESI level 2 is mandated for children <90 days with fever ≥38°C per handbook guidelines."], "red_flags": ["<90 days old with fever ≥38°C", "Infant with fever requiring urgent evaluation for sepsis", "Age-specific presentation atypical for adult fever protocols"]}

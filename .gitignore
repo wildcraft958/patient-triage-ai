@@ -19,7 +19,9 @@ dist/
 data/mimic-iv-ed-demo/
 data/esi_eval/
 data/esi_handbook/
-data/cache/
+# LLM replay caches ARE committed: they make the demo and eval reproducible
+# with zero API keys. Learned runtime state stays out.
+data/cache/calibration.json
 
 # Local state
 *.duckdb

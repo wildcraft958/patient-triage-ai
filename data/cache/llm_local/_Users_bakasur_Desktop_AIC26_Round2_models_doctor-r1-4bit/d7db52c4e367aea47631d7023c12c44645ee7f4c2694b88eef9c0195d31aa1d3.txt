@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["SpO2 86% is critically low for an adult, indicating hypoxia requiring immediate attention", "Lethargy and history of depression/self-harm suggest high-risk psychiatric and potential overdose concerns", "Vital signs (RR 10) and SpO2 are outside normal ranges for age, meeting ESI 2 criteria for high-risk vital signs", "Presence of multiple wrist lacerations indicates potential suicide attempt requiring rapid intervention"], "red_flags": ["SpO2 86% (critically low)", "Lethargy with history of depression", "Multiple wrist lacerations", "Suspected medication overdose", "Vital signs outside normal range for age"]}

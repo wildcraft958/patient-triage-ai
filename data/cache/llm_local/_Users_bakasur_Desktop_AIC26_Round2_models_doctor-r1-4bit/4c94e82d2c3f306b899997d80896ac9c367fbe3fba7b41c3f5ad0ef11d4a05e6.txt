@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.7, "reasoning": ["Patient is alert and stable vitals (implied by no critical abnormalities noted)", "Pain level 10 indicates significant discomfort but not life-threatening", "History of vomiting and prolonged migraine warrants monitoring for complications", "No signs of confusion, lethargy, or acute distress meeting ESI 2 criteria"], "red_flags": ["Prolonged migraine with vomiting", "High pain score (20/10 previously)", "No prior medical record for risk stratification"]}

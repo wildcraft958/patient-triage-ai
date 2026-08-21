@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.6, "reasoning": ["Newborns with blood in diaper may present occult sepsis or UTI, requiring urgent evaluation despite stable appearance", "No vital signs recorded but patient is alert and feeding well (stable vitals inferred)", "Blood in diaper is red flag for urological or systemic pathology in neonate"], "red_flags": ["Blood in diaper in neonate", "Age < 1 month", "Uncertain vital status"]}

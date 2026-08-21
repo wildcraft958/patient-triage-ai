@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.85, "reasoning": ["Postpartum patient with hypotension (86/40), tachycardia (132), and massive hemorrhage (clots size oranges) meets high-risk vital signs per ESI Handbook p.30", "Alertness does not negate hypovolemic shock presentation with unstable vitals", "ESI 2 criteria include high-risk vital signs requiring immediate intervention"], "red_flags": ["Postpartum hemorrhage (PPH) with hypovolemic shock", "Hypotension and tachycardia with massive blood loss", "Clots size oranges indicate severe hemorrhage"]}

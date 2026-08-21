@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["The patient is 72 years old with fever (100.8°F), confusion (disoriented to time/place), and possible UTI (pain on urination). Elderly patients with fever and confusion are at higher risk for sepsis or other acute conditions.", "Confusion and fever are high-risk vital signs in this age group, even if other vitals are within normal ranges for adults.", "The combination of fever, confusion, and altered mental status meets ESI 2 criteria (high-risk, confused/lethargic)."], "red_flags": ["Fever in elderly patient", "Confusion/disorientation", "Possible occult sepsis/UTI"]}

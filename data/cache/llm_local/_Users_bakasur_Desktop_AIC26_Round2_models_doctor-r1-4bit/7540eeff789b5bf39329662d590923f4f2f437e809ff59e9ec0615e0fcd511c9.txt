@@ -1,0 +1,3 @@
+
+
+{"esi": 4, "confidence": 0.75, "reasoning": ["Vitals are within normal range for an adult (T 97°F, HR 78, RR 16, BP 118/80)", "No signs of distress, confusion, or altered mental status", "Patient is alert and cooperative, with no indications of high-risk vital signs", "Emergency contraception requires clinical evaluation but does not meet ESI 2/3 criteria"], "red_flags": ["No red flags identified in vitals or presentation"]}

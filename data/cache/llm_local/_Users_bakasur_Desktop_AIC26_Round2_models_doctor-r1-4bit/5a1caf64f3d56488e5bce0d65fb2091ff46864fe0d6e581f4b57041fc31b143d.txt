@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["Patient has low SpO2 (84%) and fever, which are high-risk vital signs per ESI guidelines.", "Respiratory distress (increased work of breathing) indicates acute distress requiring immediate attention.", "Fever in a COPD patient raises concern for superimposed infection (e.g., pneumonia) or sepsis, which are high-risk conditions.", "Despite COPD history, the combination of low SpO2, fever, and respiratory distress exceeds the 'stable' criteria for ESI 3."], "red_flags": ["Low SpO2 (84%)", "Fever", "Respiratory distress", "COPD exacerbation with infection risk"]}

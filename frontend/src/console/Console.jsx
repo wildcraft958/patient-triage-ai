@@ -23,9 +23,15 @@ const VITAL_DEFS = [
 function TopBar({ state, busy, auto, onAuto, onStep, onAdvance, onSurge, onReset, remaining }) {
   return (
     <div className="topbar">
-      <h1>PatientTriage.ai · Nurse Console</h1>
+      <h1>
+        <a href="/" style={{ color: '#fff', textDecoration: 'none' }}
+           title="Back to PatientTriage.ai site">
+          PatientTriage.ai
+        </a>
+        {' '}· Nurse Console
+      </h1>
       <div className="meta">
-        <a className="chip" href="/" style={{ textDecoration: 'none', color: '#fff' }}>&lsaquo; site</a>
+        <a className="chip" href="/" style={{ textDecoration: 'none', color: '#fff' }}>&lsaquo; Back to site</a>
         <span className="chip">{state?.profile ?? '…'}</span>
         <span className="chip">t = {fmt(state?.sim_min)} min</span>
         <span className="chip">Waiting: {state?.waiting ?? 0}</span>

@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["Patient has tachycardia (HR 108), tachypnea (RR 20), and hypoxia (SpO2 97%) which are high-risk vital signs per ESI handbook examples", "History of anaphylaxis with EpiPen use indicates potential for biphasic reaction requiring close monitoring", "Vitals meet criteria for ESI 2 despite patient being alert and stable"], "red_flags": ["Anaphylaxis history with delayed reaction risk", "High-risk vital signs (tachycardia, tachypnea, hypoxia)"]}

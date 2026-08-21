@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.7, "reasoning": ["Head injury with loss of consciousness and altered mental status (sleepiness) are red flags for high-risk neurological compromise", "HR 162 and RR 38 are significantly elevated for a 4-year-old (pediatric tachycardia/tachypnea thresholds are lower than adults)", "Elevated vitals combined with neurological changes meet ESI 2 criteria for high-risk, confused/lethargic patients", "No evidence of immediate life-saving interventions (ESI 1) but requires urgent neuro-imaging and monitoring"], "red_flags": ["Head injury with loss of consciousness", "Altered mental status (sleepiness)", "Pediatric tachycardia (HR 162) and tachypnea (RR 38)"]}

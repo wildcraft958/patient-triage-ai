@@ -1,0 +1,3 @@
+
+
+{"esi": 2, "confidence": 0.75, "reasoning": ["Severe abdominal pain (10/10) with hypotension (88/68), tachycardia (122), and hypoxia (94%) indicate high-risk vital signs per ESI Handbook p.30", "Diaphoresis and cool skin suggest potential shock, though patient is alert (contradicting ESI 1 criteria)", "Elderly patients may present atypically (e.g., silent ACS, occult sepsis) but this patient's hypotension/tachycardia align with ESI 2 criteria", "Severe distress and need for immediate intervention despite stable mental status"], "red_flags": ["Hypotension (88/68)", "Tachycardia (122)", "Hypoxia (94%)", "Diaphoresis", "Severe abdominal pain (10/10)"]}

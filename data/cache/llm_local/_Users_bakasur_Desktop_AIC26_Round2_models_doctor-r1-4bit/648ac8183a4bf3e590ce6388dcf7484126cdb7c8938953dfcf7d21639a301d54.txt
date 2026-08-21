@@ -1,0 +1,3 @@
+
+
+{"esi": 3, "confidence": 0.85, "reasoning": ["Patient presents with fever (100.6°F) and sore throat, which are red flags for potential strep throat or other infection.", "Vitals are stable (HR 88, RR 18, BP 112/76) with no signs of distress or confusion.", "ESI 3 applies as the patient requires assessment for potential bacterial infection but is stable and not in immediate danger.", "Fever alone, while concerning, does not meet ESI 2 criteria without additional high-risk indicators (e.g., confusion, severe distress)."], "red_flags": ["Fever", "Sore throat", "Concern about strep throat"]}
