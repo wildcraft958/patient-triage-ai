@@ -1,0 +1,99 @@
+from fastapi import APIRouter, HTTPException
+from pydantic import BaseModel, Field
+
+from app.models import PatientIntake, Vitals
+from app.service import CALIBRATION_PATH, TriageService
+
+router = APIRouter()
+
+_service: TriageService | None = None
+
+
+def get_service() -> TriageService:
+    global _service
+    if _service is None:
+        _service = TriageService(calibration_path=CALIBRATION_PATH)
+    return _service
+
+
+def reset_service(**kwargs) -> TriageService:
+    global _service
+    _service = TriageService(**kwargs)
+    return _service
+
+
+class OverrideBody(BaseModel):
+    new_esi: int = Field(ge=1, le=5)
+    clinician_id: str = Field(min_length=1)
+    reason: str = Field(min_length=3)
+
+
+class ClinicianBody(BaseModel):
+    clinician_id: str = Field(min_length=1)
+
+
+class ClockBody(BaseModel):
+    minutes: float = Field(gt=0, le=24 * 60)
+
+
+class SurgeBody(BaseModel):
+    forced: bool | None  # true/false to force, null to return to automatic
+
+
+def _require(patient_id: str) -> None:
+    if patient_id not in get_service().room.entries:
+        raise HTTPException(404, f"unknown patient {patient_id}")
+
+
+@router.post("/patients")
+def arrive(intake: PatientIntake):
+    svc = get_service()
+    if intake.patient_id in svc.room.entries:
+        raise HTTPException(409, f"{intake.patient_id} already triaged")
+    fused = svc.arrive(intake)
+    return {"fused": fused, "state": svc.state_view()}
+
+
+@router.post("/patients/{patient_id}/vitals")
+def record_vitals(patient_id: str, vitals: Vitals):
+    _require(patient_id)
+    result = get_service().record_vitals(patient_id, vitals)
+    return {"alert": result["alert"], "retriaged": result["retriaged"]}
+
+
+@router.post("/patients/{patient_id}/override")
+def override(patient_id: str, body: OverrideBody):
+    _require(patient_id)
+    return get_service().override(
+        patient_id, body.new_esi, body.clinician_id, body.reason
+    )
+
+
+@router.post("/patients/{patient_id}/accept")
+def accept(patient_id: str, body: ClinicianBody):
+    _require(patient_id)
+    return {"reward": get_service().accept(patient_id, body.clinician_id)}
+
+
+@router.get("/queue")
+def queue():
+    svc = get_service()
+    return {"queue": svc.queue_view(), "state": svc.state_view()}
+
+
+@router.post("/clock/advance")
+def advance_clock(body: ClockBody):
+    alerts = get_service().advance_clock(body.minutes)
+    return {"alerts": alerts, "state": get_service().state_view()}
+
+
+@router.post("/surge")
+def surge(body: SurgeBody):
+    get_service().surge_forced = body.forced
+    return get_service().state_view()
+
+
+@router.get("/patients/{patient_id}/audit")
+def audit_trail(patient_id: str):
+    _require(patient_id)
+    return {"events": get_service().audit.events_for(patient_id)}
