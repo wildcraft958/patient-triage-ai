@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     llm_model: str = "anthropic.claude-haiku-4-5"
     hf_token: str = ""
     hospital_profile: str = "urban_500"
+    # en_core_web_lg for full PHI recall; en_core_web_sm for small-RAM hosts
+    spacy_model: str = "en_core_web_lg"
 
 
 settings = Settings()

@@ -29,9 +29,16 @@ class RedactionResult(BaseModel):
 def _engines():
     # Presidio + spaCy load takes seconds; initialize once per process
     from presidio_analyzer import AnalyzerEngine
+    from presidio_analyzer.nlp_engine import NlpEngineProvider
     from presidio_anonymizer import AnonymizerEngine
 
-    return AnalyzerEngine(), AnonymizerEngine()
+    from app.config import settings
+
+    provider = NlpEngineProvider(nlp_configuration={
+        "nlp_engine_name": "spacy",
+        "models": [{"lang_code": "en", "model_name": settings.spacy_model}],
+    })
+    return AnalyzerEngine(nlp_engine=provider.create_engine()), AnonymizerEngine()
 
 
 def redact(text: str) -> RedactionResult:

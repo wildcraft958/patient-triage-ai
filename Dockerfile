@@ -28,4 +28,4 @@ RUN cd backend && uv run python ../scripts/fetch_data.py
 
 ENV HOSPITAL_PROFILE=urban_500
 EXPOSE 7860
-CMD ["sh", "-c", "cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port 7860"]
+CMD ["sh", "-c", "cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}"]

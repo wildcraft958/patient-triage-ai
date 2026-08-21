@@ -517,6 +517,14 @@ wheels = [
 ]
 
 [[package]]
+name = "en-core-web-sm"
+version = "3.8.0"
+source = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" }
+wheels = [
+    { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl", hash = "sha256:1932429db727d4bff3deed6b34cfc05df17794f4a52eeb26cf8928f7c1a0fb85" },
+]
+
+[[package]]
 name = "fastapi"
 version = "0.141.1"
 source = { registry = "https://pypi.org/simple" }
@@ -1190,6 +1198,7 @@ dependencies = [
     { name = "anthropic" },
     { name = "duckdb" },
     { name = "en-core-web-lg" },
+    { name = "en-core-web-sm" },
     { name = "fastapi" },
     { name = "langgraph" },
     { name = "presidio-analyzer" },
@@ -1213,6 +1222,7 @@ requires-dist = [
     { name = "anthropic", specifier = ">=1.0.0" },
     { name = "duckdb", specifier = ">=1.5.5" },
     { name = "en-core-web-lg", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_lg-3.8.0/en_core_web_lg-3.8.0-py3-none-any.whl" },
+    { name = "en-core-web-sm", url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.8.0/en_core_web_sm-3.8.0-py3-none-any.whl" },
     { name = "fastapi", specifier = ">=0.141.1" },
     { name = "langgraph", specifier = ">=1.2.11" },
     { name = "presidio-analyzer", specifier = ">=2.2.364" },

@@ -1,0 +1,20 @@
+# Render.com blueprint: deploys the whole product (site + console + API)
+# as one free-tier container. The committed LLM replay cache powers the demo
+# scenario with full Claude reasoning and zero API keys; uncached requests
+# fall back to the deterministic rules path.
+#
+# The free instance has 512 MB RAM, so the hosted demo uses the compact
+# spaCy NER model for PHI redaction; local and hospital deployments keep
+# the full en_core_web_lg model (the default).
+
+services:
+  - type: web
+    name: patient-triage-ai
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: SPACY_MODEL
+        value: en_core_web_sm
+      - key: HOSPITAL_PROFILE
+        value: urban_500

@@ -157,6 +157,23 @@ uv run python ../scripts/replay_demo.py --speedup 3 --profile rural_100   # 3x s
 uv run python ../eval/run_eval.py --sets test_1 test_2 test_3    # 216-case benchmark
 ```
 
+## Deploying
+
+The repo ships a single-container deployment (site + console + API in one
+process). The committed LLM replay cache gives the demo scenario full Claude
+reasoning with no API key; anything uncached falls back to rules-only.
+
+```bash
+docker build -t patient-triage-ai .
+docker run -p 7860:7860 patient-triage-ai     # open http://localhost:7860
+```
+
+Any container host works (Render, Railway, Fly, Cloud Run, a hospital VM).
+`render.yaml` is a ready Render blueprint: connect the repo in the Render
+dashboard, pick Blueprint, deploy. The free tier sleeps when idle (first
+request takes about a minute) and uses the compact spaCy NER model for
+redaction; set `SPACY_MODEL=en_core_web_lg` on hosts with 1 GB+ RAM.
+
 ## Data and licenses
 
 - `data/curated_patients.json`: 22 simulated patients written by us, covering every mandated case (ambiguous presentation, pediatric, geriatric, zero-history, a sepsis-trajectory deteriorator with worsening rechecks; roughly half have prior records).
