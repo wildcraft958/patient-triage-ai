@@ -85,18 +85,18 @@ A fatigued nurse will not use a tool that nags. The UX choices come from that re
 
 ```mermaid
 flowchart LR
-    A[Arrival intake] --> R[Presidio PHI redaction]
-    R --> PA[Path A: ESI v4 rules engine, age-banded]
-    R --> PB[Path B: Claude reasoning + ESI Handbook RAG]
-    PA --> F[FUSE: agree = high confidence, disagree = more acute wins + flag]
+    A["Arrival intake"] --> R["Presidio PHI redaction"]
+    R --> PA["Path A: ESI v4 rules engine (age-banded)"]
+    R --> PB["Path B: Claude reasoning + ESI Handbook RAG"]
+    PA --> F["FUSE: agree = high confidence; disagree = more acute wins + flag"]
     PB --> F
-    F --> CAL[Learned calibration, escalate-only]
-    CAL --> S[Safety pipeline L1-L4]
-    S --> Q[Waiting room monitor]
-    Q -->|priority queue + wait breach + worsening vitals| RT[Re-triage]
+    F --> CAL["Learned calibration (escalate-only)"]
+    CAL --> S["Safety pipeline L1-L4"]
+    S --> Q["Waiting-room monitor"]
+    Q -->|"priority queue + wait breach + worsening vitals"| RT["Re-triage"]
     RT --> Q
-    S --> N[Nurse console]
-    N -->|accept / override + reason| L[Audit trail + reward loop]
+    S --> N["Nurse console"]
+    N -->|"accept / override + reason"| L["Audit trail + reward loop"]
     L --> CAL
 ```
 
