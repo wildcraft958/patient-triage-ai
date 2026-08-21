@@ -12,6 +12,7 @@ from app.learning.loop import CalibrationTable, age_band, compute_reward
 from app.models import PatientIntake, Vitals
 from app.monitor.waiting_room import Alert, SimClock, WaitingRoom
 from app.profiles import load_profile
+from app.safety.pipeline import BiasMonitor, check as safety_check
 
 from app.config import REPO_ROOT
 
@@ -28,6 +29,7 @@ class TriageService:
         self.calibration = CalibrationTable(path=calibration_path)
         self.transport = transport
         self.surge_forced: bool | None = None
+        self.bias = BiasMonitor()
 
     # --- surge ---
 
@@ -43,6 +45,8 @@ class TriageService:
         surge = self.surge_mode
         fused = self._run_triage(intake, use_llm=use_llm and not surge)
         fused = self._apply_calibration(intake, fused)
+        fused, safety = safety_check(intake, fused)
+        self.bias.record(intake, fused.esi)
         self.room.add(intake, fused)
         self.audit.log("triage", intake.patient_id, self.clock.now_min, {
             "esi": fused.esi, "route": fused.route, "confidence": fused.confidence,
@@ -51,6 +55,7 @@ class TriageService:
             "rules_reasons": fused.rules.reasons,
             "llm_reasoning": fused.llm.reasoning if fused.llm else None,
             "notes": fused.notes,
+            "safety": safety.model_dump(),
         })
         return fused
 

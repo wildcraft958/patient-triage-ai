@@ -93,6 +93,16 @@ def surge(body: SurgeBody):
     return get_service().state_view()
 
 
+@router.get("/metrics")
+def metrics():
+    svc = get_service()
+    return {
+        "bias_by_age_band": svc.bias.snapshot(),
+        "calibration_cells": svc.calibration.cells,
+        "state": svc.state_view(),
+    }
+
+
 @router.get("/patients/{patient_id}/audit")
 def audit_trail(patient_id: str):
     _require(patient_id)
