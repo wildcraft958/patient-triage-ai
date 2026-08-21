@@ -17,6 +17,8 @@ dist/
 
 # Data pulled at setup time (not redistributed)
 data/mimic-iv-ed-demo/
+data/esi_eval/
+data/esi_handbook/
 data/cache/
 
 # Local state

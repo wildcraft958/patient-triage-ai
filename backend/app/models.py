@@ -25,6 +25,20 @@ class PatientIntake(BaseModel):
     allergies: list[str] = Field(default_factory=list)
 
 
+class VitalsRecheck(BaseModel):
+    offset_min: float
+    vitals: Vitals
+
+
+class SimPatient(PatientIntake):
+    """A curated simulated patient: intake plus replay/scenario metadata."""
+
+    arrival_offset_min: float = 0
+    vitals_rechecks: list[VitalsRecheck] = Field(default_factory=list)
+    tags: list[str] = Field(default_factory=list)
+    expected_esi: int | None = None
+
+
 class RulesResult(BaseModel):
     esi: int
     reasons: list[str]
