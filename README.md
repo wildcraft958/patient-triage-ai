@@ -121,22 +121,24 @@ Prerequisites: Python 3.12+ with [uv](https://docs.astral.sh/uv/), Node 20+.
 git clone https://github.com/wildcraft958/patient-triage-ai
 cd patient-triage-ai
 
-# 1. Data (MIMIC-IV-ED demo, ESI eval sets, ESI Handbook; ~3 MB)
-python3 scripts/fetch_data.py
-
-# 2. Backend
+# 1. Backend environment
 cd backend
 uv sync
+
+# 2. Data (MIMIC-IV-ED demo, ESI eval sets, ESI Handbook; ~3 MB)
+uv run python ../scripts/fetch_data.py
+
+# 3. Tests and server
 uv run pytest                     # 77 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
-# 3. Frontend (new terminal)
+# 4. Frontend (new terminal)
 cd frontend
 npm install
 npm run dev                       # http://localhost:5173
 
-# 4. In the dashboard: Load scenario -> Next event, step through the timeline
+# 5. In the dashboard: Load scenario -> Next event, step through the timeline
 ```
 
 **LLM access.** Set `LLM_API_KEY` (AWS Bedrock API key) and `LLM_REGION` in `.env`; default model is `anthropic.claude-haiku-4-5`. Without a key the system still runs end to end in rules-only mode (every recommendation notes it), and all previously seen prompts are served from the replay cache in `data/cache/`.

@@ -6,11 +6,25 @@
   github.com/Karthick47v2/ED-Triage-Agent) — standardized ESI scenario sets
   used here as the evaluation benchmark and RAG source.
 
-Run:  python3 scripts/fetch_data.py   (from repo root; stdlib only)
+Run:  cd backend && uv run python ../scripts/fetch_data.py
+(also works with any python3 that has certifi installed)
 """
 
+import ssl
 import urllib.request
 from pathlib import Path
+
+try:
+    import certifi
+
+    _CTX = ssl.create_default_context(cafile=certifi.where())
+except ImportError:  # stock python without certifi: use system defaults
+    _CTX = ssl.create_default_context()
+
+_opener = urllib.request.build_opener(
+    urllib.request.HTTPSHandler(context=_CTX)
+)
+urllib.request.install_opener(_opener)
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA = ROOT / "data"
