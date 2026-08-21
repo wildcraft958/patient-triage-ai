@@ -16,6 +16,8 @@ Team **NamoFans** (IIT Kharagpur): Monika Kumari (Team Leader) and Animesh Raj. 
 
 Triage today is a snapshot: a patient is scored once at arrival and then nobody systematically re-examines them. An ESI-3 patient can silently deteriorate toward ESI-1 in the waiting room, and in sepsis every hour of treatment delay raises mortality by roughly 8% (Kumar et al.). Existing AI triage systems (ED-Triage-Agent, TriageAgent) automate the initial score and stop at the door.
 
+![The patient journey: AI improves the initial triage score, then nobody watches the gap between triage and treatment. That gap is the danger window.](docs/round1_problem.png)
+
 PatientTriage.ai treats the waiting room as part of triage:
 
 1. **Phase 1, Intake.** Structured first-minutes data only: chief complaint, vitals, age, medications if on file. Half of real patients have no record at all; the system is designed for that.
@@ -86,6 +88,12 @@ A fatigued nurse will not use a tool that nags. The UX choices come from that re
 - **Overrides visibly teach the system.** The dashboard tells the clinician their override became a learning signal. People trust tools that admit being corrected.
 
 ## Architecture
+
+**As pitched in Round 1** (every element below now exists as running code):
+
+![Round 1 concept design: three phases, dual-path Guardian Brain with FUSE, priority-queue reassessment, safety pipeline, override-to-reward loop](docs/round1_architecture.png)
+
+**As built:**
 
 ```mermaid
 flowchart LR
