@@ -1,38 +1,26 @@
-"""One-time connectivity probe for the OpenAI-compatible Bedrock gateway.
+"""One-time connectivity probe for Claude on AWS Bedrock (Mantle endpoint).
 
-Run from repo root:  cd backend && uv run python ../scripts/probe_llm.py
-Requires LLM_BASE_URL / LLM_API_KEY (and optionally LLM_MODEL) in .env.
+Run:  cd backend && uv run python ../scripts/probe_llm.py
+Requires LLM_API_KEY (and optionally LLM_REGION / LLM_MODEL) in .env or local.env.
 """
 
 import sys
+from pathlib import Path
 
-from openai import OpenAI
+from anthropic import AnthropicBedrockMantle
 
-sys.path.insert(0, "backend") if "backend" not in sys.path[0] else None
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "backend"))
 from app.config import settings  # noqa: E402
 
-if not settings.llm_base_url or not settings.llm_api_key:
-    sys.exit("Fill LLM_BASE_URL and LLM_API_KEY in .env first (cp env.example .env).")
+if not settings.llm_api_key:
+    sys.exit("Fill LLM_API_KEY in .env first (cp env.example .env).")
 
-client = OpenAI(base_url=settings.llm_base_url, api_key=settings.llm_api_key)
+client = AnthropicBedrockMantle(api_key=settings.llm_api_key, aws_region=settings.llm_region)
 
-try:
-    models = [m.id for m in client.models.list()]
-    print(f"Gateway exposes {len(models)} models:")
-    for m in models:
-        print(f"  - {m}")
-except Exception as exc:
-    print(f"/models not supported or failed ({exc}); relying on LLM_MODEL from .env")
-    models = []
-
-model = settings.llm_model or (models[0] if models else None)
-if not model:
-    sys.exit("No model available — set LLM_MODEL in .env.")
-
-resp = client.chat.completions.create(
-    model=model,
-    max_tokens=50,
+resp = client.messages.create(
+    model=settings.llm_model,
+    max_tokens=32,
     messages=[{"role": "user", "content": "Reply with exactly: TRIAGE-LINK-OK"}],
 )
-print(f"\nRound trip via {model}: {resp.choices[0].message.content!r}")
-print(f"Usage: {resp.usage}")
+print(f"Round trip via {settings.llm_model}: {resp.content[0].text!r}")
+print(f"Usage: {resp.usage.input_tokens} in / {resp.usage.output_tokens} out")

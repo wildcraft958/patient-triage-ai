@@ -1,5 +1,6 @@
 # Secrets — this repo is public, nothing sensitive ever gets committed
 .env
+local.env
 *.pem
 *.key
 
