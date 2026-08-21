@@ -1,0 +1,77 @@
+"""The triage pipeline as a LangGraph StateGraph.
+
+    START -> redact (Presidio)
+               |----> rules (Path A, deterministic)   \
+               |----> llm   (Path B, Claude reasoning) -> fuse -> END
+
+The two paths fan out in parallel after redaction; LangGraph's superstep
+barrier joins them at the fuse node.
+"""
+
+from typing import Any, TypedDict
+
+from langgraph.graph import END, START, StateGraph
+
+from app.agent.fuse import FusedResult, LLMResult, fuse
+from app.agent.llm_path import assess
+from app.engine.esi_rules import score
+from app.models import PatientIntake, RulesResult
+from app.privacy.redact import redact
+
+
+class TriageState(TypedDict, total=False):
+    intake: PatientIntake
+    use_llm: bool          # False = surge fast path / offline: rules only
+    transport: Any         # injectable LLM transport for tests
+    redacted_complaint: str
+    phi_entities_removed: list[str]
+    rules_result: RulesResult
+    llm_result: LLMResult | None
+    fused: FusedResult
+
+
+def redact_node(state: TriageState) -> dict:
+    r = redact(state["intake"].chief_complaint)
+    return {"redacted_complaint": r.text, "phi_entities_removed": r.entities_removed}
+
+
+def rules_node(state: TriageState) -> dict:
+    return {"rules_result": score(state["intake"])}
+
+
+def llm_node(state: TriageState) -> dict:
+    if not state.get("use_llm", True):
+        return {"llm_result": None}
+    result = assess(
+        state["intake"],
+        state["redacted_complaint"],
+        transport=state.get("transport"),
+    )
+    return {"llm_result": result}
+
+
+def fuse_node(state: TriageState) -> dict:
+    return {"fused": fuse(state["rules_result"], state["llm_result"])}
+
+
+def _build():
+    builder = StateGraph(TriageState)
+    builder.add_node("redact", redact_node)
+    builder.add_node("rules", rules_node)
+    builder.add_node("llm", llm_node)
+    builder.add_node("fuse", fuse_node)
+    builder.add_edge(START, "redact")
+    builder.add_edge("redact", "rules")
+    builder.add_edge("redact", "llm")
+    builder.add_edge("rules", "fuse")
+    builder.add_edge("llm", "fuse")
+    builder.add_edge("fuse", END)
+    return builder.compile()
+
+
+_graph = _build()
+
+
+def triage(intake: PatientIntake, use_llm: bool = True, transport=None) -> TriageState:
+    """Run one patient through the full dual-path pipeline."""
+    return _graph.invoke({"intake": intake, "use_llm": use_llm, "transport": transport})

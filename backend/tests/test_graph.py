@@ -1,0 +1,70 @@
+"""Full-graph tests with a fake LLM transport (no API calls)."""
+
+import json
+
+from app.agent.graph import triage
+from app.models import PatientIntake, Vitals
+
+
+def fake_transport(esi: int, confidence: float = 0.9):
+    def call(system: str, user: str) -> str:
+        return json.dumps({
+            "esi": esi, "confidence": confidence,
+            "reasoning": ["fake reasoning"], "red_flags": [],
+        })
+    return call
+
+
+def make_intake(**kw) -> PatientIntake:
+    defaults = dict(
+        patient_id="G-1", age_years=45,
+        chief_complaint="abdominal pain for two days",
+        complaint_category="abdominal_pain",
+        vitals=Vitals(hr=88, rr=16, spo2=98, temp_c=37.2, sbp=125, pain=5),
+    )
+    defaults.update(kw)
+    return PatientIntake(**defaults)
+
+
+def test_agreeing_paths_produce_high_confidence():
+    state = triage(make_intake(), transport=fake_transport(3))
+    fused = state["fused"]
+    assert fused.esi == 3 and fused.paths_agree and fused.confidence == "high"
+
+
+def test_disagreement_escalates_and_flags():
+    # rules say ESI-3 (stable multi-resource); fake LLM says ESI-2
+    state = triage(make_intake(), transport=fake_transport(2))
+    fused = state["fused"]
+    assert fused.esi == 2 and fused.clinician_flag and fused.confidence == "low"
+
+
+def test_phi_is_redacted_before_llm_path():
+    seen = {}
+
+    def spying_transport(system: str, user: str) -> str:
+        seen["user"] = user
+        return json.dumps({"esi": 3, "confidence": 0.9, "reasoning": ["ok"]})
+
+    intake = make_intake(
+        chief_complaint="Sunita Devi reports abdominal pain, callback 9876543210"
+    )
+    state = triage(intake, transport=spying_transport)
+    assert "Sunita" not in seen["user"]
+    assert "abdominal pain" in seen["user"]
+    assert "PERSON" in state["phi_entities_removed"]
+
+
+def test_surge_fast_path_skips_llm_and_uses_rules():
+    def exploding_transport(system, user):
+        raise AssertionError("LLM must not be called in rules-only mode")
+
+    state = triage(make_intake(), use_llm=False, transport=exploding_transport)
+    fused = state["fused"]
+    assert fused.esi == 3 and fused.llm is None
+
+
+def test_malformed_llm_output_falls_back_to_rules():
+    state = triage(make_intake(), transport=lambda s, u: "not json at all")
+    fused = state["fused"]
+    assert fused.esi == 3 and fused.llm is None
