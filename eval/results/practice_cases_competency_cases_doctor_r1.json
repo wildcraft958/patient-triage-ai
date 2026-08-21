@@ -20,23 +20,23 @@
    },
    "llm": {
     "n": 60,
-    "exact_acc": 71.66666666666667,
-    "within_1": 96.66666666666667,
-    "under_triage": 6.666666666666667,
+    "exact_acc": 33.33333333333333,
+    "within_1": 90.0,
+    "under_triage": 31.666666666666664,
     "sig_under_triage": 0.0,
-    "over_triage": 21.666666666666668,
-    "sig_over_triage": 3.3333333333333335,
-    "high_acuity_sens": 100.0
+    "over_triage": 35.0,
+    "sig_over_triage": 10.0,
+    "high_acuity_sens": 73.07692307692307
    },
    "fused": {
     "n": 60,
-    "exact_acc": 51.66666666666667,
-    "within_1": 90.0,
-    "under_triage": 5.0,
+    "exact_acc": 28.333333333333332,
+    "within_1": 83.33333333333334,
+    "under_triage": 26.666666666666668,
     "sig_under_triage": 0.0,
-    "over_triage": 43.333333333333336,
-    "sig_over_triage": 10.0,
-    "high_acuity_sens": 100.0
+    "over_triage": 45.0,
+    "sig_over_triage": 16.666666666666664,
+    "high_acuity_sens": 76.92307692307693
    }
   }
  },
@@ -45,9 +45,9 @@
    "id": "practice_cases-1",
    "truth": 1,
    "rules": 1,
-   "llm": 1,
+   "llm": 2,
    "fused": 1,
-   "paths_agree": true,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
@@ -72,8 +72,8 @@
    "id": "practice_cases-4",
    "truth": 2,
    "rules": 4,
-   "llm": 2,
-   "fused": 2,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -81,8 +81,8 @@
    "id": "practice_cases-5",
    "truth": 4,
    "rules": 4,
-   "llm": 5,
-   "fused": 4,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -90,8 +90,8 @@
    "id": "practice_cases-6",
    "truth": 2,
    "rules": 4,
-   "llm": 2,
-   "fused": 2,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -99,9 +99,9 @@
    "id": "practice_cases-7",
    "truth": 4,
    "rules": 4,
-   "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
@@ -117,8 +117,8 @@
    "id": "practice_cases-9",
    "truth": 2,
    "rules": 4,
-   "llm": 1,
-   "fused": 1,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -126,7 +126,7 @@
    "id": "practice_cases-10",
    "truth": 5,
    "rules": 2,
-   "llm": 4,
+   "llm": 3,
    "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
@@ -144,17 +144,17 @@
    "id": "practice_cases-12",
    "truth": 1,
    "rules": 2,
-   "llm": 1,
-   "fused": 1,
-   "paths_agree": false,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
    "id": "practice_cases-13",
    "truth": 2,
    "rules": 4,
-   "llm": 2,
-   "fused": 2,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -162,17 +162,17 @@
    "id": "practice_cases-14",
    "truth": 4,
    "rules": 4,
-   "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
    "id": "practice_cases-15",
    "truth": 5,
    "rules": 4,
-   "llm": 5,
-   "fused": 4,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -180,18 +180,18 @@
    "id": "practice_cases-16",
    "truth": 5,
    "rules": 4,
-   "llm": 5,
+   "llm": 4,
    "fused": 4,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
    "id": "practice_cases-17",
    "truth": 5,
    "rules": 4,
-   "llm": 5,
+   "llm": 4,
    "fused": 4,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -207,8 +207,8 @@
    "id": "practice_cases-19",
    "truth": 1,
    "rules": 4,
-   "llm": 1,
-   "fused": 1,
+   "llm": 2,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -216,8 +216,8 @@
    "id": "practice_cases-20",
    "truth": 1,
    "rules": 4,
-   "llm": 1,
-   "fused": 1,
+   "llm": 2,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -225,18 +225,18 @@
    "id": "practice_cases-21",
    "truth": 3,
    "rules": 4,
-   "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
    "id": "practice_cases-22",
    "truth": 5,
    "rules": 4,
-   "llm": 5,
+   "llm": 4,
    "fused": 4,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -261,8 +261,8 @@
    "id": "practice_cases-25",
    "truth": 1,
    "rules": 4,
-   "llm": 1,
-   "fused": 1,
+   "llm": 2,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -270,8 +270,8 @@
    "id": "practice_cases-26",
    "truth": 2,
    "rules": 4,
-   "llm": 1,
-   "fused": 1,
+   "llm": 2,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -297,8 +297,8 @@
    "id": "practice_cases-29",
    "truth": 3,
    "rules": 4,
-   "llm": 2,
-   "fused": 2,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -315,8 +315,8 @@
    "id": "competency_cases-1",
    "truth": 1,
    "rules": 4,
-   "llm": 1,
-   "fused": 1,
+   "llm": 2,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -324,8 +324,8 @@
    "id": "competency_cases-2",
    "truth": 3,
    "rules": 4,
-   "llm": 3,
-   "fused": 3,
+   "llm": 2,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -333,7 +333,7 @@
    "id": "competency_cases-3",
    "truth": 4,
    "rules": 1,
-   "llm": 2,
+   "llm": 3,
    "fused": 1,
    "paths_agree": false,
    "age_defaulted": false
@@ -342,35 +342,35 @@
    "id": "competency_cases-4",
    "truth": 5,
    "rules": 4,
-   "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
    "id": "competency_cases-5",
    "truth": 5,
    "rules": 4,
-   "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
    "id": "competency_cases-6",
    "truth": 1,
    "rules": 1,
-   "llm": 1,
+   "llm": 2,
    "fused": 1,
-   "paths_agree": true,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
    "id": "competency_cases-7",
    "truth": 2,
    "rules": 4,
-   "llm": 2,
-   "fused": 2,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -414,8 +414,8 @@
    "id": "competency_cases-12",
    "truth": 1,
    "rules": 4,
-   "llm": 1,
-   "fused": 1,
+   "llm": 2,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -423,26 +423,26 @@
    "id": "competency_cases-13",
    "truth": 5,
    "rules": 4,
-   "llm": 5,
+   "llm": 4,
    "fused": 4,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
    "id": "competency_cases-14",
    "truth": 1,
    "rules": 2,
-   "llm": 1,
-   "fused": 1,
-   "paths_agree": false,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
    "id": "competency_cases-15",
    "truth": 2,
    "rules": 4,
-   "llm": 2,
-   "fused": 2,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": true
   },
@@ -450,9 +450,9 @@
    "id": "competency_cases-16",
    "truth": 3,
    "rules": 2,
-   "llm": 2,
+   "llm": 3,
    "fused": 2,
-   "paths_agree": true,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
@@ -468,25 +468,25 @@
    "id": "competency_cases-18",
    "truth": 4,
    "rules": 4,
-   "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "llm": 3,
+   "fused": 3,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
    "id": "competency_cases-19",
    "truth": 2,
    "rules": 2,
-   "llm": 2,
+   "llm": 3,
    "fused": 2,
-   "paths_agree": true,
+   "paths_agree": false,
    "age_defaulted": false
   },
   {
    "id": "competency_cases-20",
    "truth": 4,
    "rules": 2,
-   "llm": 4,
+   "llm": 3,
    "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
@@ -495,8 +495,8 @@
    "id": "competency_cases-21",
    "truth": 5,
    "rules": 4,
-   "llm": 5,
-   "fused": 4,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -513,8 +513,8 @@
    "id": "competency_cases-23",
    "truth": 3,
    "rules": 4,
-   "llm": 2,
-   "fused": 2,
+   "llm": 3,
+   "fused": 3,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -567,18 +567,18 @@
    "id": "competency_cases-29",
    "truth": 5,
    "rules": 4,
-   "llm": 5,
+   "llm": 4,
    "fused": 4,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
    "id": "competency_cases-30",
    "truth": 1,
    "rules": 2,
-   "llm": 1,
-   "fused": 1,
-   "paths_agree": false,
+   "llm": 2,
+   "fused": 2,
+   "paths_agree": true,
    "age_defaulted": false
   }
  ]

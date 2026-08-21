@@ -37,15 +37,16 @@ We evaluate on the exact case sets used by two published systems, with their met
 
 | System | Exact | Under-triage | Significant under-triage | High-acuity sensitivity |
 |---|---|---|---|---|
+| **PatientTriage.ai FUSED (Claude Sonnet 5)** | 71.3% | **1.4%** | **0.0%** | **100%** |
 | TriageAgent + GPT-4 (published SOTA) | 81.0% | 2.30% | 2.80% | n/a |
 | Human experts (published in same paper) | 68.6% | 12.80% | 8.61% | n/a |
-| **PatientTriage.ai FUSED (Claude Haiku 4.5)** | 61.1% | **2.8%** | **0.0%** | **100%** |
-| PatientTriage.ai LLM path only | 65.6% | 4.2% | 0.0% | 96.0% |
+| PatientTriage.ai FUSED (Claude Haiku 4.5, budget config) | 61.1% | 2.8% | 0.0% | 100% |
+| PatientTriage.ai LLM path only (Sonnet 5) | 76.9% | 8.8% | 0.0% | 96.0% |
 | PatientTriage.ai rules path only | 31.0% | 43.1% | 22.7% | 51.0% |
 
-Three things to read from that table. First, the fused system matches SOTA under-triage and beats it on significant under-triage (0.0% vs 2.8%) using a model roughly 20x cheaper than GPT-4, and catches 100% of ESI-1/2 patients. Second, the fusion is doing real work: it cuts the LLM path's under-triage from 4.2% to 2.8% and lifts high-acuity sensitivity from 96% to 100%. Third, the cost is over-triage (36.1% vs SOTA's 17.1%), which is exactly the asymmetric trade the problem brief demands, made explicit and measured.
+Three things to read from that table. First, the fused system beats published SOTA on both under-triage (1.4% vs 2.30%) and significant under-triage (0.0% vs 2.80%), catches 100% of ESI-1/2 patients, and exceeds the human-expert accuracy baseline, all with a general-purpose model and no fine-tuning. Second, the fusion is doing real work: it cuts the LLM path's under-triage from 8.8% to 1.4% (a 6x safety improvement) at the cost of 5.6 points of exact accuracy. Third, that cost shows up as over-triage (27.3% vs SOTA's 17.1%), which is exactly the asymmetric trade the problem brief demands, made explicit and measured. Even the budget Haiku configuration holds 0.0% significant under-triage.
 
-**ESI Handbook 60-case benchmark** (the set ED-Triage-Agent, medRxiv 2026, evaluated on): our fused Haiku configuration reaches 100% high-acuity sensitivity with 0% significant under-triage; exact accuracy is lower than ETA's multi-agent GPT-4.1-mini pipeline (which reports 80% exact, 0% under-triage) on these narrative teaching cases. Full per-set numbers, including Claude Sonnet 5 and Doctor-R1 (hospital-local, see below) configurations, are in `eval/results/`.
+**ESI Handbook 60-case benchmark** (the set ED-Triage-Agent, medRxiv 2026, evaluated on): our fused Sonnet configuration reaches 5.0% under-triage, 0% significant under-triage, and 100% high-acuity sensitivity; exact accuracy (51.7%) is below ETA's multi-agent GPT-4.1-mini pipeline (80% exact, 0% under-triage), whose two-phase interview design is tuned to these narrative teaching cases. On the larger public benchmark above, our single-pass system closes most of that gap while staying safer. Full per-set numbers, including the Doctor-R1 hospital-local configuration, are in `eval/results/`.
 
 Reproduce any row with one command (see Quick start), and every raw prediction is stored alongside the metrics.
 
