@@ -6,6 +6,8 @@ Team **NamoFans** (IIT Kharagpur): Monika Kumari (Team Leader) and Animesh Raj. 
 
 > The system recommends. The clinician decides. Always.
 
+**Live demo: https://patient-triage-ai-s5hk.onrender.com** (free tier: first visit after idle takes up to a minute to wake). The hosted console runs the full replayed shift with cached Claude reasoning and no API keys; open it, load a scenario, and press Auto-play.
+
 ![Nurse console: SIM-007 after his deterioration alert, both reasoning chains visible, priority queue re-ranked](docs/dashboard.png)
 
 ---
