@@ -85,7 +85,20 @@ class AuditLog:
             "SELECT AVG(CAST(payload->>'latency_ms' AS DOUBLE)) FROM events "
             "WHERE event_type = 'triage'"
         ).fetchone()[0]
+        axes = ["diagnostic_accuracy", "management_quality", "communication",
+                "documentation", "safety"]
+        axis_row = self.conn.execute(
+            "SELECT " + ", ".join(
+                f"AVG(CAST(json_extract_string(payload, '$.reward_axes.{a}') AS DOUBLE))"
+                for a in axes
+            ) + " FROM events WHERE json_extract(payload, '$.reward_axes') IS NOT NULL"
+        ).fetchone()
+        reward_axis_means = (
+            {a: round(v, 3) for a, v in zip(axes, axis_row)}
+            if axis_row and axis_row[0] is not None else None
+        )
         return {
+            "reward_axis_means": reward_axis_means,
             "events_by_type": counts,
             "override_rate_pct": (
                 round(overrides / decisions * 100, 1) if decisions else None

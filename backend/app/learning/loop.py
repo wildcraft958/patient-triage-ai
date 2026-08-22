@@ -1,19 +1,22 @@
 """The override-reward learning loop.
 
-Every clinician action becomes a reward signal (the experience-repository
-pattern from Doctor-R1). Rewards are asymmetric exactly like the brief's
-cost structure: an under-triage override (clinician says MORE acute - the
-dangerous miss) costs 5x an over-triage one.
+Every clinician action becomes an experience tuple with a multi-axis reward
+(the ResidencyRL reward structure: diagnostic accuracy, management quality,
+communication, documentation, safety), stored in the audit trail as the
+experience repository (Doctor-R1 pattern). The scalar total is asymmetric
+exactly like the brief's cost structure: an under-triage override (clinician
+says MORE acute - the dangerous miss) costs 5x an over-triage one.
 
-The online learner is deliberately conservative: a calibration table over
-(complaint category x age band) cells whose learned adjustment can ONLY
-escalate - the RL layer cannot break the escalation-safety invariant by
-construction. Full policy optimization (GRPO per Doctor-R1) is the Round 3
-path once override volume exists.
+Two learners consume the repository: the conservative online calibration
+table below (escalate-only by construction), and the batch GRPO optimizer in
+app.learning.grpo that recomputes the same table from group-relative
+advantages over the logged experience.
 """
 
 import json
 from pathlib import Path
+
+from pydantic import BaseModel
 
 from app.engine.thresholds import GERIATRIC_AGE, age_in_months
 from app.models import PatientIntake
@@ -21,18 +24,47 @@ from app.models import PatientIntake
 UNDER_TRIAGE_PENALTY = -1.0  # per level: clinician escalated our recommendation
 OVER_TRIAGE_PENALTY = -0.2   # per level: clinician downgraded it
 ACCEPT_REWARD = 1.0
+ACCURACY_PENALTY = -0.25     # per level of distance, direction-blind
 
 LEARN_RATE = 0.4
 ESCALATE_THRESHOLD = 0.5
 
 
+class RewardVector(BaseModel):
+    """The five ResidencyRL reward axes, scored per triage episode.
+
+    safety dominates by design (5x management_quality per level) - the
+    scalar `total` keeps the brief's asymmetric cost structure so the
+    calibration policy optimizes worst-case safety, not average accuracy."""
+
+    diagnostic_accuracy: float  # agreement with the clinician's final level
+    management_quality: float   # resource stewardship: over-triage cost
+    communication: float        # was the recommendation explained (both chains?)
+    documentation: float        # was the clinician action legally complete
+    safety: float               # under-triage cost, the dominant axis
+
+    @property
+    def total(self) -> float:
+        if self.safety == 0.0 and self.management_quality == 0.0:
+            return ACCEPT_REWARD * self.diagnostic_accuracy
+        return self.safety + self.management_quality
+
+
+def compute_reward_vector(recommended_esi: int, clinician_esi: int | None,
+                          dual_chain: bool, documented: bool = True) -> RewardVector:
+    diff = 0 if clinician_esi is None else recommended_esi - clinician_esi
+    return RewardVector(
+        diagnostic_accuracy=1.0 if diff == 0 else ACCURACY_PENALTY * abs(diff),
+        management_quality=OVER_TRIAGE_PENALTY * -diff if diff < 0 else 0.0,
+        communication=1.0 if dual_chain else 0.5,
+        documentation=1.0 if documented else 0.0,
+        safety=UNDER_TRIAGE_PENALTY * diff if diff > 0 else 0.0,
+    )
+
+
 def compute_reward(recommended_esi: int, clinician_esi: int | None) -> float:
-    if clinician_esi is None:  # accepted as recommended
-        return ACCEPT_REWARD
-    diff = recommended_esi - clinician_esi
-    if diff > 0:  # clinician chose a more acute level: we under-triaged
-        return UNDER_TRIAGE_PENALTY * diff
-    return OVER_TRIAGE_PENALTY * -diff
+    return compute_reward_vector(recommended_esi, clinician_esi,
+                                 dual_chain=True).total
 
 
 def age_band(intake: PatientIntake) -> str:

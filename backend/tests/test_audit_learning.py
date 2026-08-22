@@ -5,7 +5,7 @@ import pytest
 from pydantic import ValidationError
 
 from app.audit.log import AuditLog, OverrideRecord
-from app.learning.loop import CalibrationTable, compute_reward
+from app.learning.loop import CalibrationTable, compute_reward, compute_reward_vector
 
 
 # --- audit ---
@@ -43,6 +43,39 @@ def test_under_triage_override_penalized_hard():
 
 def test_over_triage_override_penalized_lightly():
     assert compute_reward(recommended_esi=3, clinician_esi=4) == pytest.approx(-0.2)
+
+
+# --- multi-axis reward structure (the five ResidencyRL axes) ---
+
+def test_reward_vector_acceptance():
+    v = compute_reward_vector(recommended_esi=3, clinician_esi=None, dual_chain=True)
+    assert v.diagnostic_accuracy == 1.0
+    assert v.safety == 0.0 and v.management_quality == 0.0
+    assert v.communication == 1.0 and v.documentation == 1.0
+    assert v.total == 1.0  # preserves the scalar semantics
+
+
+def test_reward_vector_under_triage_dominated_by_safety_axis():
+    v = compute_reward_vector(recommended_esi=4, clinician_esi=2, dual_chain=True)
+    assert v.safety == -2.0
+    assert v.management_quality == 0.0
+    assert v.diagnostic_accuracy == pytest.approx(-0.5)
+    assert v.total == -2.0
+    assert abs(v.safety) > abs(v.management_quality)
+
+
+def test_reward_vector_over_triage_hits_management_axis():
+    v = compute_reward_vector(recommended_esi=3, clinician_esi=4, dual_chain=True)
+    assert v.management_quality == pytest.approx(-0.2)
+    assert v.safety == 0.0
+    assert v.total == pytest.approx(-0.2)
+
+
+def test_reward_vector_communication_axis_scores_the_explanation():
+    dual = compute_reward_vector(recommended_esi=3, clinician_esi=None, dual_chain=True)
+    rules_only = compute_reward_vector(recommended_esi=3, clinician_esi=None,
+                                       dual_chain=False)
+    assert dual.communication > rules_only.communication
 
 
 # --- calibration: learns to escalate, can never downgrade ---

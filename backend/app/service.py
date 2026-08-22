@@ -10,7 +10,7 @@ import time
 from app.agent.fuse import ROUTES, FusedResult
 from app.agent.graph import triage
 from app.audit.log import AuditLog, OverrideRecord
-from app.learning.loop import CalibrationTable, age_band, compute_reward
+from app.learning.loop import CalibrationTable, age_band, compute_reward_vector
 from app.models import PatientIntake, Vitals
 from app.monitor.waiting_room import Alert, SimClock, WaitingRoom
 from app.profiles import load_profile
@@ -160,13 +160,15 @@ class TriageService:
 
     def accept(self, patient_id: str, clinician_id: str) -> float:
         entry = self.room.entries[patient_id]
-        reward = compute_reward(entry.fused.esi, None)
+        vector = compute_reward_vector(entry.fused.esi, None,
+                                       dual_chain=entry.fused.llm is not None)
         self._learn(entry.intake, under_triage=False)
         self.audit.log("acceptance", patient_id, self.clock.now_min, {
-            "esi": entry.fused.esi, "clinician_id": clinician_id, "reward": reward,
+            "esi": entry.fused.esi, "clinician_id": clinician_id,
+            "reward": vector.total, "reward_axes": vector.model_dump(),
         })
         self.room.to_treatment(patient_id)
-        return reward
+        return vector.total
 
     def override(self, patient_id: str, new_esi: int, clinician_id: str,
                  reason: str, acknowledge_risk: bool = False) -> dict:
@@ -198,12 +200,16 @@ class TriageService:
             original_esi=entry.fused.esi, new_esi=new_esi,
             clinician_id=clinician_id, reason=reason, sim_min=self.clock.now_min,
         )
-        reward = compute_reward(record.original_esi, new_esi)
+        vector = compute_reward_vector(record.original_esi, new_esi,
+                                       dual_chain=entry.fused.llm is not None)
+        reward = vector.total
         under_triage = new_esi < record.original_esi
         self._learn(entry.intake, under_triage=under_triage)
         self.audit.log_override(patient_id, record)
         self.audit.log("reward", patient_id, self.clock.now_min, {
-            "reward": reward, "under_triage": under_triage,
+            "reward": reward, "reward_axes": vector.model_dump(),
+            "under_triage": under_triage,
+            "recommended_esi": record.original_esi, "clinician_esi": new_esi,
             "cell": f"{entry.intake.complaint_category}|{age_band(entry.intake)}",
         })
         # the clinician decides: their level becomes the patient's level

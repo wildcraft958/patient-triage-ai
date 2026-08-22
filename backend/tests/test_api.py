@@ -152,6 +152,10 @@ def test_metrics_audit_stats_aggregate_clinician_decisions():
     assert audit["override_rate_pct"] == 50.0
     assert audit["overrides_toward_more_acute"] == 1
     assert audit["mean_triage_latency_ms"] >= 0
+    axes = audit["reward_axis_means"]
+    assert axes["safety"] < 0  # the under-triage override registered on the safety axis
+    assert set(axes) == {"diagnostic_accuracy", "management_quality",
+                         "communication", "documentation", "safety"}
 
 
 # --- surge deferred enrichment: Path B is queued, not dropped ---
