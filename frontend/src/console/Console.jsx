@@ -325,9 +325,10 @@ function BeliefStrip({ belief }) {
   )
 }
 
-const CATEGORIES = ['chest_pain', 'breathing_difficulty', 'stroke_signs', 'trauma_major',
-  'sepsis_concern', 'allergic_reaction', 'self_harm', 'abdominal_pain', 'fever',
-  'laceration', 'sprain', 'rash', 'medication_refill', 'minor', 'other']
+const CATEGORIES = ['other', 'chest_pain', 'breathing_difficulty', 'stroke_signs',
+  'trauma_major', 'sepsis_concern', 'allergic_reaction', 'pregnancy_complication',
+  'self_harm', 'abdominal_pain', 'fever', 'laceration', 'sprain', 'rash',
+  'medication_refill', 'minor']
 
 const OLDCARTS_FIELDS = [
   ['onset', 'O', 'Onset', 'When did this start?'],
@@ -400,7 +401,8 @@ function IntakeForm({ onSubmit, onClose, nextId }) {
           <label className="if-field"><span>Category</span>
             <select value={f.complaint_category}
                     onChange={(e) => setF({ ...f, complaint_category: e.target.value })}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+              {CATEGORIES.map((c) => <option key={c} value={c}>
+                {c === 'other' ? 'auto (from complaint text)' : c}</option>)}
             </select></label>
           <label className="if-field"><span>AVPU</span>
             <select value={f.responsiveness}
