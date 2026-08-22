@@ -9,6 +9,7 @@ ICD10 = {
     "breathing_difficulty": ("R06.00", "Dyspnea, unspecified"),
     "stroke_signs": ("I63.9", "Cerebral infarction, unspecified"),
     "allergic_reaction": ("T78.2", "Anaphylactic shock, unspecified"),
+    "pregnancy_complication": ("O26.90", "Pregnancy related conditions, unspecified"),
     "fever": ("R50.9", "Fever, unspecified"),
     "sepsis_concern": ("A41.9", "Sepsis, unspecified organism"),
     "trauma_major": ("T14.90", "Injury, unspecified"),

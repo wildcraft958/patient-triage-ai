@@ -196,6 +196,21 @@ def test_metrics_audit_stats_aggregate_clinician_decisions():
                          "communication", "documentation", "safety"}
 
 
+def test_uncategorized_arrival_is_auto_classified():
+    """The intake NLP runs on live arrivals: no dropdown category needed."""
+    r = client.post("/patients", json=patient(
+        chief_complaint="28 weeks pregnant, sudden severe headache, vomited twice",
+        complaint_category="other",
+        vitals={"hr": 96, "rr": 18, "spo2": 98, "temp_c": 37.0, "sbp": 150, "pain": 7}))
+    fused = r.json()["fused"]
+    assert fused["esi"] == 2  # pregnancy complication is always high risk
+    assert any("auto-categorized" in n for n in fused["notes"])
+    row = [q for q in client.get("/queue").json()["queue"]
+           if q["patient_id"] == "P1"][0]
+    assert row["category"] == "pregnancy_complication"
+    assert row["icd10"]["code"] == "O26.90"
+
+
 # --- surge deferred enrichment: Path B is queued, not dropped ---
 
 def test_surge_arrival_queues_enrichment_and_next_tick_attaches_llm():

@@ -24,6 +24,8 @@ FEVER_C = 38.0
 SBP_ADULT_AGE = 16
 SBP_DANGER_LOW = 90
 SBP_CRISIS = 220
+# ACOG severe-range blood pressure in pregnancy (severe preeclampsia)
+SEVERE_PREECLAMPSIA_SBP = 160
 
 
 def age_in_months(intake: PatientIntake) -> float:

@@ -26,13 +26,16 @@ BASE_RESOURCES = {
     "trauma_major": 2,
     "sepsis_concern": 2,
     "allergic_reaction": 2,
+    "pregnancy_complication": 2,
     "other": 1,
 }
 
 # Systemic allergic presentation is ESI-2 minimum (airway risk); localized
-# hives without systemic signs belongs under "rash" instead.
+# hives without systemic signs belongs under "rash" instead. A pregnancy
+# complication (bleeding, preeclampsia signs) is ESI-2 minimum: two patients.
 ALWAYS_HIGH_RISK = {"stroke_signs", "breathing_difficulty", "trauma_major",
-                    "sepsis_concern", "self_harm", "allergic_reaction"}
+                    "sepsis_concern", "self_harm", "allergic_reaction",
+                    "pregnancy_complication"}
 
 
 def _resources(intake: PatientIntake) -> int:
@@ -68,6 +71,12 @@ def score(intake: PatientIntake) -> RulesResult:
     if intake.complaint_category in ALWAYS_HIGH_RISK:
         red_flags.append(intake.complaint_category)
         reasons.append(f"B: high-risk presentation ({intake.complaint_category})")
+        if (intake.complaint_category == "pregnancy_complication"
+                and v.sbp is not None
+                and v.sbp >= thresholds.SEVERE_PREECLAMPSIA_SBP):
+            red_flags.append("possible severe preeclampsia")
+            reasons.append(f"B: SBP {v.sbp:.0f} in severe range for pregnancy "
+                           f"(>= {thresholds.SEVERE_PREECLAMPSIA_SBP})")
         return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
                            resources_estimate=_resources(intake))
     if intake.complaint_category == "chest_pain" and (

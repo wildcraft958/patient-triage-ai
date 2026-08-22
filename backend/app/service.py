@@ -10,6 +10,7 @@ import time
 from app.agent.fuse import ROUTES, FusedResult
 from app.agent.graph import triage
 from app.audit.log import AuditLog, OverrideRecord
+from app.engine.complaint import classify_category
 from app.learning.loop import CalibrationTable, age_band, compute_reward_vector
 from app.models import PatientIntake, Vitals
 from app.monitor.waiting_room import Alert, SimClock, WaitingRoom
@@ -57,8 +58,17 @@ class TriageService:
         # intake-to-recommendation latency: redact + both paths + calibration
         # + safety - the full pipeline a clinician actually waits on
         started = time.perf_counter()
+        auto_note = None
+        if intake.complaint_category == "other" and intake.chief_complaint.strip():
+            detected = classify_category(intake.chief_complaint)
+            if detected != "other":
+                intake = intake.model_copy(update={"complaint_category": detected})
+                auto_note = (f"Complaint auto-categorized as {detected} "
+                             f"from the chief complaint text")
         surge = self.surge_mode
         fused = self._run_triage(intake, use_llm=use_llm and not surge)
+        if auto_note:
+            fused = fused.model_copy(update={"notes": [auto_note] + fused.notes})
         if surge and use_llm:
             self._enrichment_queue.append(intake.patient_id)
             fused = fused.model_copy(update={"notes": fused.notes + [

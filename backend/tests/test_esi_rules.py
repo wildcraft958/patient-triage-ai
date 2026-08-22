@@ -181,3 +181,22 @@ def test_allergic_reaction_category_is_high_risk():
                           complaint_category="allergic_reaction"))
     assert r.esi == 2
     assert r.resources_estimate >= 2
+
+
+def test_pregnancy_complication_category_is_high_risk():
+    r = score(make_intake(age_years=29,
+                          chief_complaint="32 weeks pregnant, headache and swelling",
+                          complaint_category="pregnancy_complication"))
+    assert r.esi == 2
+    assert r.resources_estimate >= 2
+    assert "pregnancy_complication" in r.red_flags
+
+
+def test_severe_range_bp_in_pregnancy_is_flagged():
+    r = score(make_intake(age_years=29,
+                          chief_complaint="34 weeks pregnant, severe headache",
+                          complaint_category="pregnancy_complication",
+                          vitals=Vitals(hr=95, rr=18, spo2=98, temp_c=36.9,
+                                        sbp=168, pain=6)))
+    assert r.esi == 2
+    assert any("preeclampsia" in f for f in r.red_flags)
