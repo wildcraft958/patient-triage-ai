@@ -38,6 +38,9 @@ function TopBar({ state, busy, auto, onAuto, onStep, onAdvance, onSurge, onReset
         <button className={`chip ${state?.surge_mode ? 'on' : ''}`} onClick={onSurge}>
           SURGE {state?.surge_mode ? 'ON' : 'OFF'}
         </button>
+        {(state?.pending_enrichment ?? 0) > 0 && (
+          <span className="chip">Enrichment queue: {state.pending_enrichment}</span>
+        )}
         {remaining != null && (
           <>
             <button className={`chip play ${auto ? 'on' : ''}`} disabled={remaining === 0}
@@ -415,6 +418,9 @@ export default function Console() {
         if (e.event_type === 'override_safety_flag')
           return { type: 'event', at: e.sim_min, dot: 'alert',
                    text: `SAFETY FLAG ${e.patient_id} downgraded ESI-${p.original_esi} to ESI-${p.new_esi} (acknowledged)` }
+        if (e.event_type === 'surge_enrichment' && p.escalated)
+          return { type: 'event', at: e.sim_min, dot: 'override',
+                   text: `ENRICHED ${e.patient_id} escalated ESI-${p.previous_esi} to ESI-${p.new_esi}` }
         if (e.event_type === 'acceptance')
           return { type: 'event', at: e.sim_min, dot: 'accept', text: `ACCEPT ${e.patient_id}` }
         return null

@@ -130,3 +130,43 @@ def test_forced_surge_switches_to_rules_only():
 
 def test_unknown_patient_404s():
     assert client.get("/patients/GHOST/audit").status_code == 404
+
+
+# --- surge deferred enrichment: Path B is queued, not dropped ---
+
+def test_surge_arrival_queues_enrichment_and_next_tick_attaches_llm():
+    client.post("/surge", json={"forced": True})
+    r = client.post("/patients", json=patient())
+    assert r.json()["fused"]["llm"] is None
+    assert client.get("/queue").json()["state"]["pending_enrichment"] == 1
+    client.post("/surge", json={"forced": None})
+    client.post("/clock/advance", json={"minutes": 1})
+    assert client.get("/queue").json()["state"]["pending_enrichment"] == 0
+    detail = client.get("/patients/P1").json()
+    assert detail["fused"]["llm"] is not None
+    events = client.get("/patients/P1/audit").json()["events"]
+    assert "surge_enrichment" in [e["event_type"] for e in events]
+
+
+def test_enrichment_escalates_but_never_downgrades():
+    api.reset_service(
+        profile_name="urban_500", audit_path=":memory:",
+        transport=lambda s, u: json.dumps(
+            {"esi": 2, "confidence": 0.8, "reasoning": ["sicker than rules imply"]}))
+    client.post("/surge", json={"forced": True})
+    client.post("/patients", json=patient())  # rules say ESI-3
+    client.post("/surge", json={"forced": None})
+    client.post("/clock/advance", json={"minutes": 1})
+    assert client.get("/patients/P1").json()["fused"]["esi"] == 2  # escalated
+
+    api.reset_service(
+        profile_name="urban_500", audit_path=":memory:",
+        transport=lambda s, u: json.dumps(
+            {"esi": 5, "confidence": 0.9, "reasoning": ["looks minor"]}))
+    client.post("/surge", json={"forced": True})
+    client.post("/patients", json=patient(
+        "P2", age_years=61, complaint_category="chest_pain",
+        chief_complaint="chest pain radiating to left arm"))  # rules say ESI-2
+    client.post("/surge", json={"forced": None})
+    client.post("/clock/advance", json={"minutes": 1})
+    assert client.get("/patients/P2").json()["fused"]["esi"] == 2  # held

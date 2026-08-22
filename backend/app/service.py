@@ -38,6 +38,7 @@ class TriageService:
         self.transport = transport
         self.surge_forced: bool | None = None
         self.bias = BiasMonitor()
+        self._enrichment_queue: list[str] = []
 
     # --- surge ---
 
@@ -52,6 +53,10 @@ class TriageService:
     def arrive(self, intake: PatientIntake, use_llm: bool = True) -> FusedResult:
         surge = self.surge_mode
         fused = self._run_triage(intake, use_llm=use_llm and not surge)
+        if surge and use_llm:
+            self._enrichment_queue.append(intake.patient_id)
+            fused = fused.model_copy(update={"notes": fused.notes + [
+                "Surge: Path B queued for deferred enrichment"]})
         fused = self._apply_calibration(intake, fused)
         fused, safety = safety_check(intake, fused)
         self.bias.record(intake, fused.esi)
@@ -97,11 +102,50 @@ class TriageService:
 
     def advance_clock(self, minutes: float) -> list[Alert]:
         self.clock.advance(minutes)
+        self.process_enrichment()
         alerts = self.room.tick()
         for alert in alerts:
             self.audit.log("alert", alert.patient_id, self.clock.now_min,
                            {"kind": alert.kind, "reasons": alert.reasons})
         return alerts
+
+    def process_enrichment(self) -> list[dict]:
+        """Drain Path-B work deferred at surge arrivals.
+
+        Deterministic on purpose: the sim clock drives draining, so demos and
+        tests replay identically (production swap: a background worker
+        consuming the same queue). Enrichment may only hold or escalate a
+        standing level, never downgrade, and every outcome is audited."""
+        queue, self._enrichment_queue = self._enrichment_queue, []
+        results = []
+        for pid in queue:
+            entry = self.room.entries.get(pid)
+            if entry is None or entry.status == "in_treatment":
+                continue
+            fused = self._run_triage(entry.intake, use_llm=True)
+            if fused.llm is None:
+                self.audit.log("surge_enrichment", pid, self.clock.now_min,
+                               {"outcome": "llm_unavailable"})
+                continue
+            fused = self._apply_calibration(entry.intake, fused)
+            fused, _ = safety_check(entry.intake, fused)
+            old_esi = entry.fused.esi
+            if fused.esi > old_esi:
+                fused = fused.model_copy(update={
+                    "esi": old_esi, "route": ROUTES[old_esi],
+                    "notes": fused.notes + [
+                        "Enrichment suggested a less acute level; keeping the "
+                        "standing level - enrichment never downgrades"],
+                })
+            entry.fused = fused
+            self.audit.log("surge_enrichment", pid, self.clock.now_min, {
+                "previous_esi": old_esi, "new_esi": fused.esi,
+                "escalated": fused.esi < old_esi,
+                "paths_agree": fused.paths_agree,
+            })
+            results.append({"patient_id": pid, "previous_esi": old_esi,
+                            "new_esi": fused.esi})
+        return results
 
     # --- clinician actions ---
 
@@ -191,6 +235,7 @@ class TriageService:
             "surge_mode": self.surge_mode,
             "waiting": len(self.room.queue()),
             "total_patients": len(self.room.entries),
+            "pending_enrichment": len(self._enrichment_queue),
         }
 
     # --- internals ---
