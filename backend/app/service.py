@@ -166,6 +166,7 @@ class TriageService:
         self.audit.log("acceptance", patient_id, self.clock.now_min, {
             "esi": entry.fused.esi, "clinician_id": clinician_id,
             "reward": vector.total, "reward_axes": vector.model_dump(),
+            "cell": f"{entry.intake.complaint_category}|{age_band(entry.intake)}",
         })
         self.room.to_treatment(patient_id)
         return vector.total
