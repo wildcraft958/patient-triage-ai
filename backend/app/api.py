@@ -154,6 +154,14 @@ def metrics():
     }
 
 
+@router.get("/patients/{patient_id}/fhir")
+def fhir_export(patient_id: str):
+    from app.fhir import triage_bundle
+    _require(patient_id)
+    svc = get_service()
+    return triage_bundle(svc.room.entries[patient_id], svc.clock.now_min)
+
+
 @router.get("/patients/{patient_id}/audit")
 def audit_trail(patient_id: str):
     _require(patient_id)

@@ -132,6 +132,22 @@ def test_unknown_patient_404s():
     assert client.get("/patients/GHOST/audit").status_code == 404
 
 
+def test_fhir_bundle_export():
+    client.post("/patients", json=patient())
+    bundle = client.get("/patients/P1/fhir").json()
+    assert bundle["resourceType"] == "Bundle"
+    resources = [e["resource"] for e in bundle["entry"]]
+    types = [r["resourceType"] for r in resources]
+    assert types.count("Patient") == 1
+    assert types.count("RiskAssessment") == 1 and types.count("Provenance") == 1
+    obs = [r for r in resources if r["resourceType"] == "Observation"]
+    assert len(obs) == 6  # one per recorded vital
+    assert all(o["code"]["coding"][0]["system"] == "http://loinc.org" for o in obs)
+    risk = next(r for r in resources if r["resourceType"] == "RiskAssessment")
+    probs = [p["probabilityDecimal"] for p in risk["prediction"]]
+    assert len(probs) == 5 and abs(sum(probs) - 1.0) < 0.01
+
+
 def test_queue_rows_carry_action_and_icd10_and_detail_carries_belief():
     client.post("/patients", json=patient())
     row = client.get("/queue").json()["queue"][0]
