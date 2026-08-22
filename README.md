@@ -29,7 +29,9 @@ PatientTriage.ai treats the waiting room as part of triage:
 The brief asks for a system "deliberately tuned to bias toward escalation under uncertainty rather than optimized for average accuracy." Here that bias is structural, not a prompt suggestion:
 
 - **FUSE takes the more acute level on any disagreement.** Uncertainty can never downgrade a patient (`backend/app/agent/fuse.py`, unit-tested).
-- **Missing core vitals escalate** rather than default to average assumptions (`backend/app/engine/esi_rules.py`).
+- **Danger-zone vitals escalate every category.** Measured deranged vitals uptriage to ESI-2 even when the complaint category says minor, because deranged vitals mean the category is wrong: anaphylaxis mis-coded as "other" with SBP 80 still lands at ESI-2 (`backend/app/engine/esi_rules.py`, executed in tests).
+- **Missing core vitals escalate** multi-resource complaints rather than default to average assumptions; low-acuity complaints are flagged for vitals collection instead, because ESI v4 assigns levels 4 and 5 without vitals (`backend/app/engine/esi_rules.py`).
+- **High-risk downgrades require explicit acknowledgment.** Overriding a red-flagged or ESI 1-2 patient down two or more levels returns HTTP 422 until the clinician confirms they reviewed the flagged risk; the confirmed downgrade is applied and audited as a safety flag. A confirmed clinician decision is never blocked.
 - **Age-banded thresholds**: the same HR 110 is danger-zone for a 40-year-old and normal for a 4-year-old; the same 38.5 C fever is ESI-2 for a neonate, sepsis-watch ESI-3 for a 75-year-old, and ESI-4 for a healthy adult. A single adult-calibrated model across ages is a silent safety risk; we do not have one.
 - **A 4-layer safety pipeline** (input completeness, clinical grounding floor, red-flag propagation, per-age-band bias counters) wraps every recommendation (`backend/app/safety/pipeline.py`).
 - **The NEVER list is structural.** Nothing in this codebase finalizes an ESI level, blocks a patient, or overrides a clinician. Only a clinician action moves a patient to treatment.
@@ -43,14 +45,16 @@ We evaluate on the exact case sets used by two published systems, with their met
 
 | System | Exact | Under-triage | Significant under-triage | High-acuity sensitivity |
 |---|---|---|---|---|
-| **PatientTriage.ai FUSED (Claude Sonnet 5)** | 71.3% | **1.4%** | **0.0%** | **100%** |
+| **PatientTriage.ai FUSED (Claude Sonnet 5)** | 68.5% | **1.4%** | **0.0%** | **100%** |
 | TriageAgent + GPT-4 (published SOTA) | 81.0% | 2.30% | 2.80% | n/a |
 | Human experts (published in same paper) | 68.6% | 12.80% | 8.61% | n/a |
-| PatientTriage.ai FUSED (Claude Haiku 4.5, budget config) | 61.1% | 2.8% | 0.0% | 100% |
+| PatientTriage.ai FUSED (Claude Haiku 4.5, budget config) | 58.3% | 2.3% | 0.0% | 100% |
 | PatientTriage.ai LLM path only (Sonnet 5) | 76.9% | 8.8% | 0.0% | 96.0% |
-| PatientTriage.ai rules path only | 31.0% | 43.1% | 22.7% | 51.0% |
+| PatientTriage.ai rules path only | 33.8% | 37.5% | 17.1% | 63.0% |
 
-Three things to read from that table. First, the fused system beats published SOTA on both under-triage (1.4% vs 2.30%) and significant under-triage (0.0% vs 2.80%), catches 100% of ESI-1/2 patients, and exceeds the human-expert accuracy baseline, all with a general-purpose model and no fine-tuning. Second, the fusion is doing real work: it cuts the LLM path's under-triage from 8.8% to 1.4% (a 6x safety improvement) at the cost of 5.6 points of exact accuracy. Third, that cost shows up as over-triage (27.3% vs SOTA's 17.1%), which is exactly the asymmetric trade the problem brief demands, made explicit and measured. Even the budget Haiku configuration holds 0.0% significant under-triage.
+Three things to read from that table. First, the fused system beats published SOTA on both under-triage (1.4% vs 2.30%) and significant under-triage (0.0% vs 2.80%), catches 100% of ESI-1/2 patients, and matches the human-expert accuracy baseline, all with a general-purpose model and no fine-tuning. Second, the fusion is doing real work: it cuts the LLM path's under-triage from 8.8% to 1.4% (a 6x safety improvement) at the cost of 8.4 points of exact accuracy. Third, that cost shows up as over-triage (30.1% vs SOTA's 17.1%), which is exactly the asymmetric trade the problem brief demands, made explicit and measured. Even the budget Haiku configuration holds 0.0% significant under-triage.
+
+**Reproducibility.** Every number above reproduces offline from response caches committed to this repo, with zero API keys, in one command - anyone can verify the exact table. A live re-run with a different model or sampling will naturally vary; the safety invariants (rules floor, more-acute-wins, escalate-only learning) hold regardless of the model behind Path B. Per-case predictions, agreement flags, and data caveats (26 of 216 cases state no age and are marked `age_defaulted`) are stored alongside the metrics in `eval/results/`.
 
 **ESI Handbook 60-case benchmark** (the set ED-Triage-Agent, medRxiv 2026, evaluated on): our fused Sonnet configuration reaches 5.0% under-triage, 0% significant under-triage, and 100% high-acuity sensitivity; exact accuracy (51.7%) is below ETA's multi-agent GPT-4.1-mini pipeline (80% exact, 0% under-triage), whose two-phase interview design is tuned to these narrative teaching cases. On the larger public benchmark above, our single-pass system closes most of that gap while staying safer. Full per-set numbers are in `eval/results/`.
 
@@ -68,7 +72,7 @@ Full policy optimization (GRPO per Doctor-R1, multi-axis rewards per ResidencyRL
 
 ## Hospital-local mode (privacy) and PHI protection
 
-- **Microsoft Presidio redacts PHI** (names, phone numbers, addresses, identifiers) from free text BEFORE any LLM call and before any audit log write. Clinical content passes through untouched. This is code, not a policy paragraph.
+- **Microsoft Presidio redacts every free-text field** (chief complaint, medication and condition strings) BEFORE any LLM call; the audit log stores derived recommendations and reasoning, not raw complaint text. Clinical content passes through untouched. This is code, not a policy paragraph. Two honest boundaries: the intake schema collects no name, DOB, or MRN by design (and never sends patient_id to the LLM), which does most of the privacy work; and the Presidio entity list is a working subset of the 18 HIPAA Safe Harbor identifiers - a production deployment must extend it (dates, MRNs, ages over 89, license numbers).
 - **Assumed jurisdiction: HIPAA (US).** The audit trail is append-only (DuckDB). A clinician override must legally record the original recommendation, the new level, the clinician identifier, the timestamp, and a stated reason; our `OverrideRecord` type makes an incomplete override unconstructable, and the API rejects an override without a reason (HTTP 422).
 - **The reasoning path is pluggable.** Default is Claude on AWS Bedrock. Point one environment variable at any OpenAI-compatible local server (Ollama, mlx_lm.server) and the same pipeline runs fully on-premises; we ship an evaluated configuration using **Doctor-R1** (Qwen3-8B, MIT, RL-trained for clinical inquiry) so patient data never has to leave the hospital at all.
 
@@ -76,7 +80,9 @@ Full policy optimization (GRPO per Doctor-R1, multi-axis rewards per ResidencyRL
 
 `config/rural_100.yaml` and `config/urban_500.yaml` drive per-ESI safe wait limits, reassessment cadence, deterioration sensitivity, and the surge threshold. The same assistant flexes from a 100-visit rural ED to a 500-visit urban trauma center by swapping a file.
 
-**Surge behavior (tested at 3x arrivals):** when the waiting count crosses the profile threshold, arrivals switch automatically to the deterministic fast path (about 4 ms per triage in our runs), clinician flags are preserved, and the monitoring loop keeps firing. The LLM becomes async enrichment, never a bottleneck. `scripts/replay_demo.py --speedup 3 --profile rural_100` demonstrates it.
+**Surge behavior (tested at 3x arrivals):** when the waiting count crosses the profile threshold, arrivals switch automatically to the deterministic fast path, clinician flags are preserved, and the monitoring loop keeps firing. Path B is deferred, not dropped: each surge arrival joins an enrichment queue that drains on the next clock tick, attaches the LLM reasoning, and may only hold or escalate the standing level (audited as `surge_enrichment`, escalations surface in the console feed). `scripts/replay_demo.py --speedup 3 --profile rural_100` demonstrates it end to end. In production the same queue would be drained by a background worker instead of the sim clock.
+
+**Latency, measured honestly:** rules scoring is sub-millisecond; the full intake-to-recommendation pipeline (redaction + both paths + calibration + safety) runs in the low tens of milliseconds warm when the LLM answer is cached, and 1 to 3 seconds on a live LLM call; the first request pays a one-time spaCy model load. `/metrics` reports live p50/p95, and every triage audit event records its own `latency_ms`.
 
 ## Adoption and change management
 
@@ -141,7 +147,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 77 tests
+uv run pytest                     # 96 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
@@ -190,6 +196,17 @@ redaction; set `SPACY_MODEL=en_core_web_lg` on hosts with 1 GB+ RAM.
 - MIMIC-IV-ED **Demo** v2.2 (PhysioNet, open access, ODbL): fetched at setup, never committed. The full 440K-visit MIMIC-IV-ED replay is our Round 3 evaluation path.
 - ESI scenario benchmarks and ESI v4 Handbook: fetched from the MIT-licensed [ED-Triage-Agent](https://github.com/Karthick47v2/ED-Triage-Agent) repository (c) Karthick T. Sharma; the three test sets originate from [TriageAgent](https://aclanthology.org/2024.findings-emnlp.329/) (EMNLP 2024 Findings).
 - No real patient data is used anywhere. Presidio redaction runs regardless, because the pipeline is built as if data were real.
+
+## Round 3 roadmap
+
+Each item below has its seam already built into the codebase:
+
+- **Structured interview intake** (OLDCARTS-style, the ED-Triage-Agent two-phase pattern) feeding the same dual-path engine; today's intake is deliberately the first-minutes data that exists before any interview.
+- **GRPO policy optimization** on the override experience repository once a pilot produces real volume; the escalate-only calibration table is the conservative online learner until then.
+- **Full HIPAA Safe Harbor entity coverage** in the redaction layer, plus HL7/FHIR vitals ingestion from monitors and the EHR.
+- **MIMIC-IV-ED full replay** (440K visits) as the large-scale evaluation, using the same DuckDB analytical layer that powers `/metrics` today.
+- **Protected-attribute bias auditing** with the governance a pilot requires; the per-age-band monitor and its alert thresholds are the running skeleton.
+- **Production scheduling**: the sim clock swaps for a background worker driving the same `tick()` and enrichment queue.
 
 ## References
 

@@ -14,11 +14,13 @@ Three reasons, each observable in this repo:
    vitals escalate no matter what the reasoning path says, and the safety
    pipeline enforces the rules floor independently
    (`backend/app/safety/pipeline.py`).
-3. **A zero-latency surge path.** At 3x arrivals the rules path answers in
-   about 4 ms while the LLM becomes async enrichment
-   (`scripts/replay_demo.py --speedup 3`).
+3. **A near-instant surge path.** At 3x arrivals the rules path answers in
+   milliseconds while Path B is deferred to an enrichment queue that drains on
+   the next tick and may only hold or escalate the standing level
+   (`TriageService.process_enrichment`, demonstrated by
+   `scripts/replay_demo.py --speedup 3`).
 
-The reverse question matters equally: rules alone under-triage 43% on the
+The reverse question matters equally: rules alone under-triage 37.5% on the
 public benchmark because they cannot read context. The disagreement between
 the two paths is itself clinical signal; we surface it as a flag rather than
 hiding it behind a single number.
@@ -40,7 +42,7 @@ who never worsens and never breaches a wait limit. That is also the least
 dangerous cell in the error matrix, and the over-triage bias shrinks it
 further.
 
-## Why is over-triage so high (27%)? Is that not a flaw?
+## Why is over-triage so high (30%)? Is that not a flaw?
 
 It is a chosen operating point, not an accident. Under-triage and over-triage
 carry asymmetric costs: a missed ESI-2 can die in the waiting room; an
@@ -72,6 +74,71 @@ dependency-light, and every retrieved excerpt carries a page citation the
 clinician can check. An embedding store adds infrastructure and
 non-determinism without measurable benefit at this corpus size. At Round 3
 scale (institution-specific protocols, multiple handbooks) we would revisit.
+
+## What does LangGraph actually buy you here?
+
+Today: a declarative parallel fan-out with a superstep barrier (redact, then
+rules and LLM concurrently, then fuse) that reads as a graph instead of thread
+plumbing (`backend/app/agent/graph.py`). We will not pretend the current
+four-node graph could not be a function with a thread pool. The honest value
+is the shape it leaves us: the Round 3 pipeline adds nodes (structured
+interview, escalation consult, enrichment re-fuse) and conditional edges, and
+those compose in a StateGraph without rewriting orchestration.
+
+## Why DuckDB for the audit log and not SQLite or Postgres?
+
+The audit trail has two consumers with different shapes: append-only writes
+during operation, and analytical rollups when someone asks "what is our
+override rate, in which direction, with what latency" - `AuditLog.stats()`
+answers those with SQL aggregation over the JSON payloads and feeds
+`/metrics`. DuckDB is built for exactly that read pattern, embeds like SQLite
+(no server to run in a demo or an air-gapped hospital), and reads Parquet
+natively for the Round 3 MIMIC replay. Postgres would be justified at
+multi-writer production scale; SQLite would work but makes the analytics the
+awkward part.
+
+## How do you avoid serving a stale cached LLM response to the wrong patient?
+
+The cache key is a SHA-256 of model, system prompt, and the fully rendered
+user prompt - age, vitals, redacted complaint, history, and the retrieved
+handbook excerpts (`backend/app/agent/llm_path.py`). Two patients whose
+clinical pictures differ in any of those produce different keys; two patients
+with byte-identical pictures get the same answer, which is what a
+deterministic assistant should do. What the cache does not have is TTL or
+versioning: it is a replay mechanism for demos and judges, not a production
+serving layer, and a deployment would version keys by model and prompt
+revision.
+
+## What stops a nurse from blindly accepting every recommendation?
+
+Structurally, three things: both reasoning chains are always visible including
+when they disagree (disagreement is flagged, not averaged away); accepting is
+one click but a high-risk downgrade override requires reading and checking an
+explicit risk acknowledgment (HTTP 422 without it, audited as a safety flag
+with it); and every acceptance is itself a logged learning signal, so rubber
+stamping is visible in the audit stats (`/metrics` reports override rate and
+direction). What we do not have is measurement of automation bias in real
+nurses; that is a pilot-study question and we would track
+alert-acknowledgment latency and override direction as its proxies.
+
+## How do you prevent alert fatigue?
+
+The design is passive first: the reassessment queue reorders continuously and
+interrupts nobody. Hard alerts exist for only two conditions (wait breach,
+deterioration), wait-breach alerts self-suppress once the patient is marked
+for reassessment, and repeat trend-deterioration alerts are rate limited by a
+per-profile cooldown (`alert_cooldown_min`; danger-zone vitals always fire,
+never muted). Thresholds live in the hospital profile YAML because fatigue
+tuning is a per-site clinical decision, not a code constant.
+
+## Why not OLDCARTS for intake?
+
+We considered it and chose not to fake it. Our intake is the data that exists
+in the first minutes: chief complaint, vitals, age, AVPU, history if on file.
+OLDCARTS is a structured interview - it assumes a conversation, which is
+exactly the two-phase design ED-Triage-Agent uses and the natural Round 3
+upgrade once an interview agent exists. Claiming OLDCARTS fields that nothing
+populates would be checkbox architecture.
 
 ## Why a simulation clock instead of a background scheduler?
 

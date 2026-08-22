@@ -1,6 +1,8 @@
 """Reassessment priority: which waiting patient should the nurse check next?
 
-The POMDP information-gain idea applied to triage - 
+A transparent heuristic product, inspired by (not implementing) the POMDP
+information-gain idea - rank highest the patient where a recheck changes the
+most:
 
     priority = deterioration_risk x wait_pressure x acuity_uncertainty x severity
 
