@@ -20,7 +20,7 @@ Triage today is a snapshot: a patient is scored once at arrival and then nobody 
 
 PatientTriage.ai treats the waiting room as part of triage:
 
-1. **Phase 1, Intake.** Structured first-minutes data: chief complaint (typed or voice-dictated), vitals, age, AVPU, medications if on file, and an optional OLDCARTS structured interview (Onset, Location, Duration, Characteristics, Aggravating/Alleviating, Radiation, Timing/Triggers, Severity 1-10) whose severity answer feeds the ESI pain gate. The complaint category auto-codes to a provisional ICD-10. Half of real patients have no record at all; the system is designed for that.
+1. **Phase 1, Intake.** Structured first-minutes data: chief complaint (typed or voice-dictated), vitals, age, AVPU, medications if on file, and an optional OLDCARTS structured interview (Onset, Location, Duration, Characteristics, Aggravating/Alleviating, Radiation, Timing/Triggers, Severity 1-10) whose severity answer feeds the ESI pain gate. A two-pass intake classifier (`backend/app/engine/complaint.py`) reads the complaint text: an exact clinical keyword pass, then a fuzzy pass with bounded edit distance over accent-folded phrases that absorbs misspellings and Spanish and Hinglish phrasings, plus a compound obstetric-emergency predicate (pregnancy context AND a complication sign, so a routine pregnancy visit is never over-triaged). The category auto-codes to a provisional ICD-10. Half of real patients have no record at all; the system is designed for that.
 2. **Phase 2, Dual-path scoring.** Path A is a deterministic ESI v4 rules engine with age-banded vital thresholds. Path B is Claude reasoning over the redacted intake, grounded in retrieved ESI Handbook passages. A FUSE step combines them: agreement means high confidence; disagreement takes the MORE acute level, lowers confidence, and flags the clinician with both reasoning chains.
 3. **Phase 3, Dynamic reassessment (the novel loop).** Triage is formalized as a POMDP: the hidden state is the patient's true acuity, and each patient carries a live belief - a probability distribution over ESI 1-5 - initialized from the two paths (disagreement IS the uncertainty), drifted acute-ward by a deterioration hazard while they wait, and Bayes-updated by every vitals recheck from any channel (nurse spot-check, wearable, kiosk self-report). The policy over that belief ranks the room:
 
@@ -38,7 +38,7 @@ The brief asks for a system "deliberately tuned to bias toward escalation under 
 - **High-risk downgrades require explicit acknowledgment.** Overriding a red-flagged or ESI 1-2 patient down two or more levels returns HTTP 422 until the clinician confirms they reviewed the flagged risk; the confirmed downgrade is applied and audited as a safety flag. A confirmed clinician decision is never blocked.
 - **Age-banded thresholds**: the same HR 110 is danger-zone for a 40-year-old and normal for a 4-year-old; the same 38.5 C fever is ESI-2 for a neonate, sepsis-watch ESI-3 for a 75-year-old, and ESI-4 for a healthy adult. A single adult-calibrated model across ages is a silent safety risk; we do not have one.
 - **A 4-layer safety pipeline** (input completeness, clinical grounding floor, red-flag propagation, per-age-band bias counters) wraps every recommendation (`backend/app/safety/pipeline.py`).
-- **The NEVER list is structural.** Nothing in this codebase finalizes an ESI level, blocks a patient, or overrides a clinician. Only a clinician action moves a patient to treatment.
+- **The NEVER list is structural.** Nothing in this codebase finalizes an ESI level, blocks a patient, or overrides a clinician. A level set by a clinician is final for automation: even the surge enrichment queue, when it disagrees with a decision made while it was waiting, attaches its reasoning as an advisory note and flags the disagreement instead of rescoring (`TriageService.process_enrichment`). Only a clinician action moves a patient to treatment.
 - **Deterioration re-triage never downgrades**, and the learning loop (below) is only allowed to escalate.
 
 ## Results against published benchmarks
@@ -68,7 +68,7 @@ Reproduce any row with one command (see Quick start), and every raw prediction i
 
 ## The learning loop (clinician actions as RL training signal)
 
-Every clinician action becomes a logged experience tuple in the audit trail - the experience-repository pattern from Doctor-R1 (ICLR 2026) - scored by a **multi-axis reward structure per ResidencyRL**: diagnostic accuracy, management quality, communication, documentation, and safety (`backend/app/learning/loop.py`, per-axis means live in `/metrics`). The safety axis dominates by design, mirroring the brief's asymmetric costs: acceptance +1.0; an over-triage override costs 0.2 per level on the management axis; an under-triage override (the dangerous miss) costs 1.0 per level on the safety axis.
+Every clinician action becomes a logged experience tuple in the audit trail - the experience-repository pattern from Doctor-R1 (ICLR 2026) - scored by a **multi-axis reward structure per ResidencyRL**: diagnostic accuracy, management quality, communication, documentation, and safety (`backend/app/learning/loop.py`, per-axis means live in `/metrics`). All five axes price the scalar: an unexplained rules-only recommendation or an incomplete override record deducts from the episode score (0.1 weight each). The safety axis dominates by design, mirroring the brief's asymmetric costs: acceptance +1.0; an over-triage override costs 0.2 per level on the management axis; an under-triage override (the dangerous miss) costs 1.0 per level on the safety axis - five times the maximum combined soft-axis deduction.
 
 Two learners consume the repository:
 
@@ -160,7 +160,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 122 tests
+uv run pytest                     # 136 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 

@@ -74,20 +74,60 @@ card, and the FHIR export carries it as per-level probabilities.
 
 Three pieces. The reward model (`learning/loop.py`) scores every clinician
 action on the five ResidencyRL axes (diagnostic accuracy, management
-quality, communication, documentation, safety) with safety dominant; the
-experience repository is the audit trail itself, each override or acceptance
-logged with state, action, correction, and the reward vector. The optimizer
+quality, communication, documentation, safety), and all five price the
+scalar: communication and documentation deduct from a perfect score at 0.1
+weight each, capped combined at exactly one over-triage level, so safety
+keeps a 5x-per-level dominance by construction. The experience repository
+is the audit trail itself, each override or acceptance logged with state,
+action, correction, and the reward vector. The optimizer
 (`learning/grpo.py`) is GRPO's estimator on the policy we actually learn:
 group episodes per (category x age band) cell, score the factual outcome and
-the counterfactual escalated recommendation with the same reward model,
-normalize advantages within the group (critic-free, GRPO's defining move),
-and write the resulting escalation policy into the calibration table the
-live service consumes. `scripts/train_policy.py` runs the whole pass. What
+the counterfactual escalated recommendation with the same reward model -
+the counterfactual reuses the factual episode's communication and
+documentation values, so the soft axes shift whole episodes within a group
+and can never fabricate a hold-vs-escalate advantage - normalize advantages
+within the group (critic-free, GRPO's defining move), and write the
+resulting escalation policy into the calibration table the live service
+consumes. `scripts/train_policy.py` runs the whole pass. What
 we deliberately do NOT do is fine-tune model weights: a triage assistant
 must stay auditable, and the decision layer is where override volume
 accumulates - so the decision layer is what trains. We did benchmark the
 closest released RL-trained clinical model (Doctor-R1 8B) inside our
 pipeline as the hospital-local option, with honest numbers.
+
+## Can any automated path ever undo a clinician's decision?
+
+No, and it is enforced on the patient record, not by convention. An override
+stamps `decided_by` on the queue entry (`monitor/waiting_room.py`), and while
+it is set no automated path may replace the level. The concrete race this
+closes: a patient is surge-queued for deferred Path B enrichment, a
+clinician decides before the queue drains, and the drained LLM result
+disagrees. The enrichment then turns advisory - it appends its suggested
+level and reasoning as a note, raises the clinician flag when its view is
+MORE acute so a human sees the disagreement, and audits the outcome as
+`clinician_decision_stands` (`TriageService.process_enrichment`, regression
+test in `backend/tests/test_api.py`). Deterioration re-triage on new vitals
+remains active for everyone - new clinical evidence may still escalate, never
+downgrade - which is exactly the division of authority a hospital expects:
+machines may raise concern, only people decide.
+
+## What happens with a misspelled, Spanish, or Hinglish complaint?
+
+The intake classifier (`engine/complaint.py`) runs two passes. Pass 1 is an
+exact clinical keyword scan in precedence order. Pass 2 fires only when
+pass 1 finds nothing: tokens are lowercased and accent-folded, then matched
+phrase-by-phrase against a multilingual lexicon with a length-bounded edit
+distance (transposition-aware, distance 1 for 7-9 character terms, 2 for
+longer, exact below 7 - so "anaphlaxis" and "anaphalaxis" match anaphylaxis
+while a sore "throat" alone never matches "throat closing"). Spanish
+("dolor de pecho", "no puedo respirar") and Hinglish ("seene mein dard",
+"saans nahi aa rahi", "bukhar") phrasings classify directly. Pregnancy
+complications use a compound predicate: pregnancy context AND a complication
+sign are both required, so "I think I'm pregnant" stays a routine visit
+while "28 weeks pregnant, sudden severe headache" is an obstetric emergency
+(ESI-2 floor, ICD-10 O26.90, ACOG severe-range SBP flag). The two-pass
+design also has an engineering property: pass 1 is frozen, so every cached
+reasoning replay keys on exactly the category it was recorded under.
 
 ## Why BM25 retrieval instead of embeddings?
 
@@ -176,9 +216,11 @@ adapter, documented in `backend/app/monitor/waiting_room.py`.
 
 ## What would break first in a real hospital?
 
-Honest list: (1) the complaint-category keyword mapper is a placeholder for a
-proper intake NLP step; (2) vitals arrive from monitors and EHR integration
-(HL7/FHIR), which we mock; (3) the ESI resource-count estimate should learn
-from the hospital's own historical data; (4) alert thresholds need tuning per
-site to avoid alarm fatigue, which is why they live in the hospital profile
-YAML rather than in code.
+Honest list: (1) the two-pass intake classifier covers exact clinical terms,
+misspellings, and Spanish/Hinglish phrasings, but a hospital's full intake
+language (regional scripts, compound narratives) needs a learned NLP layer
+trained on that site's own triage notes; (2) vitals arrive from monitors and
+EHR integration (HL7/FHIR), which we mock; (3) the ESI resource-count
+estimate should learn from the hospital's own historical data; (4) alert
+thresholds need tuning per site to avoid alarm fatigue, which is why they
+live in the hospital profile YAML rather than in code.
