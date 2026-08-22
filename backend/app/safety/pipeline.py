@@ -73,6 +73,9 @@ class BiasMonitor:
     def record(self, intake: PatientIntake, esi: int) -> None:
         self.counts[age_band(intake)].append(esi)
 
+    MIN_SAMPLE = 20        # bands below this are noise, not signal
+    DEVIATION_POINTS = 15  # high-acuity share gap vs pooled other bands
+
     def snapshot(self) -> dict:
         return {
             band: {
@@ -84,3 +87,26 @@ class BiasMonitor:
             }
             for band, esis in self.counts.items()
         }
+
+    def alerts(self) -> list[str]:
+        """Bands whose high-acuity share deviates sharply from the rest.
+
+        A trigger is a review signal, not proof of bias - some skew (e.g.
+        geriatric patients scoring sicker) is clinically expected."""
+        out = []
+        for band, stats in self.snapshot().items():
+            if stats["n"] < self.MIN_SAMPLE:
+                continue
+            others = [e for b, esis in self.counts.items() if b != band
+                      for e in esis]
+            if not others:
+                continue
+            others_pct = sum(1 for e in others if e <= 2) / len(others) * 100
+            deviation = stats["high_acuity_pct"] - others_pct
+            if abs(deviation) > self.DEVIATION_POINTS:
+                out.append(
+                    f"{band}: high-acuity share {stats['high_acuity_pct']:.1f}% "
+                    f"deviates {deviation:+.1f} points from other bands "
+                    f"({others_pct:.1f}%, n={stats['n']}) - review for "
+                    f"systematic skew")
+        return out

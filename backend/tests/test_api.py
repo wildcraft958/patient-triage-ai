@@ -132,6 +132,14 @@ def test_unknown_patient_404s():
     assert client.get("/patients/GHOST/audit").status_code == 404
 
 
+def test_metrics_expose_pipeline_latency_and_bias_alerts():
+    client.post("/patients", json=patient())
+    m = client.get("/metrics").json()
+    assert m["latency"]["n"] == 1
+    assert m["latency"]["p50_ms"] >= 0 and m["latency"]["p95_ms"] >= m["latency"]["p50_ms"]
+    assert m["bias_alerts"] == []
+
+
 # --- surge deferred enrichment: Path B is queued, not dropped ---
 
 def test_surge_arrival_queues_enrichment_and_next_tick_attaches_llm():

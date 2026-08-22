@@ -142,6 +142,8 @@ def metrics():
     svc = get_service()
     return {
         "bias_by_age_band": svc.bias.snapshot(),
+        "bias_alerts": svc.bias.alerts(),
+        "latency": svc.latency_stats(),
         "calibration_cells": svc.calibration.cells,
         "state": svc.state_view(),
     }

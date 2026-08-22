@@ -51,3 +51,19 @@ def test_bias_monitor_tracks_bands():
     assert snap["geriatric"]["mean_esi"] == 2.5
     assert snap["geriatric"]["high_acuity_pct"] == 50.0
     assert snap["adult"]["n"] == 1
+
+
+def test_bias_alert_fires_on_sustained_band_skew():
+    monitor = BiasMonitor()
+    for _ in range(20):
+        monitor.record(intake(age_years=75), esi=2)
+        monitor.record(intake(age_years=30), esi=4)
+    assert any(a.startswith("geriatric") for a in monitor.alerts())
+
+
+def test_no_bias_alert_below_minimum_sample():
+    monitor = BiasMonitor()
+    for _ in range(5):
+        monitor.record(intake(age_years=75), esi=2)
+        monitor.record(intake(age_years=30), esi=4)
+    assert monitor.alerts() == []

@@ -5,6 +5,8 @@ vitals recheck -> deterioration trigger -> automatic re-triage
 clinician accept/override -> reward -> calibration update -> audit trail
 """
 
+import time
+
 from app.agent.fuse import ROUTES, FusedResult
 from app.agent.graph import triage
 from app.audit.log import AuditLog, OverrideRecord
@@ -39,6 +41,7 @@ class TriageService:
         self.surge_forced: bool | None = None
         self.bias = BiasMonitor()
         self._enrichment_queue: list[str] = []
+        self._latencies_ms: list[float] = []
 
     # --- surge ---
 
@@ -51,6 +54,9 @@ class TriageService:
     # --- core flows ---
 
     def arrive(self, intake: PatientIntake, use_llm: bool = True) -> FusedResult:
+        # intake-to-recommendation latency: redact + both paths + calibration
+        # + safety - the full pipeline a clinician actually waits on
+        started = time.perf_counter()
         surge = self.surge_mode
         fused = self._run_triage(intake, use_llm=use_llm and not surge)
         if surge and use_llm:
@@ -59,12 +65,15 @@ class TriageService:
                 "Surge: Path B queued for deferred enrichment"]})
         fused = self._apply_calibration(intake, fused)
         fused, safety = safety_check(intake, fused)
+        latency_ms = round((time.perf_counter() - started) * 1000, 1)
+        self._latencies_ms.append(latency_ms)
         self.bias.record(intake, fused.esi)
         self.room.add(intake, fused)
         self.audit.log("triage", intake.patient_id, self.clock.now_min, {
             "esi": fused.esi, "route": fused.route, "confidence": fused.confidence,
             "paths_agree": fused.paths_agree, "clinician_flag": fused.clinician_flag,
             "surge_mode": surge,
+            "latency_ms": latency_ms,
             "rules_reasons": fused.rules.reasons,
             "llm_reasoning": fused.llm.reasoning if fused.llm else None,
             "notes": fused.notes,
@@ -207,6 +216,14 @@ class TriageService:
                 "record": record.model_dump(), "safety_warning": safety_warning}
 
     # --- views ---
+
+    def latency_stats(self) -> dict | None:
+        if not self._latencies_ms:
+            return None
+        s = sorted(self._latencies_ms)
+        def pct(p: float) -> float:
+            return s[min(len(s) - 1, int(p / 100 * len(s)))]
+        return {"n": len(s), "p50_ms": pct(50), "p95_ms": pct(95)}
 
     def queue_view(self) -> list[dict]:
         return [

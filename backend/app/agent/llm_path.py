@@ -9,6 +9,7 @@ rules-only - the LLM is never a single point of failure.
 
 import hashlib
 import json
+import logging
 import re
 
 from app.agent import rag
@@ -18,6 +19,8 @@ from app.data_io import DATA_DIR
 from app.models import PatientIntake
 
 LLM_CACHE_DIR = DATA_DIR / "cache" / "llm"
+
+log = logging.getLogger(__name__)
 
 # NOTE: SYSTEM and build_user_prompt text form the replay-cache key.
 # Do not edit their wording without accepting a full cache re-warm.
@@ -125,9 +128,13 @@ def assess(
         try:  # one retry with a stricter instruction
             raw = transport(SYSTEM + "\nReturn ONLY the JSON object.", user)
             result = _parse(raw)
-        except Exception:
+        except Exception as e:
+            log.warning("LLM path unavailable after retry (%s: %s) - "
+                        "falling back to rules-only", type(e).__name__, e)
             return None
-    except Exception:
+    except Exception as e:
+        log.warning("LLM path unavailable (%s: %s) - falling back to "
+                    "rules-only", type(e).__name__, e)
         return None
 
     if use_cache:
