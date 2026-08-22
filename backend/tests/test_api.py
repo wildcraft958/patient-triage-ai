@@ -74,6 +74,31 @@ def test_override_requires_reason():
     assert r.json()["reward"] == -1.0 and r.json()["under_triage"] is True
 
 
+def test_dangerous_downgrade_requires_acknowledgment():
+    client.post("/patients", json=patient(
+        "P1", age_years=61, complaint_category="chest_pain",
+        chief_complaint="chest pain radiating to left arm"))  # fused ESI-2, red-flagged
+    body = {"new_esi": 4, "clinician_id": "RN-07",
+            "reason": "pain reproducible on palpation, ECG normal"}
+    r = client.post("/patients/P1/override", json=body)
+    assert r.status_code == 422
+    assert "acknowledge" in str(r.json()["detail"]).lower()
+    r = client.post("/patients/P1/override", json={**body, "acknowledge_risk": True})
+    assert r.status_code == 200
+    assert r.json()["safety_warning"]
+    events = client.get("/patients/P1/audit").json()["events"]
+    assert "override_safety_flag" in [e["event_type"] for e in events]
+
+
+def test_small_downgrade_needs_no_acknowledgment():
+    client.post("/patients", json=patient())  # fused ESI-3, no red flags
+    r = client.post("/patients/P1/override",
+                    json={"new_esi": 4, "clinician_id": "RN-07",
+                          "reason": "stable, low suspicion"})
+    assert r.status_code == 200
+    assert r.json()["safety_warning"] is None
+
+
 def test_two_overrides_teach_the_system_to_escalate():
     for pid in ["P1", "P2"]:
         client.post("/patients", json=patient(pid))

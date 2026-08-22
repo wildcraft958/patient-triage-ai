@@ -19,6 +19,14 @@ from app.config import REPO_ROOT
 CALIBRATION_PATH = REPO_ROOT / "data" / "cache" / "calibration.json"
 
 
+class UnacknowledgedDowngrade(ValueError):
+    """A high-risk downgrade override submitted without explicit confirmation.
+
+    The clinician's authority is absolute - a confirmed decision is never
+    blocked - but downgrading a red-flagged or ESI<=2 patient by two or more
+    levels requires an explicit acknowledgment so it cannot happen by slip."""
+
+
 class TriageService:
     def __init__(self, profile_name: str | None = None, audit_path: str | None = None,
                  transport=None, calibration_path=None):
@@ -108,8 +116,31 @@ class TriageService:
         return reward
 
     def override(self, patient_id: str, new_esi: int, clinician_id: str,
-                 reason: str) -> dict:
+                 reason: str, acknowledge_risk: bool = False) -> dict:
         entry = self.room.entries[patient_id]
+        dangerous = (
+            (entry.fused.esi <= 2 or entry.fused.rules.red_flags)
+            and new_esi >= entry.fused.esi + 2
+        )
+        if dangerous and not acknowledge_risk:
+            raise UnacknowledgedDowngrade(
+                f"Downgrading ESI-{entry.fused.esi} "
+                f"(red flags: {entry.fused.rules.red_flags or 'none'}) to "
+                f"ESI-{new_esi} requires acknowledge_risk=true - please confirm "
+                f"you have reviewed the flagged risk."
+            )
+        safety_warning = None
+        if dangerous:
+            safety_warning = (
+                f"High-risk downgrade: ESI-{entry.fused.esi} -> ESI-{new_esi} "
+                f"with red flags {entry.fused.rules.red_flags}; acknowledged by "
+                f"{clinician_id}"
+            )
+            self.audit.log("override_safety_flag", patient_id, self.clock.now_min, {
+                "original_esi": entry.fused.esi, "new_esi": new_esi,
+                "red_flags": entry.fused.rules.red_flags,
+                "clinician_id": clinician_id, "reason": reason,
+            })
         record = OverrideRecord(
             original_esi=entry.fused.esi, new_esi=new_esi,
             clinician_id=clinician_id, reason=reason, sim_min=self.clock.now_min,
@@ -129,7 +160,7 @@ class TriageService:
         })
         self.room.mark_assessed(patient_id)
         return {"reward": reward, "under_triage": under_triage,
-                "record": record.model_dump()}
+                "record": record.model_dump(), "safety_warning": safety_warning}
 
     # --- views ---
 

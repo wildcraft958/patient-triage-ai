@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.models import PatientIntake, Vitals
-from app.service import CALIBRATION_PATH, TriageService
+from app.service import CALIBRATION_PATH, TriageService, UnacknowledgedDowngrade
 
 router = APIRouter()
 
@@ -27,6 +27,7 @@ class OverrideBody(BaseModel):
     new_esi: int = Field(ge=1, le=5)
     clinician_id: str = Field(min_length=1)
     reason: str = Field(min_length=3)
+    acknowledge_risk: bool = False
 
 
 class ClinicianBody(BaseModel):
@@ -65,9 +66,13 @@ def record_vitals(patient_id: str, vitals: Vitals):
 @router.post("/patients/{patient_id}/override")
 def override(patient_id: str, body: OverrideBody):
     _require(patient_id)
-    return get_service().override(
-        patient_id, body.new_esi, body.clinician_id, body.reason
-    )
+    try:
+        return get_service().override(
+            patient_id, body.new_esi, body.clinician_id, body.reason,
+            acknowledge_risk=body.acknowledge_risk,
+        )
+    except UnacknowledgedDowngrade as e:
+        raise HTTPException(422, str(e))
 
 
 @router.post("/patients/{patient_id}/accept")

@@ -134,6 +134,14 @@ button.chip.on { color: var(--purple-deep); }
 }
 .req { color: var(--purple); font-weight: 700; }
 
+.risk-warning {
+  margin-top: 8px; padding: 8px 10px; font-size: 11px; line-height: 1.5;
+  border: 1px solid #C4452F; border-left-width: 4px; border-radius: 5px;
+  background: #FBEEEB; color: #7A2B1D;
+}
+.risk-ack { display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; font-weight: 600; cursor: pointer; }
+.risk-ack input { margin-top: 2px; }
+
 .footer {
   display: flex; gap: 8px; padding: 0 12px 12px; font-size: 10.5px;
   color: var(--muted); flex-wrap: wrap;

@@ -199,6 +199,7 @@ function DetailCard({ detail, onAccept, onOverride, feedback }) {
   const [newEsi, setNewEsi] = useState('')
   const [clin, setClin] = useState('RN-07')
   const [reason, setReason] = useState('')
+  const [ack, setAck] = useState(false)
 
   if (!detail) {
     return (
@@ -211,11 +212,18 @@ function DetailCard({ detail, onAccept, onOverride, feedback }) {
   const { intake, fused, status, waited_min, vitals_history } = detail
   const inTreatment = status === 'in_treatment'
 
+  const redFlags = detail.fused.rules.red_flags || []
+  const dangerousDowngrade =
+    newEsi !== '' &&
+    (detail.fused.esi <= 2 || redFlags.length > 0) &&
+    Number(newEsi) >= detail.fused.esi + 2
+
   const submit = async () => {
     await onOverride(intake.patient_id, {
       new_esi: Number(newEsi), clinician_id: clin, reason,
+      acknowledge_risk: dangerousDowngrade,
     })
-    setShowForm(false); setReason(''); setNewEsi('')
+    setShowForm(false); setReason(''); setNewEsi(''); setAck(false)
   }
 
   return (
@@ -268,8 +276,22 @@ function DetailCard({ detail, onAccept, onOverride, feedback }) {
             <div className="sub">
               Logged: original rec, new level, clinician ID, timestamp, reason <span className="req">*</span>
             </div>
+            {dangerousDowngrade && (
+              <div className="risk-warning">
+                <b>High-risk downgrade.</b> This patient is flagged
+                {redFlags.length > 0 ? ` (${redFlags.join(', ')})` : ''} at
+                ESI-{fused.esi}. Downgrading to ESI-{newEsi} will be recorded
+                as a safety-flagged override.
+                <label className="risk-ack">
+                  <input type="checkbox" checked={ack}
+                         onChange={(e) => setAck(e.target.checked)} />
+                  I have reviewed the flagged risk and confirm this downgrade
+                </label>
+              </div>
+            )}
             <div className="row">
-              <button className="btn btn-accept" disabled={!newEsi || reason.length < 3}
+              <button className="btn btn-accept"
+                      disabled={!newEsi || reason.length < 3 || (dangerousDowngrade && !ack)}
                       onClick={submit}>
                 Confirm override
               </button>
@@ -390,6 +412,9 @@ export default function Console() {
         if (e.event_type === 'override')
           return { type: 'event', at: e.sim_min, dot: 'override',
                    text: `OVERRIDE ${e.patient_id} to ESI-${p.new_esi}` }
+        if (e.event_type === 'override_safety_flag')
+          return { type: 'event', at: e.sim_min, dot: 'alert',
+                   text: `SAFETY FLAG ${e.patient_id} downgraded ESI-${p.original_esi} to ESI-${p.new_esi} (acknowledged)` }
         if (e.event_type === 'acceptance')
           return { type: 'event', at: e.sim_min, dot: 'accept', text: `ACCEPT ${e.patient_id}` }
         return null
@@ -497,7 +522,10 @@ export default function Console() {
         ? `Override logged, reward ${r.reward}. Under-triage signal: the system will learn to escalate this pattern.`
         : `Override logged, reward ${r.reward}.`
     )
-    pushFeed([{ type: 'event', at: state?.sim_min, dot: 'override', text: `OVERRIDE ${id} to ESI-${body.new_esi}` }])
+    const feedRows = [{ type: 'event', at: state?.sim_min, dot: 'override', text: `OVERRIDE ${id} to ESI-${body.new_esi}` }]
+    if (r.safety_warning)
+      feedRows.push({ type: 'event', at: state?.sim_min, dot: 'alert', text: `SAFETY FLAG ${r.safety_warning}` })
+    pushFeed(feedRows)
     await refresh(id)
   }
 
