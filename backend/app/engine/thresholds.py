@@ -19,6 +19,11 @@ SPO2_DANGER = 92
 SPO2_CRITICAL = 85
 GERIATRIC_AGE = 65
 FEVER_C = 38.0
+# Adult-only SBP extremes (pediatric SBP norms vary too much by age for a
+# single floor; adult shock-range < 75 is already ESI-1 at decision point A)
+SBP_ADULT_AGE = 16
+SBP_DANGER_LOW = 90
+SBP_CRISIS = 220
 
 
 def age_in_months(intake: PatientIntake) -> float:
@@ -46,4 +51,9 @@ def in_danger_zone(intake: PatientIntake) -> tuple[bool, list[str]]:
         reasons.append(f"RR {v.rr:.0f} exceeds age-band limit {rr_limit}")
     if v.spo2 is not None and v.spo2 < SPO2_DANGER:
         reasons.append(f"SpO2 {v.spo2:.0f}% below {SPO2_DANGER}%")
+    if v.sbp is not None and intake.age_years >= SBP_ADULT_AGE:
+        if v.sbp < SBP_DANGER_LOW:
+            reasons.append(f"SBP {v.sbp:.0f} below adult floor {SBP_DANGER_LOW}")
+        elif v.sbp >= SBP_CRISIS:
+            reasons.append(f"SBP {v.sbp:.0f} in hypertensive-crisis range (>= {SBP_CRISIS})")
     return bool(reasons), reasons

@@ -117,3 +117,58 @@ def test_missing_vitals_on_multi_resource_complaint_escalates():
 def test_zero_history_patient_scores_from_observed_data():
     r = score(make_intake(has_history=False, complaint_category="chest_pain", age_years=61))
     assert 1 <= r.esi <= 5
+
+
+# --- Danger-zone vitals must escalate EVERY category, not just 2+-resource ---
+
+def test_deranged_vitals_escalate_single_resource_category():
+    # anaphylaxis mis-coded as "other": HR 120 / SBP 80 must not sit at ESI-4
+    r = score(make_intake(age_years=25, chief_complaint="feels unwell after bee sting",
+                          complaint_category="other",
+                          vitals=Vitals(hr=120, rr=22, spo2=95, temp_c=37.0, sbp=80, pain=4)))
+    assert r.esi == 2
+    assert r.danger_zone_vitals is True
+
+
+def test_adult_hypotension_sbp_80_is_danger():
+    r = score(make_intake(age_years=50, complaint_category="abdominal_pain",
+                          vitals=Vitals(hr=90, rr=16, spo2=97, temp_c=37.0, sbp=80, pain=4)))
+    assert r.esi == 2
+    assert any("SBP" in reason for reason in r.reasons)
+
+
+def test_hypertensive_crisis_sbp_220_is_danger():
+    r = score(make_intake(age_years=55, chief_complaint="severe headache",
+                          complaint_category="other",
+                          vitals=Vitals(hr=88, rr=16, spo2=98, temp_c=36.9, sbp=225, pain=6)))
+    assert r.esi == 2
+    assert r.danger_zone_vitals is True
+
+
+def test_child_sbp_below_adult_floor_is_not_flagged():
+    # pediatric SBP norms differ; the SBP checks are adult-only by design
+    r = score(make_intake(age_years=5, complaint_category="abdominal_pain",
+                          vitals=Vitals(hr=100, rr=22, spo2=98, temp_c=37.0, sbp=85, pain=3)))
+    assert r.danger_zone_vitals is False
+
+
+def test_hives_with_normal_vitals_stays_esi_4():
+    r = score(make_intake(age_years=28, chief_complaint="itchy hives on arms",
+                          complaint_category="rash"))
+    assert r.esi == 4
+
+
+def test_missing_vitals_on_single_resource_flags_without_escalation():
+    r = score(make_intake(age_years=30, complaint_category="laceration", vitals=Vitals()))
+    assert r.esi == 4
+    assert "vitals not recorded" in r.red_flags
+    refill = score(make_intake(complaint_category="medication_refill", vitals=Vitals()))
+    assert refill.esi == 5
+    assert "vitals not recorded" in refill.red_flags
+
+
+def test_allergic_reaction_category_is_high_risk():
+    r = score(make_intake(age_years=25, chief_complaint="allergic reaction, lip swelling",
+                          complaint_category="allergic_reaction"))
+    assert r.esi == 2
+    assert r.resources_estimate >= 2

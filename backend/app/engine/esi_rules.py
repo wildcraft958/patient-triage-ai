@@ -25,11 +25,14 @@ BASE_RESOURCES = {
     "stroke_signs": 2,
     "trauma_major": 2,
     "sepsis_concern": 2,
+    "allergic_reaction": 2,
     "other": 1,
 }
 
+# Systemic allergic presentation is ESI-2 minimum (airway risk); localized
+# hives without systemic signs belongs under "rash" instead.
 ALWAYS_HIGH_RISK = {"stroke_signs", "breathing_difficulty", "trauma_major",
-                    "sepsis_concern", "self_harm"}
+                    "sepsis_concern", "self_harm", "allergic_reaction"}
 
 
 def _resources(intake: PatientIntake) -> int:
@@ -91,6 +94,18 @@ def score(intake: PatientIntake) -> RulesResult:
                            resources_estimate=_resources(intake))
     reasons.append("B: no high-risk criteria met")
 
+    # --- Decision point D first: danger-zone vitals gate, ALL categories ---
+    # Run before the resource count on purpose: measured deranged vitals in a
+    # "minor" complaint mean the category is wrong (e.g. anaphylaxis coded as
+    # "other"), so the resource shortcut must never bypass this check.
+    danger, danger_reasons = thresholds.in_danger_zone(intake)
+    if danger:
+        reasons.append("D: danger-zone vitals - uptriage to ESI-2 (" +
+                       "; ".join(danger_reasons) + ")")
+        return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
+                           danger_zone_vitals=True,
+                           resources_estimate=_resources(intake))
+
     # --- Decision point C: expected resources ---
     resources = _resources(intake)
     if intake.age_years >= thresholds.GERIATRIC_AGE and intake.complaint_category == "fever":
@@ -98,27 +113,25 @@ def score(intake: PatientIntake) -> RulesResult:
         reasons.append("C: geriatric fever, broadened workup (sepsis watch)")
     reasons.append(f"C: estimated resources = {resources}")
 
+    # Missing core vitals: escalate 2+-resource patients under uncertainty;
+    # for 0/1-resource complaints ESI v4 assigns 4/5 without vitals, so flag
+    # for collection instead of escalating every vitals-less sprain to ESI-2.
+    missing_core = v.hr is None or v.rr is None or v.spo2 is None
+    if missing_core and resources >= 2:
+        reasons.append("D: core vitals missing - escalating under uncertainty")
+        red_flags.append("incomplete vitals")
+        return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
+                           resources_estimate=resources)
+    if missing_core:
+        reasons.append("D: core vitals not recorded - flagged for collection")
+        red_flags.append("vitals not recorded")
+
     if resources == 0:
         return RulesResult(esi=5, reasons=reasons, red_flags=red_flags,
                            resources_estimate=0)
     if resources == 1:
         return RulesResult(esi=4, reasons=reasons, red_flags=red_flags,
                            resources_estimate=1)
-
-    # --- Decision point D: danger-zone vitals gate for multi-resource patients ---
-    missing_core = v.hr is None or v.rr is None or v.spo2 is None
-    if missing_core:
-        reasons.append("D: core vitals missing - escalating under uncertainty")
-        red_flags.append("incomplete vitals")
-        return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
-                           resources_estimate=resources)
-
-    danger, danger_reasons = thresholds.in_danger_zone(intake)
-    if danger:
-        reasons.append("D: danger-zone vitals - uptriage to ESI-2 (" +
-                       "; ".join(danger_reasons) + ")")
-        return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
-                           danger_zone_vitals=True, resources_estimate=resources)
 
     reasons.append("D: vitals within age-band limits")
     return RulesResult(esi=3, reasons=reasons, red_flags=red_flags,
