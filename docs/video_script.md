@@ -72,8 +72,9 @@ Action: terminal, run: `uv run python ../scripts/replay_demo.py --speedup 3
 --profile rural_100 | tail -15` (or toggle SURGE in the UI and step).
 
 > "At three times normal arrivals, the system flips to the deterministic
-> fast path: four milliseconds per triage, monitoring still live, the LLM
-> becomes async enrichment instead of a bottleneck."  [surge 3x]
+> fast path: milliseconds per triage, monitoring still live, and the LLM
+> is deferred to an enrichment queue that catches patients up on the next
+> tick instead of becoming a bottleneck."  [surge 3x, enrichment chip visible]
 
 ## 2:35 - 2:55 | Results (slide with the README table)
 
