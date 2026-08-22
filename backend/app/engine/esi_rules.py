@@ -87,9 +87,13 @@ def score(intake: PatientIntake) -> RulesResult:
         reasons.append(f"B: fever {v.temp_c:.1f}C in infant under 3 months")
         return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
                            resources_estimate=2)
-    if v.pain is not None and v.pain >= 8:
+    # pain from the vitals panel, or the OLDCARTS severity answer as fallback
+    pain = v.pain
+    if pain is None and intake.oldcarts is not None:
+        pain = intake.oldcarts.severity
+    if pain is not None and pain >= 8:
         red_flags.append("severe pain")
-        reasons.append(f"B: severe pain {v.pain}/10 - escalating rather than waiting")
+        reasons.append(f"B: severe pain {pain}/10 - escalating rather than waiting")
         return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,
                            resources_estimate=_resources(intake))
     reasons.append("B: no high-risk criteria met")

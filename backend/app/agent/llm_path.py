@@ -67,11 +67,20 @@ def build_user_prompt(intake: PatientIntake, redacted_complaint: str) -> str:
     excerpt_text = "\n".join(
         f"[ESI Handbook p.{c['page']}] {c['text'][:400]}" for c in excerpts
     ) or "(no relevant excerpts retrieved)"
+    # Additive-only: renders empty when no OLDCARTS interview was captured,
+    # so every pre-existing prompt (and its cache key) stays byte-identical
+    oldcarts_line = ""
+    if intake.oldcarts is not None:
+        answers = [f"{k}: {v}" for k, v in intake.oldcarts.model_dump().items()
+                   if v is not None]
+        if answers:
+            oldcarts_line = "OLDCARTS interview: " + "; ".join(answers) + "\n"
     return (
         f"Patient (de-identified): age {age}, responsiveness {intake.responsiveness}\n"
         f"Chief complaint: {redacted_complaint}\n"
         f"Vitals: {vitals}\n"
-        f"History: {history}\n\n"
+        f"History: {history}\n"
+        f"{oldcarts_line}\n"
         f"Relevant ESI handbook excerpts:\n{excerpt_text}"
     )
 

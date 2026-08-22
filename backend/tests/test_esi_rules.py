@@ -167,6 +167,15 @@ def test_missing_vitals_on_single_resource_flags_without_escalation():
     assert "vitals not recorded" in refill.red_flags
 
 
+def test_oldcarts_severity_backs_up_the_pain_gate():
+    from app.models import Oldcarts
+    r = score(make_intake(complaint_category="abdominal_pain",
+                          vitals=Vitals(hr=95, rr=18, spo2=97, temp_c=37.0, sbp=125),
+                          oldcarts=Oldcarts(onset="2 hours ago", severity=9)))
+    assert r.esi == 2
+    assert "severe pain" in r.red_flags
+
+
 def test_allergic_reaction_category_is_high_risk():
     r = score(make_intake(age_years=25, chief_complaint="allergic reaction, lip swelling",
                           complaint_category="allergic_reaction"))

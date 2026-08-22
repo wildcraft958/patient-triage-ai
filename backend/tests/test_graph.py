@@ -76,6 +76,30 @@ def test_history_fields_are_redacted_before_llm_path():
     assert "Ramesh Kumar" in intake.medications[0]
 
 
+def test_oldcarts_enters_the_prompt_only_when_present_and_redacted():
+    from app.agent.llm_path import build_user_prompt
+    from app.models import Oldcarts
+    from app.privacy.redact import redact
+
+    plain = make_intake()
+    with_oc = make_intake(oldcarts=Oldcarts(
+        onset="started at Ramesh Kumar's shop an hour ago", severity=6))
+
+    # absent OLDCARTS renders nothing: pre-existing cache keys stay identical
+    assert "OLDCARTS" not in build_user_prompt(plain, plain.chief_complaint)
+
+    seen = {}
+
+    def spying_transport(system: str, user: str) -> str:
+        seen["user"] = user
+        return json.dumps({"esi": 3, "confidence": 0.9, "reasoning": ["ok"]})
+
+    triage(with_oc, transport=spying_transport)
+    assert "OLDCARTS interview:" in seen["user"]
+    assert "severity: 6" in seen["user"]
+    assert "Ramesh" not in seen["user"]  # free-text answers pass through Presidio
+
+
 def test_surge_fast_path_skips_llm_and_uses_rules():
     def exploding_transport(system, user):
         raise AssertionError("LLM must not be called in rules-only mode")

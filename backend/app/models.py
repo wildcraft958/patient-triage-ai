@@ -10,6 +10,21 @@ class Vitals(BaseModel):
     pain: int | None = None      # self-reported, 0-10
 
 
+class Oldcarts(BaseModel):
+    """Structured OLDCARTS interview: Onset, Location, Duration,
+    Characteristics, Aggravating/Alleviating, Radiation, Timing/Triggers,
+    Severity. All optional - intake captures what the first minutes yield."""
+
+    onset: str | None = None
+    location: str | None = None
+    duration: str | None = None
+    characteristics: str | None = None
+    aggravating_alleviating: str | None = None
+    radiation: str | None = None
+    timing_triggers: str | None = None
+    severity: int | None = Field(default=None, ge=0, le=10)
+
+
 class PatientIntake(BaseModel):
     patient_id: str
     age_years: int
@@ -19,6 +34,7 @@ class PatientIntake(BaseModel):
     complaint_category: str = "other"
     vitals: Vitals = Field(default_factory=Vitals)
     responsiveness: str = "alert"  # AVPU: alert | verbal | pain | unresponsive
+    oldcarts: Oldcarts | None = None
     has_history: bool = False
     medications: list[str] = Field(default_factory=list)
     conditions: list[str] = Field(default_factory=list)

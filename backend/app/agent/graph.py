@@ -44,10 +44,19 @@ def redact_node(state: TriageState) -> dict:
             out.append(rr.text)
         return out
 
-    llm_intake = intake.model_copy(update={
+    update = {
         "medications": redact_items(intake.medications),
         "conditions": redact_items(intake.conditions),
-    })
+    }
+    if intake.oldcarts is not None:
+        oc = intake.oldcarts.model_dump()
+        for field_name, value in oc.items():
+            if isinstance(value, str):
+                rr = redact(value)
+                entities.update(rr.entities_removed)
+                oc[field_name] = rr.text
+        update["oldcarts"] = type(intake.oldcarts)(**oc)
+    llm_intake = intake.model_copy(update=update)
     return {"redacted_complaint": r.text, "llm_intake": llm_intake,
             "phi_entities_removed": sorted(entities)}
 
