@@ -11,12 +11,12 @@
    "rules": {
     "n": 60,
     "exact_acc": 26.666666666666668,
-    "within_1": 78.33333333333333,
+    "within_1": 80.0,
     "under_triage": 38.333333333333336,
-    "sig_under_triage": 13.333333333333334,
+    "sig_under_triage": 11.666666666666666,
     "over_triage": 35.0,
     "sig_over_triage": 8.333333333333332,
-    "high_acuity_sens": 69.23076923076923
+    "high_acuity_sens": 73.07692307692307
    },
    "llm": {
     "n": 60,
@@ -215,10 +215,10 @@
   {
    "id": "practice_cases-20",
    "truth": 1,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
