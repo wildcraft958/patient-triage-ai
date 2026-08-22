@@ -140,6 +140,28 @@ class TriageService:
                 continue
             fused = self._apply_calibration(entry.intake, fused)
             fused, _ = safety_check(entry.intake, fused)
+            if entry.decided_by is not None:
+                # a clinician decided while Path B was queued: their level is
+                # final for automation - the enrichment turns advisory, and a
+                # more-acute LLM view is flagged to a human, never auto-acted
+                llm_more_acute = fused.esi < entry.fused.esi
+                note = (f"Deferred Path B reviewed: LLM suggests ESI-{fused.esi}; "
+                        f"clinician decision ESI-{entry.fused.esi} by "
+                        f"{entry.decided_by} stands")
+                update: dict = {"notes": entry.fused.notes + [note]}
+                if llm_more_acute:
+                    update["clinician_flag"] = True
+                entry.fused = entry.fused.model_copy(update=update)
+                self.audit.log("surge_enrichment", pid, self.clock.now_min, {
+                    "outcome": "clinician_decision_stands",
+                    "llm_esi": fused.esi, "clinician_esi": entry.fused.esi,
+                    "decided_by": entry.decided_by,
+                    "llm_more_acute": llm_more_acute,
+                })
+                continue
+            # append-only note trail: the arrival record survives enrichment
+            fused = fused.model_copy(
+                update={"notes": entry.fused.notes + fused.notes})
             old_esi = entry.fused.esi
             if fused.esi > old_esi:
                 fused = fused.model_copy(update={
@@ -215,11 +237,13 @@ class TriageService:
             "recommended_esi": record.original_esi, "clinician_esi": new_esi,
             "cell": f"{entry.intake.complaint_category}|{age_band(entry.intake)}",
         })
-        # the clinician decides: their level becomes the patient's level
+        # the clinician decides: their level becomes the patient's level,
+        # and while decided_by is set no automated path may replace it
         entry.fused = entry.fused.model_copy(update={
             "esi": new_esi, "route": ROUTES[new_esi],
             "notes": entry.fused.notes + [f"Clinician override to ESI-{new_esi}: {reason}"],
         })
+        entry.decided_by = clinician_id
         self.room.mark_assessed(patient_id)
         return {"reward": reward, "under_triage": under_triage,
                 "record": record.model_dump(), "safety_warning": safety_warning}

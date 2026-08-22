@@ -212,6 +212,44 @@ def test_surge_arrival_queues_enrichment_and_next_tick_attaches_llm():
     assert "surge_enrichment" in [e["event_type"] for e in events]
 
 
+def test_enrichment_never_overwrites_clinician_decision():
+    """A clinician decision made while Path B was queued must stand: the
+    drained enrichment becomes advisory (note + flag), never a rescore."""
+    api.reset_service(
+        profile_name="urban_500", audit_path=":memory:",
+        transport=lambda s, u: json.dumps(
+            {"esi": 1, "confidence": 0.9, "reasoning": ["peri-arrest picture"]}))
+    client.post("/surge", json={"forced": True})
+    client.post("/patients", json=patient(
+        "P1", age_years=61, complaint_category="chest_pain",
+        chief_complaint="chest pain radiating to left arm"))  # rules ESI-2
+    client.post("/surge", json={"forced": None})
+    r = client.post("/patients/P1/override", json={
+        "new_esi": 4, "clinician_id": "RN-07",
+        "reason": "pain reproducible on palpation, ECG normal",
+        "acknowledge_risk": True})
+    assert r.status_code == 200
+    client.post("/clock/advance", json={"minutes": 1})
+    fused = client.get("/patients/P1").json()["fused"]
+    assert fused["esi"] == 4  # the clinician's level stands
+    assert any("Clinician override to ESI-4" in n for n in fused["notes"])
+    assert any("clinician decision ESI-4" in n for n in fused["notes"])
+    assert fused["clinician_flag"] is True  # more-acute LLM view is surfaced
+    events = client.get("/patients/P1/audit").json()["events"]
+    enrich = [e["payload"] for e in events if e["event_type"] == "surge_enrichment"]
+    assert enrich and enrich[-1]["outcome"] == "clinician_decision_stands"
+    assert enrich[-1]["llm_esi"] == 1 and enrich[-1]["clinician_esi"] == 4
+
+
+def test_enrichment_preserves_the_arrival_note_trail():
+    client.post("/surge", json={"forced": True})
+    client.post("/patients", json=patient())
+    client.post("/surge", json={"forced": None})
+    client.post("/clock/advance", json={"minutes": 1})
+    notes = client.get("/patients/P1").json()["fused"]["notes"]
+    assert any("queued for deferred enrichment" in n for n in notes)
+
+
 def test_enrichment_escalates_but_never_downgrades():
     api.reset_service(
         profile_name="urban_500", audit_path=":memory:",

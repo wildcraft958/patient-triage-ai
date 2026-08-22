@@ -54,6 +54,9 @@ class QueueEntry:
     alerts: list[Alert] = field(default_factory=list)
     belief: list[float] = field(default_factory=list)  # P(true acuity = ESI 1..5)
     belief_at_min: float = 0.0
+    # clinician who set the current level; while set, no automated path may
+    # replace the level (deferred enrichment turns advisory, see service)
+    decided_by: str | None = None
 
 
 ACTIVE_STATUSES = {"waiting", "reassess_due", "deteriorating"}
