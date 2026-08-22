@@ -31,6 +31,31 @@ URBAN = load_profile("urban_500")
 
 # --- priority formula ---
 
+def test_deck_worked_example_ordering():
+    """The Round 1 deck's Phase 3 table: A (ESI-3, 45 min, worsening) must
+    outrank B (ESI-3, 30 min, stable) > C (ESI-4, 60 min, stable) >
+    D (ESI-5, 15 min, stable); scores live in [0, 1]; only A crosses the
+    REASSESS NOW threshold."""
+    from app.monitor.priority import action_for
+
+    def entry(esi, cat, waited, worsening=False):
+        base = Vitals(hr=88, rr=16, spo2=98, temp_c=37.0, sbp=125)
+        hist = [(0.0, base)]
+        if worsening:
+            hist.append((waited, Vitals(hr=112, rr=20, spo2=96, temp_c=37.4, sbp=104)))
+        return {"intake": intake("P", category=cat), "fused": fused(esi),
+                "last_assessed_min": 0.0, "vitals_history": hist}
+
+    a = reassessment_priority(entry(3, "chest_pain", 45, worsening=True), 45, URBAN)
+    b = reassessment_priority(entry(3, "other", 30), 30, URBAN)
+    c = reassessment_priority(entry(4, "other", 60), 60, URBAN)
+    d = reassessment_priority(entry(5, "other", 15), 15, URBAN)
+    assert a > b > c > d
+    assert all(0.0 <= p <= 1.0 for p in (a, b, c, d))
+    assert action_for(a, URBAN) == "REASSESS NOW"
+    assert all(action_for(p, URBAN) == "Monitor" for p in (b, c, d))
+
+
 def test_priority_grows_with_wait_time():
     e = {"intake": intake(), "fused": fused(3), "last_assessed_min": 0.0,
          "vitals_history": [(0.0, intake().vitals)]}

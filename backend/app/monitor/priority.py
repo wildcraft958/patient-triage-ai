@@ -1,23 +1,27 @@
-"""Reassessment priority: which waiting patient should the nurse check next?
+"""Reassessment priority: the policy over the acuity belief state - which
+waiting patient, if reassessed now, most reduces our risk?
 
-A transparent heuristic product, inspired by (not implementing) the POMDP
-information-gain idea - rank highest the patient where a recheck changes the
-most:
+    priority = deterioration_risk x time_since_last_assessment
+             x acuity_uncertainty x esi_severity_weight
 
-    priority = deterioration_risk x wait_pressure x acuity_uncertainty x severity
-
-deterioration_risk reads the vitals trajectory (rising HR, falling SBP/SpO2,
-climbing temp) plus a complaint-category prior; wait_pressure is time since
-last assessment over the profile's per-ESI safe limit; uncertainty is raised
-when the two scoring paths disagreed at triage; severity weights high acuity.
+The four factors are the pitched formula, computed from the POMDP belief
+(app.monitor.belief): acuity_uncertainty is the belief's normalized entropy
+(seeded by Path A/B disagreement), deterioration_risk is the hazard read
+from category prior plus vitals trajectory (with a positive floor - a stable
+patient never scores zero), and the product is squashed to [0, 1]. Scores at
+or above the profile's reassess_now_threshold surface as REASSESS NOW.
 """
 
+import math
+
+from app.monitor.belief import entropy, initial_belief
 from app.profiles import HospitalProfile
 
 CATEGORY_RISK = {
     "sepsis_concern": 0.50,
     "breathing_difficulty": 0.45,
     "chest_pain": 0.40,
+    "allergic_reaction": 0.40,
     "fever": 0.35,
     "abdominal_pain": 0.30,
     "stroke_signs": 0.40,
@@ -27,12 +31,18 @@ DEFAULT_CATEGORY_RISK = 0.15
 
 SEVERITY_WEIGHT = {1: 3.0, 2: 2.0, 3: 1.5, 4: 1.0, 5: 0.7}
 
+SQUASH_K = 1.7  # maps the raw product onto [0, 1)
 
-def _field(entry, name):
-    return entry[name] if isinstance(entry, dict) else getattr(entry, name)
+
+def _field(entry, name, default=None):
+    if isinstance(entry, dict):
+        return entry.get(name, default)
+    return getattr(entry, name, default)
 
 
 def deterioration_risk(entry) -> float:
+    """Hazard estimate: complaint-category prior plus vitals trajectory.
+    Also used as the belief transition rate while the patient waits."""
     intake = _field(entry, "intake")
     history = _field(entry, "vitals_history")
     score = CATEGORY_RISK.get(intake.complaint_category, DEFAULT_CATEGORY_RISK)
@@ -53,22 +63,25 @@ def wait_pressure(minutes_waiting: float, max_wait_min: float) -> float:
     return min(2.0, minutes_waiting / max_wait_min)
 
 
-def acuity_uncertainty(fused) -> float:
-    factor = 1.0
-    if not fused.paths_agree:
-        factor += 0.3
-    if fused.confidence == "low":
-        factor += 0.2
-    return factor
+def acuity_uncertainty(belief: list[float]) -> float:
+    """1 + normalized belief entropy: dual-path disagreement seeds a flatter
+    belief, so disagreement and entropy are the same uncertainty signal."""
+    return 1.0 + entropy(belief)
+
+
+def action_for(priority: float, profile: HospitalProfile) -> str:
+    return "REASSESS NOW" if priority >= profile.reassess_now_threshold else "Monitor"
 
 
 def reassessment_priority(entry, now_min: float, profile: HospitalProfile) -> float:
     fused = _field(entry, "fused")
+    belief = _field(entry, "belief") or initial_belief(fused)
     waited = now_min - _field(entry, "last_assessed_min")
     max_wait = profile.max_wait_min.get(fused.esi, profile.max_wait_min[2])
-    return (
+    raw = (
         deterioration_risk(entry)
         * wait_pressure(waited, max_wait)
-        * acuity_uncertainty(fused)
+        * acuity_uncertainty(belief)
         * SEVERITY_WEIGHT.get(fused.esi, 1.0)
     )
+    return round(1.0 - math.exp(-SQUASH_K * raw), 3)

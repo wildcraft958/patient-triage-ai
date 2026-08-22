@@ -16,8 +16,13 @@ from pydantic import Field as PField
 from app.agent.fuse import FusedResult
 from app.engine.thresholds import in_danger_zone
 from app.models import PatientIntake, Vitals
-from app.monitor.priority import reassessment_priority
+from app.monitor.belief import classify_recheck, initial_belief, observe
+from app.monitor.belief import advance as advance_belief
+from app.monitor.priority import deterioration_risk, reassessment_priority
 from app.profiles import HospitalProfile
+
+# scales the deterioration-risk estimate into the belief's per-hour hazard
+BELIEF_HAZARD_SCALE = 0.4
 
 
 class SimClock:
@@ -34,6 +39,7 @@ class Alert(BaseModel):
     kind: str  # WAIT_BREACH | DETERIORATION
     reasons: list[str] = PField(default_factory=list)
     needs_retriage: bool = False
+    message: str = ""  # nurse-facing rendering of the alert
 
 
 @dataclass
@@ -46,6 +52,8 @@ class QueueEntry:
     status: str = "waiting"  # waiting | reassess_due | deteriorating | in_treatment
     priority: float = 0.0
     alerts: list[Alert] = field(default_factory=list)
+    belief: list[float] = field(default_factory=list)  # P(true acuity = ESI 1..5)
+    belief_at_min: float = 0.0
 
 
 ACTIVE_STATUSES = {"waiting", "reassess_due", "deteriorating"}
@@ -63,9 +71,17 @@ class WaitingRoom:
             intake=intake, fused=fused, triaged_at_min=now,
             last_assessed_min=now, vitals_history=[(now, intake.vitals)],
             status="in_treatment" if fused.esi == 1 else "waiting",
+            belief=initial_belief(fused), belief_at_min=now,
         )
         self.entries[intake.patient_id] = entry
         return entry
+
+    def _advance_belief(self, entry: QueueEntry) -> None:
+        elapsed = self.clock.now_min - entry.belief_at_min
+        if elapsed > 0:
+            hazard = deterioration_risk(entry) * BELIEF_HAZARD_SCALE
+            entry.belief = advance_belief(entry.belief, elapsed, hazard)
+            entry.belief_at_min = self.clock.now_min
 
     def tick(self) -> list[Alert]:
         """Wait-breach sweep: due whenever time since last assessment
@@ -82,6 +98,10 @@ class WaitingRoom:
                     kind="WAIT_BREACH",
                     reasons=[f"waiting {waited:.0f} min exceeds the {limit} min "
                              f"limit for ESI-{entry.fused.esi}"],
+                    message=(f"Patient {entry.intake.patient_id} "
+                             f"(ESI-{entry.fused.esi}, {entry.intake.complaint_category}, "
+                             f"{waited:.0f} min wait) - safe wait limit exceeded. "
+                             f"Consider reassessment."),
                 )
                 entry.status = "reassess_due"
                 entry.alerts.append(alert)
@@ -117,8 +137,15 @@ class WaitingRoom:
         danger, danger_reasons = in_danger_zone(
             entry.intake.model_copy(update={"vitals": vitals})
         )
+        trend_worsening = bool(reasons)
         if danger:
             reasons.extend(f"danger zone: {r}" for r in danger_reasons)
+
+        # POMDP observation: every recheck updates the acuity belief
+        self._advance_belief(entry)
+        obs = classify_recheck(baseline, vitals, danger=danger,
+                               worsening=trend_worsening)
+        entry.belief = observe(entry.belief, obs)
 
         if reasons:
             # Alert-fatigue rate limit: a repeat of the same trend-based
@@ -131,9 +158,13 @@ class WaitingRoom:
             )
             if recent and not danger:
                 return None
+            waited = now - entry.last_assessed_min
             alert = Alert(
                 patient_id=patient_id, at_min=now, kind="DETERIORATION",
                 reasons=reasons, needs_retriage=True,
+                message=(f"Patient {patient_id} (ESI-{entry.fused.esi}, "
+                         f"{entry.intake.complaint_category}, {waited:.0f} min wait) - "
+                         f"{'; '.join(reasons)}. Recommend immediate reassessment."),
             )
             entry.status = "deteriorating"
             entry.alerts.append(alert)
@@ -149,6 +180,9 @@ class WaitingRoom:
         entry.status = "waiting"
         if fused is not None:
             entry.fused = fused
+        # a fresh assessment collapses the drifted belief back to the paths
+        entry.belief = initial_belief(entry.fused)
+        entry.belief_at_min = self.clock.now_min
 
     def to_treatment(self, patient_id: str) -> None:
         self.entries[patient_id].status = "in_treatment"
@@ -156,5 +190,6 @@ class WaitingRoom:
     def queue(self) -> list[QueueEntry]:
         active = [e for e in self.entries.values() if e.status in ACTIVE_STATUSES]
         for e in active:
+            self._advance_belief(e)
             e.priority = reassessment_priority(e, self.clock.now_min, self.profile)
         return sorted(active, key=lambda e: e.priority, reverse=True)

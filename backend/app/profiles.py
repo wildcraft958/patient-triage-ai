@@ -29,6 +29,7 @@ class HospitalProfile(BaseModel):
     reassess_check_interval_min: int
     surge_queue_threshold: int
     alert_cooldown_min: int = 15  # rate limit for repeat trend-deterioration alerts
+    reassess_now_threshold: float = 0.6  # priority at which the queue says REASSESS NOW
     deterioration: DeteriorationThresholds
 
 
