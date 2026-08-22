@@ -76,6 +76,25 @@ def test_reward_vector_communication_axis_scores_the_explanation():
     rules_only = compute_reward_vector(recommended_esi=3, clinician_esi=None,
                                        dual_chain=False)
     assert dual.communication > rules_only.communication
+    assert rules_only.total < dual.total  # the axis prices the scalar too
+
+
+def test_documentation_axis_prices_the_scalar():
+    documented = compute_reward_vector(recommended_esi=3, clinician_esi=4,
+                                       dual_chain=True, documented=True)
+    undocumented = compute_reward_vector(recommended_esi=3, clinician_esi=4,
+                                         dual_chain=True, documented=False)
+    assert undocumented.documentation < documented.documentation
+    assert undocumented.total < documented.total
+
+
+def test_safety_axis_dominates_all_soft_axes():
+    # the sloppiest over-triage still outscores the cleanest under-triage
+    sloppy_over = compute_reward_vector(recommended_esi=3, clinician_esi=4,
+                                        dual_chain=False, documented=False)
+    clean_under = compute_reward_vector(recommended_esi=3, clinician_esi=2,
+                                        dual_chain=True, documented=True)
+    assert clean_under.total < sloppy_over.total
 
 
 # --- calibration: learns to escalate, can never downgrade ---

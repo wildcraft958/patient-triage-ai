@@ -226,7 +226,8 @@ class TriageService:
             clinician_id=clinician_id, reason=reason, sim_min=self.clock.now_min,
         )
         vector = compute_reward_vector(record.original_esi, new_esi,
-                                       dual_chain=entry.fused.llm is not None)
+                                       dual_chain=entry.fused.llm is not None,
+                                       documented=bool(reason and reason.strip()))
         reward = vector.total
         under_triage = new_esi < record.original_esi
         self._learn(entry.intake, under_triage=under_triage)

@@ -59,6 +59,7 @@ def test_experiences_extracted_from_the_audit_trail():
     audit.log("reward", "P1", 10.0, {
         "reward": -1.0, "under_triage": True, "cell": "fever|geriatric",
         "recommended_esi": 3, "clinician_esi": 2,
+        "reward_axes": {"communication": 0.5, "documentation": 1.0},
     })
     audit.log("acceptance", "P2", 12.0, {
         "esi": 4, "clinician_id": "RN-07", "reward": 1.0,
@@ -68,4 +69,19 @@ def test_experiences_extracted_from_the_audit_trail():
     exps = experiences_from_audit(audit)
     assert len(exps) == 2
     assert exps[0].cell == "fever|geriatric" and exps[0].clinician_esi == 2
+    assert exps[0].communication == 0.5  # carried from the logged axes
     assert exps[1].cell == "sprain|adult" and exps[1].clinician_esi is None
+    assert exps[1].communication == 1.0  # axis-free legacy events default clean
+
+
+def test_counterfactual_shares_the_factual_soft_axes():
+    """The comm/doc context is the episode's, not the action's: the escalated
+    counterfactual must be priced with the same values as the factual hold,
+    so soft axes can never fabricate a factual-vs-counterfactual advantage."""
+    from app.learning.grpo import _counterfactual_reward
+
+    clean = Experience(cell="fever|adult", recommended_esi=3, clinician_esi=2,
+                       reward=-1.0)
+    sloppy = Experience(cell="fever|adult", recommended_esi=3, clinician_esi=2,
+                        reward=-1.05, communication=0.5, documentation=1.0)
+    assert _counterfactual_reward(sloppy) == _counterfactual_reward(clean) - 0.05

@@ -32,6 +32,10 @@ class Experience:
     recommended_esi: int
     clinician_esi: int | None  # None = accepted as recommended
     reward: float              # RewardVector.total of the factual episode
+    # the episode's soft-axis context, carried so counterfactuals are priced
+    # in the same context as the factual action (axis-free events score clean)
+    communication: float = 1.0
+    documentation: float = 1.0
 
 
 def experiences_from_audit(audit: AuditLog) -> list[Experience]:
@@ -39,24 +43,31 @@ def experiences_from_audit(audit: AuditLog) -> list[Experience]:
     out = []
     for e in audit.all_events():
         p = e["payload"]
+        axes = p.get("reward_axes") or {}
+        soft = {"communication": axes.get("communication", 1.0),
+                "documentation": axes.get("documentation", 1.0)}
         if e["event_type"] == "reward" and "cell" in p and "recommended_esi" in p:
             out.append(Experience(cell=p["cell"],
                                   recommended_esi=p["recommended_esi"],
                                   clinician_esi=p["clinician_esi"],
-                                  reward=p["reward"]))
+                                  reward=p["reward"], **soft))
         elif e["event_type"] == "acceptance" and "cell" in p:
             out.append(Experience(cell=p["cell"], recommended_esi=p["esi"],
-                                  clinician_esi=None, reward=p["reward"]))
+                                  clinician_esi=None, reward=p["reward"], **soft))
     return out
 
 
 def _counterfactual_reward(exp: Experience) -> float:
     """Reward the escalated candidate would have earned against the same
     clinician judgment (an acceptance means the clinician's level WAS the
-    recommendation, so escalating it would have over-triaged)."""
+    recommendation, so escalating it would have over-triaged). Soft axes are
+    the episode's context, not the action's - reuse the factual values so
+    they shift whole episodes within a group, never the hold-vs-escalate gap."""
     escalated = max(1, exp.recommended_esi - 1)
     target = exp.clinician_esi if exp.clinician_esi is not None else exp.recommended_esi
-    return compute_reward_vector(escalated, target, dual_chain=True).total
+    vec = compute_reward_vector(escalated, target, dual_chain=True)
+    return vec.model_copy(update={"communication": exp.communication,
+                                  "documentation": exp.documentation}).total
 
 
 def optimize(experiences: list[Experience], lr: float = LEARN_RATE) -> dict[str, float]:

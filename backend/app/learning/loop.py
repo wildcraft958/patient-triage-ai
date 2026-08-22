@@ -25,6 +25,10 @@ UNDER_TRIAGE_PENALTY = -1.0  # per level: clinician escalated our recommendation
 OVER_TRIAGE_PENALTY = -0.2   # per level: clinician downgraded it
 ACCEPT_REWARD = 1.0
 ACCURACY_PENALTY = -0.25     # per level of distance, direction-blind
+# soft-axis weights: the maximum combined deduction (0.2) equals exactly one
+# level of over-triage, so the safety axis keeps its 5x-per-level dominance
+COMMUNICATION_WEIGHT = 0.1
+DOCUMENTATION_WEIGHT = 0.1
 
 LEARN_RATE = 0.4
 ESCALATE_THRESHOLD = 0.5
@@ -33,9 +37,12 @@ ESCALATE_THRESHOLD = 0.5
 class RewardVector(BaseModel):
     """The five ResidencyRL reward axes, scored per triage episode.
 
-    safety dominates by design (5x management_quality per level) - the
-    scalar `total` keeps the brief's asymmetric cost structure so the
-    calibration policy optimizes worst-case safety, not average accuracy."""
+    All five axes price the scalar `total`. safety dominates by design
+    (5x management_quality per level, and 5x the maximum combined soft-axis
+    deduction), so the calibration policy optimizes worst-case safety, not
+    average accuracy. communication and documentation deduct from a perfect
+    score: an unexplained recommendation or an incomplete clinician record
+    is a worse episode even when the level was right."""
 
     diagnostic_accuracy: float  # agreement with the clinician's final level
     management_quality: float   # resource stewardship: over-triage cost
@@ -46,8 +53,12 @@ class RewardVector(BaseModel):
     @property
     def total(self) -> float:
         if self.safety == 0.0 and self.management_quality == 0.0:
-            return ACCEPT_REWARD * self.diagnostic_accuracy
-        return self.safety + self.management_quality
+            base = ACCEPT_REWARD * self.diagnostic_accuracy
+        else:
+            base = self.safety + self.management_quality
+        return (base
+                + COMMUNICATION_WEIGHT * (self.communication - 1.0)
+                + DOCUMENTATION_WEIGHT * (self.documentation - 1.0))
 
 
 def compute_reward_vector(recommended_esi: int, clinician_esi: int | None,
