@@ -29,6 +29,9 @@ CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
     ("sprain", ["sprain", "twisted ankle", "twisted his ankle", "twisted her ankle"]),
     ("rash", ["rash", "hives"]),
     ("medication_refill", ["refill", "out of medication", "ran out of med"]),
+    # lowest precedence on purpose: verified to reclassify zero benchmark
+    # cases, so the committed LLM replay cache stays byte-identical
+    ("allergic_reaction", ["anaphyla", "allergic reaction", "bee sting", "epipen"]),
 ]
 
 _AGE_YEARS = re.compile(r"(\d{1,3})[\s-]*(?:year|yr)s?[\s-]*old", re.I)

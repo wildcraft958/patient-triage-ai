@@ -10,13 +10,13 @@
   "configs": {
    "rules": {
     "n": 60,
-    "exact_acc": 23.333333333333332,
-    "within_1": 68.33333333333333,
-    "under_triage": 41.66666666666667,
-    "sig_under_triage": 23.333333333333332,
+    "exact_acc": 26.666666666666668,
+    "within_1": 78.33333333333333,
+    "under_triage": 38.333333333333336,
+    "sig_under_triage": 13.333333333333334,
     "over_triage": 35.0,
     "sig_over_triage": 8.333333333333332,
-    "high_acuity_sens": 46.15384615384615
+    "high_acuity_sens": 69.23076923076923
    },
    "llm": {
     "n": 60,
@@ -71,10 +71,10 @@
   {
    "id": "practice_cases-4",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -206,10 +206,10 @@
   {
    "id": "practice_cases-19",
    "truth": 1,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -260,19 +260,19 @@
   {
    "id": "practice_cases-25",
    "truth": 1,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
    "id": "practice_cases-26",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -314,10 +314,10 @@
   {
    "id": "competency_cases-1",
    "truth": 1,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -413,7 +413,7 @@
   {
    "id": "competency_cases-12",
    "truth": 1,
-   "rules": 4,
+   "rules": 2,
    "llm": 1,
    "fused": 1,
    "paths_agree": false,

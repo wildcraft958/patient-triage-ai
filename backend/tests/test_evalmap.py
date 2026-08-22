@@ -27,6 +27,14 @@ def test_category_first_match_wins():
     assert classify_category("stubbed toe") == "other"
 
 
+def test_allergic_reaction_recognized_at_lowest_precedence():
+    assert classify_category("anaphylaxis after eating peanuts") == "allergic_reaction"
+    assert classify_category("swelling after a bee sting") == "allergic_reaction"
+    # earlier keywords keep precedence so benchmark classifications never shift
+    assert classify_category("allergic reaction with wheezing") == "breathing_difficulty"
+    assert classify_category("allergic reaction, hives everywhere") == "rash"
+
+
 def test_fahrenheit_converted():
     assert to_celsius(101.3, "F") == 38.5
     assert to_celsius(101.3, None) == 38.5  # heuristic: >45 must be Fahrenheit

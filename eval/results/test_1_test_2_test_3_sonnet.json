@@ -11,13 +11,13 @@
   "configs": {
    "rules": {
     "n": 216,
-    "exact_acc": 31.01851851851852,
-    "within_1": 75.92592592592592,
-    "under_triage": 43.05555555555556,
-    "sig_under_triage": 22.685185185185187,
-    "over_triage": 25.925925925925924,
-    "sig_over_triage": 1.3888888888888888,
-    "high_acuity_sens": 51.0
+    "exact_acc": 33.7962962962963,
+    "within_1": 78.70370370370371,
+    "under_triage": 37.5,
+    "sig_under_triage": 17.12962962962963,
+    "over_triage": 28.703703703703702,
+    "sig_over_triage": 4.166666666666666,
+    "high_acuity_sens": 63.0
    },
    "llm": {
     "n": 216,
@@ -31,12 +31,12 @@
    },
    "fused": {
     "n": 216,
-    "exact_acc": 71.29629629629629,
-    "within_1": 95.83333333333334,
+    "exact_acc": 68.51851851851852,
+    "within_1": 93.05555555555556,
     "under_triage": 1.3888888888888888,
     "sig_under_triage": 0.0,
-    "over_triage": 27.314814814814813,
-    "sig_over_triage": 4.166666666666666,
+    "over_triage": 30.09259259259259,
+    "sig_over_triage": 6.944444444444445,
     "high_acuity_sens": 100.0
    }
   }
@@ -117,9 +117,9 @@
   {
    "id": "test_1-9",
    "truth": 4,
-   "rules": 4,
+   "rules": 2,
    "llm": 5,
-   "fused": 4,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -135,9 +135,9 @@
   {
    "id": "test_1-11",
    "truth": 3,
-   "rules": 4,
+   "rules": 2,
    "llm": 3,
-   "fused": 3,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -162,10 +162,10 @@
   {
    "id": "test_1-14",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": true
   },
   {
@@ -180,10 +180,10 @@
   {
    "id": "test_1-16",
    "truth": 5,
-   "rules": 4,
+   "rules": 2,
    "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "fused": 2,
+   "paths_agree": false,
    "age_defaulted": true
   },
   {
@@ -333,10 +333,10 @@
   {
    "id": "test_1-33",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -441,7 +441,7 @@
   {
    "id": "test_1-45",
    "truth": 1,
-   "rules": 4,
+   "rules": 2,
    "llm": 1,
    "fused": 1,
    "paths_agree": false,
@@ -451,8 +451,8 @@
    "id": "test_1-46",
    "truth": 5,
    "rules": 4,
-   "llm": 3,
-   "fused": 3,
+   "llm": 2,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -576,10 +576,10 @@
   {
    "id": "test_1-60",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -756,9 +756,9 @@
   {
    "id": "test_2-8",
    "truth": 4,
-   "rules": 4,
+   "rules": 2,
    "llm": 5,
-   "fused": 4,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -774,9 +774,9 @@
   {
    "id": "test_2-10",
    "truth": 3,
-   "rules": 4,
+   "rules": 2,
    "llm": 3,
-   "fused": 3,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -801,10 +801,10 @@
   {
    "id": "test_2-13",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": true
   },
   {
@@ -819,10 +819,10 @@
   {
    "id": "test_2-15",
    "truth": 5,
-   "rules": 4,
+   "rules": 2,
    "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "fused": 2,
+   "paths_agree": false,
    "age_defaulted": true
   },
   {
@@ -972,10 +972,10 @@
   {
    "id": "test_2-32",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -1080,7 +1080,7 @@
   {
    "id": "test_2-44",
    "truth": 1,
-   "rules": 4,
+   "rules": 2,
    "llm": 1,
    "fused": 1,
    "paths_agree": false,
@@ -1215,10 +1215,10 @@
   {
    "id": "test_2-59",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -1404,9 +1404,9 @@
   {
    "id": "test_3-8",
    "truth": 4,
-   "rules": 4,
+   "rules": 2,
    "llm": 5,
-   "fused": 4,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -1422,9 +1422,9 @@
   {
    "id": "test_3-10",
    "truth": 3,
-   "rules": 4,
+   "rules": 2,
    "llm": 3,
-   "fused": 3,
+   "fused": 2,
    "paths_agree": false,
    "age_defaulted": false
   },
@@ -1449,10 +1449,10 @@
   {
    "id": "test_3-13",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": true
   },
   {
@@ -1467,10 +1467,10 @@
   {
    "id": "test_3-15",
    "truth": 5,
-   "rules": 4,
+   "rules": 2,
    "llm": 4,
-   "fused": 4,
-   "paths_agree": true,
+   "fused": 2,
+   "paths_agree": false,
    "age_defaulted": true
   },
   {
@@ -1620,10 +1620,10 @@
   {
    "id": "test_3-32",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
@@ -1728,7 +1728,7 @@
   {
    "id": "test_3-44",
    "truth": 1,
-   "rules": 4,
+   "rules": 2,
    "llm": 1,
    "fused": 1,
    "paths_agree": false,
@@ -1863,10 +1863,10 @@
   {
    "id": "test_3-59",
    "truth": 2,
-   "rules": 4,
+   "rules": 2,
    "llm": 2,
    "fused": 2,
-   "paths_agree": false,
+   "paths_agree": true,
    "age_defaulted": false
   },
   {
