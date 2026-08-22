@@ -31,14 +31,14 @@ def test_step_requires_load():
 def test_scenario_steps_through_all_events():
     r = client.post("/scenario/load", json={"speedup": 1.0})
     total = r.json()["events"]
-    assert total >= 24  # 22 arrivals + at least 2 rechecks
+    assert total >= 27  # 24 arrivals + at least 3 rechecks
 
     kinds = []
     for _ in range(total):
         step = client.post("/scenario/step").json()
         kinds.append(step["event"]["kind"])
     assert step["done"] is True
-    assert kinds.count("arrive") == 22
+    assert kinds.count("arrive") == 24
     assert kinds.count("vitals") >= 2
 
     # SIM-007's worsening rechecks must have fired deterioration alerts

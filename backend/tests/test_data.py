@@ -22,6 +22,16 @@ def test_mandated_case_coverage(patients):
     assert tags.count("ambiguous") >= 1
     assert tags.count("zero_history") >= 1
     assert tags.count("deteriorator") >= 1
+    # adversarial presentations (under-reporting, atypical, vague) per the
+    # ResidencyRL adversarial-simulator pattern
+    assert sum(1 for t in tags if t.startswith("adversarial")) >= 3
+
+
+def test_underreporter_is_caught_by_the_vitals_gate(patients):
+    from app.engine.esi_rules import score
+    p = next(p for p in patients if "adversarial_underreport" in p.tags)
+    assert p.vitals.pain is not None and p.vitals.pain <= 3  # says it is nothing
+    assert score(p).esi <= 2  # deranged vitals overrule the minimized story
 
 
 def test_roughly_half_have_history(patients):
