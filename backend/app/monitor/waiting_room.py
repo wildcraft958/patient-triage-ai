@@ -121,6 +121,16 @@ class WaitingRoom:
             reasons.extend(f"danger zone: {r}" for r in danger_reasons)
 
         if reasons:
+            # Alert-fatigue rate limit: a repeat of the same trend-based
+            # deterioration inside the cooldown window is suppressed. A
+            # danger-zone entry always fires - absolute risk is never muted.
+            recent = any(
+                a.kind == "DETERIORATION"
+                and now - a.at_min < self.profile.alert_cooldown_min
+                for a in entry.alerts
+            )
+            if recent and not danger:
+                return None
             alert = Alert(
                 patient_id=patient_id, at_min=now, kind="DETERIORATION",
                 reasons=reasons, needs_retriage=True,

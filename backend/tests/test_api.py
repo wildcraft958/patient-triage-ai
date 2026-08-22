@@ -140,6 +140,20 @@ def test_metrics_expose_pipeline_latency_and_bias_alerts():
     assert m["bias_alerts"] == []
 
 
+def test_metrics_audit_stats_aggregate_clinician_decisions():
+    client.post("/patients", json=patient("P1"))
+    client.post("/patients/P1/accept", json={"clinician_id": "RN-07"})
+    client.post("/patients", json=patient("P2"))
+    client.post("/patients/P2/override",
+                json={"new_esi": 2, "clinician_id": "RN-07",
+                      "reason": "worse than it looks"})
+    audit = client.get("/metrics").json()["audit"]
+    assert audit["events_by_type"]["triage"] == 2
+    assert audit["override_rate_pct"] == 50.0
+    assert audit["overrides_toward_more_acute"] == 1
+    assert audit["mean_triage_latency_ms"] >= 0
+
+
 # --- surge deferred enrichment: Path B is queued, not dropped ---
 
 def test_surge_arrival_queues_enrichment_and_next_tick_attaches_llm():

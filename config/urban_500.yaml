@@ -10,6 +10,7 @@ max_wait_min:
   5: 120
 reassess_check_interval_min: 10
 surge_queue_threshold: 40
+alert_cooldown_min: 15       # high volume: repeat trend alerts are rate limited harder
 deterioration:
   hr_rise_pct: 15
   sbp_drop_pct: 15

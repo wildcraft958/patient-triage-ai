@@ -64,6 +64,39 @@ class AuditLog:
             for r in rows
         ]
 
+    def stats(self) -> dict:
+        """Analytical rollup straight from DuckDB SQL over the audit trail -
+        the reason this log is a columnar analytical store and not a row DB."""
+        counts = dict(self.conn.execute(
+            "SELECT event_type, COUNT(*) FROM events GROUP BY event_type"
+        ).fetchall())
+        overrides = counts.get("override", 0)
+        decisions = overrides + counts.get("acceptance", 0)
+        more_acute = self.conn.execute(
+            "SELECT COUNT(*) FROM events WHERE event_type = 'override' "
+            "AND CAST(payload->>'new_esi' AS INTEGER) "
+            "  < CAST(payload->>'original_esi' AS INTEGER)"
+        ).fetchone()[0]
+        alerts_by_kind = dict(self.conn.execute(
+            "SELECT payload->>'kind', COUNT(*) FROM events "
+            "WHERE event_type = 'alert' GROUP BY 1"
+        ).fetchall())
+        mean_latency = self.conn.execute(
+            "SELECT AVG(CAST(payload->>'latency_ms' AS DOUBLE)) FROM events "
+            "WHERE event_type = 'triage'"
+        ).fetchone()[0]
+        return {
+            "events_by_type": counts,
+            "override_rate_pct": (
+                round(overrides / decisions * 100, 1) if decisions else None
+            ),
+            "overrides_toward_more_acute": more_acute,
+            "alerts_by_kind": alerts_by_kind,
+            "mean_triage_latency_ms": (
+                round(mean_latency, 1) if mean_latency is not None else None
+            ),
+        }
+
     def all_events(self) -> list[dict]:
         rows = self.conn.execute(
             "SELECT sim_min, patient_id, event_type, payload FROM events ORDER BY id"

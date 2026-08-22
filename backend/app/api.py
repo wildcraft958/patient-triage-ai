@@ -144,6 +144,7 @@ def metrics():
         "bias_by_age_band": svc.bias.snapshot(),
         "bias_alerts": svc.bias.alerts(),
         "latency": svc.latency_stats(),
+        "audit": svc.audit.stats(),
         "calibration_cells": svc.calibration.cells,
         "state": svc.state_view(),
     }

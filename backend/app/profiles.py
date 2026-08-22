@@ -28,6 +28,7 @@ class HospitalProfile(BaseModel):
     max_wait_min: dict[int, int]  # ESI level -> safe wait before re-assessment due
     reassess_check_interval_min: int
     surge_queue_threshold: int
+    alert_cooldown_min: int = 15  # rate limit for repeat trend-deterioration alerts
     deterioration: DeteriorationThresholds
 
 

@@ -103,6 +103,31 @@ def test_deterioration_trigger_on_worsening_recheck():
     assert any("HR" in r for r in alert.reasons)
 
 
+def test_repeat_trend_deterioration_is_rate_limited():
+    room, clock = make_room("urban_500")  # alert_cooldown_min drives suppression
+    p = intake("P1", vitals=Vitals(hr=80, rr=16, spo2=97, temp_c=37.0, sbp=120))
+    room.add(p, fused(3))
+    clock.advance(10)
+    worse = Vitals(hr=95, rr=16, spo2=97, temp_c=37.0, sbp=120)  # +19% HR, no danger
+    assert room.record_vitals("P1", worse) is not None
+    clock.advance(2)  # still inside the cooldown window
+    assert room.record_vitals("P1", worse) is None
+    clock.advance(room.profile.alert_cooldown_min)
+    assert room.record_vitals("P1", worse) is not None
+
+
+def test_danger_zone_recheck_bypasses_cooldown():
+    room, clock = make_room("urban_500")
+    p = intake("P1", vitals=Vitals(hr=80, rr=16, spo2=97, temp_c=37.0, sbp=120))
+    room.add(p, fused(3))
+    clock.advance(10)
+    assert room.record_vitals("P1", Vitals(hr=95, rr=16, spo2=97)) is not None
+    clock.advance(2)  # inside cooldown, but now in the danger zone
+    alert = room.record_vitals("P1", Vitals(hr=125, rr=16, spo2=97))
+    assert alert is not None
+    assert any("danger zone" in r for r in alert.reasons)
+
+
 def test_stable_recheck_fires_nothing_and_resets_wait():
     room, clock = make_room()
     room.add(intake("P1"), fused(3))
