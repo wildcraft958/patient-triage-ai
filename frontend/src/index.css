@@ -142,6 +142,35 @@ button.chip.on { color: var(--purple-deep); }
 .risk-ack { display: flex; gap: 6px; align-items: flex-start; margin-top: 6px; font-weight: 600; cursor: pointer; }
 .risk-ack input { margin-top: 2px; }
 
+.belief { display: flex; align-items: flex-end; gap: 5px; margin: 8px 0 2px; }
+.belief-lbl { font-size: 9.5px; color: var(--muted); margin-right: 4px; align-self: center; }
+.belief-col { display: flex; flex-direction: column; align-items: center; gap: 1px; font-size: 8.5px; color: var(--muted); }
+.belief-bar { width: 14px; border-radius: 2px 2px 0 0; background: linear-gradient(180deg, #A100FF, #6215B8); }
+
+.new-patient { float: right; font-size: 10.5px; padding: 3px 10px; margin-top: -3px; }
+
+.intake-overlay {
+  position: fixed; inset: 0; background: rgba(36, 20, 53, 0.45); z-index: 40;
+  display: flex; align-items: center; justify-content: center; padding: 20px;
+}
+.intake-form {
+  background: #fff; border-radius: 10px; padding: 18px 20px; width: 640px;
+  max-width: 95vw; max-height: 90vh; overflow-y: auto;
+  border-top: 4px solid var(--purple); box-shadow: 0 18px 60px rgba(36,20,53,.35);
+}
+.intake-form h2 { font-size: 15px; color: var(--purple-dk, #6215B8); margin-bottom: 10px; }
+.if-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+.if-grid.oc { grid-template-columns: repeat(2, 1fr); }
+.if-field { display: flex; flex-direction: column; gap: 2px; font-size: 10.5px; color: var(--muted); margin-top: 6px; }
+.if-field input, .if-field select, .if-field textarea {
+  padding: 6px; border: 1px solid var(--line); border-radius: 5px;
+  font-size: 11.5px; font-family: inherit; width: 100%;
+}
+.if-section { margin-top: 12px; font-size: 11px; font-weight: 700; color: var(--purple); border-bottom: 1px solid var(--line); padding-bottom: 3px; }
+.if-voice { display: flex; gap: 6px; align-items: stretch; }
+.if-voice textarea { flex: 1; }
+.mic.on { background: var(--purple); color: #fff; animation: pulse-border 1.2s infinite; }
+
 .footer {
   display: flex; gap: 8px; padding: 0 12px 12px; font-size: 10.5px;
   color: var(--muted); flex-wrap: wrap;

@@ -132,6 +132,28 @@ def test_unknown_patient_404s():
     assert client.get("/patients/GHOST/audit").status_code == 404
 
 
+def test_queue_rows_carry_action_and_icd10_and_detail_carries_belief():
+    client.post("/patients", json=patient())
+    row = client.get("/queue").json()["queue"][0]
+    assert row["action"] in ("Monitor", "REASSESS NOW")
+    assert row["icd10"]["code"] == "R10.9"
+    detail = client.get("/patients/P1").json()
+    assert len(detail["belief"]) == 5
+    assert abs(sum(detail["belief"]) - 1.0) < 0.01
+
+
+def test_vitals_source_channels_are_recorded():
+    client.post("/patients", json=patient())
+    r = client.post("/patients/P1/vitals?source=wearable", json={
+        "hr": 118, "rr": 24, "spo2": 91, "temp_c": 38.9, "sbp": 95, "pain": 6})
+    assert r.status_code == 200
+    events = client.get("/patients/P1/audit").json()["events"]
+    alert = next(e for e in events if e["event_type"] == "alert")
+    assert alert["payload"]["source"] == "wearable"
+    assert client.post("/patients/P1/vitals?source=telepathy", json={"hr": 90}
+                       ).status_code == 422
+
+
 def test_metrics_expose_pipeline_latency_and_bias_alerts():
     client.post("/patients", json=patient())
     m = client.get("/metrics").json()

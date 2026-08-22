@@ -252,7 +252,9 @@ function DetailCard({ detail, onAccept, onOverride, feedback }) {
               : <span className="disagree-word">Disagree</span>}
           </span>
           {fused.clinician_flag && <span className="pill flag">REVIEW FLAGGED</span>}
+          {detail.icd10 && <span className="pill">ICD-10 {detail.icd10.code}</span>}
         </div>
+        <BeliefStrip belief={detail.belief} />
         <Reasoning fused={fused} />
         {!inTreatment && (
           <div className="row" style={{ marginTop: 10 }}>
@@ -307,6 +309,149 @@ function DetailCard({ detail, onAccept, onOverride, feedback }) {
   )
 }
 
+function BeliefStrip({ belief }) {
+  if (!belief || belief.length !== 5) return null
+  return (
+    <div className="belief">
+      <span className="belief-lbl">Acuity belief P(ESI)</span>
+      {belief.map((p, i) => (
+        <div key={i} className="belief-col"
+             title={`P(true acuity is ESI-${i + 1}) = ${(p * 100).toFixed(0)}%`}>
+          <div className="belief-bar" style={{ height: `${Math.max(2, p * 34)}px` }} />
+          <span>{i + 1}</span>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+const CATEGORIES = ['chest_pain', 'breathing_difficulty', 'stroke_signs', 'trauma_major',
+  'sepsis_concern', 'allergic_reaction', 'self_harm', 'abdominal_pain', 'fever',
+  'laceration', 'sprain', 'rash', 'medication_refill', 'minor', 'other']
+
+const OLDCARTS_FIELDS = [
+  ['onset', 'O', 'Onset', 'When did this start?'],
+  ['location', 'L', 'Location', 'Where does it hurt?'],
+  ['duration', 'D', 'Duration', 'How long has this been going on?'],
+  ['characteristics', 'C', 'Characteristics', 'Describe the pain'],
+  ['aggravating_alleviating', 'A', 'Aggravating / Alleviating', 'What makes it better or worse?'],
+  ['radiation', 'R', 'Radiation', 'Does it spread anywhere?'],
+  ['timing_triggers', 'T', 'Timing / Triggers', 'Constant or comes and goes?'],
+]
+
+function IntakeForm({ onSubmit, onClose, nextId }) {
+  const [f, setF] = useState({ patient_id: nextId, age_years: '', chief_complaint: '',
+    complaint_category: 'other', responsiveness: 'alert' })
+  const [vit, setVit] = useState({})
+  const [oc, setOc] = useState({})
+  const [severity, setSeverity] = useState('')
+  const [listening, setListening] = useState(false)
+  const [error, setError] = useState('')
+
+  const dictate = () => {
+    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!SR) { setError('Voice dictation is not supported in this browser'); return }
+    const rec = new SR()
+    rec.lang = 'en-US'
+    rec.onresult = (e) => {
+      const heard = e.results[0][0].transcript
+      setF((prev) => ({ ...prev, chief_complaint: (prev.chief_complaint + ' ' + heard).trim() }))
+    }
+    rec.onend = () => setListening(false)
+    rec.onerror = () => setListening(false)
+    setListening(true)
+    rec.start()
+  }
+
+  const submit = async () => {
+    setError('')
+    const oldcartsAnswers = Object.fromEntries(
+      Object.entries(oc).filter(([, v]) => v && v.trim()))
+    if (severity !== '') oldcartsAnswers.severity = Number(severity)
+    const body = {
+      ...f,
+      age_years: Number(f.age_years),
+      vitals: Object.fromEntries(
+        Object.entries(vit).filter(([, v]) => v !== '').map(([k, v]) => [k, Number(v)])),
+      ...(Object.keys(oldcartsAnswers).length ? { oldcarts: oldcartsAnswers } : {}),
+    }
+    try { await onSubmit(body) } catch (e) { setError(String(e.message || e)) }
+  }
+
+  const vitField = (key, label) => (
+    <label key={key} className="if-field">
+      <span>{label}</span>
+      <input type="number" value={vit[key] ?? ''}
+             onChange={(e) => setVit({ ...vit, [key]: e.target.value })} />
+    </label>
+  )
+
+  return (
+    <div className="intake-overlay" onClick={onClose}>
+      <div className="intake-form" onClick={(e) => e.stopPropagation()}>
+        <h2>New patient intake</h2>
+        <div className="if-grid">
+          <label className="if-field"><span>Patient ID</span>
+            <input value={f.patient_id}
+                   onChange={(e) => setF({ ...f, patient_id: e.target.value })} /></label>
+          <label className="if-field"><span>Age (years)</span>
+            <input type="number" value={f.age_years}
+                   onChange={(e) => setF({ ...f, age_years: e.target.value })} /></label>
+          <label className="if-field"><span>Category</span>
+            <select value={f.complaint_category}
+                    onChange={(e) => setF({ ...f, complaint_category: e.target.value })}>
+              {CATEGORIES.map((c) => <option key={c} value={c}>{c}</option>)}
+            </select></label>
+          <label className="if-field"><span>AVPU</span>
+            <select value={f.responsiveness}
+                    onChange={(e) => setF({ ...f, responsiveness: e.target.value })}>
+              {['alert', 'verbal', 'pain', 'unresponsive'].map((r) =>
+                <option key={r} value={r}>{r}</option>)}
+            </select></label>
+        </div>
+        <label className="if-field"><span>Chief complaint</span>
+          <div className="if-voice">
+            <textarea rows={2} value={f.chief_complaint}
+                      onChange={(e) => setF({ ...f, chief_complaint: e.target.value })}
+                      placeholder="In the patient's words" />
+            <button className={`btn btn-outline mic ${listening ? 'on' : ''}`}
+                    onClick={dictate} title="Dictate with your voice">
+              {listening ? 'Listening…' : 'Voice'}
+            </button>
+          </div>
+        </label>
+        <div className="if-section">Vitals (leave blank if not yet recorded)</div>
+        <div className="if-grid">
+          {vitField('hr', 'HR')}{vitField('rr', 'RR')}{vitField('spo2', 'SpO2 %')}
+          {vitField('temp_c', 'Temp C')}{vitField('sbp', 'SBP')}{vitField('pain', 'Pain 0-10')}
+        </div>
+        <div className="if-section">OLDCARTS structured interview (optional)</div>
+        <div className="if-grid oc">
+          {OLDCARTS_FIELDS.map(([key, letter, name, q]) => (
+            <label key={key} className="if-field">
+              <span><b>{letter}</b> {name} · "{q}"</span>
+              <input value={oc[key] ?? ''}
+                     onChange={(e) => setOc({ ...oc, [key]: e.target.value })} />
+            </label>
+          ))}
+          <label className="if-field">
+            <span><b>S</b> Severity · 1-10 scale</span>
+            <input type="number" min={0} max={10} value={severity}
+                   onChange={(e) => setSeverity(e.target.value)} />
+          </label>
+        </div>
+        {error && <div className="sub" style={{ color: '#C4452F' }}><b>{error}</b></div>}
+        <div className="row" style={{ marginTop: 10 }}>
+          <button className="btn btn-accept"
+                  disabled={!f.patient_id || f.age_years === '' || f.chief_complaint.length < 3}
+                  onClick={submit}>Triage this patient</button>
+          <button className="btn btn-outline" onClick={onClose}>Cancel</button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function Reasoning({ fused }) {
   return (
     <div className="reasoning">
@@ -325,10 +470,14 @@ function Reasoning({ fused }) {
   )
 }
 
-function QueueBoard({ queue, selectedId, onSelect }) {
+function QueueBoard({ queue, selectedId, onSelect, onNewPatient }) {
   return (
     <div className="panel">
-      <h2>Waiting Room · Reassessment Queue</h2>
+      <h2>Waiting Room · Reassessment Queue
+        <button className="btn btn-outline new-patient" onClick={onNewPatient}>
+          + New patient
+        </button>
+      </h2>
       {queue.length === 0 && <div className="empty">No one waiting.</div>}
       {queue.map((row) => {
         const pct = row.max_wait_min ? Math.min(100, (row.waited_min / row.max_wait_min) * 100) : 0
@@ -342,9 +491,12 @@ function QueueBoard({ queue, selectedId, onSelect }) {
             <span className="right">priority {row.priority.toFixed(2)}</span>
             <div className="row">
               <span className={`esi esi-${row.esi}`}>ESI-{row.esi}</span>
-              {row.status === 'reassess_due' && <span className="pill flag">RE-ASSESS NOW</span>}
+              {row.action === 'REASSESS NOW'
+                ? <span className="pill flag">REASSESS NOW</span>
+                : <span className="pill">Monitor</span>}
               {row.status === 'deteriorating' && <span className="pill flag">DETERIORATING</span>}
               {!row.paths_agree && <span className="pill">paths disagreed</span>}
+              {row.icd10 && <span className="pill">{row.icd10.code}</span>}
             </div>
             <div className="sub">{row.chief_complaint.slice(0, 58)}</div>
             <div className={`wait-bar ${over ? 'over' : ''}`}><i style={{ width: `${pct}%` }} /></div>
@@ -369,6 +521,7 @@ export default function Console() {
   const [auto, setAuto] = useState(false)
   const [feedback, setFeedback] = useState('')
   const [metrics, setMetrics] = useState(null)
+  const [showIntake, setShowIntake] = useState(false)
   const stats = useRef({ alerts: 0, disagreements: 0 })
 
   const refresh = useCallback(async (selectedId) => {
@@ -434,7 +587,7 @@ export default function Console() {
     stats.current.alerts += alerts.length
     return alerts.map((a) => ({
       type: 'alert', kind: a.kind, patient_id: a.patient_id,
-      text: a.reasons.join('; '),
+      text: a.message || a.reasons.join('; '),
     }))
   }
 
@@ -535,6 +688,14 @@ export default function Console() {
     await refresh(id)
   }
 
+  const onCreatePatient = async (body) => {
+    const r = await api.addPatient(body)
+    setShowIntake(false)
+    pushFeed([{ type: 'event', at: state?.sim_min, esi: r.fused.esi,
+                text: `ARRIVE ${body.patient_id} (manual intake, ${r.fused.confidence} confidence)` }])
+    await refresh(body.patient_id)
+  }
+
   const notStarted = remaining === null && queue.length === 0
 
   return (
@@ -549,8 +710,13 @@ export default function Console() {
           <Feed items={feed} />
           <DetailCard detail={detail} onAccept={onAccept} onOverride={onOverride}
                       feedback={feedback} />
-          <QueueBoard queue={queue} selectedId={detail?.intake?.patient_id} onSelect={onSelect} />
+          <QueueBoard queue={queue} selectedId={detail?.intake?.patient_id} onSelect={onSelect}
+                      onNewPatient={() => setShowIntake(true)} />
         </div>
+      )}
+      {showIntake && (
+        <IntakeForm onSubmit={onCreatePatient} onClose={() => setShowIntake(false)}
+                    nextId={`WALKIN-${(queue.length + 1).toString().padStart(2, '0')}`} />
       )}
       <div className="footer">
         <span className="stat">The system recommends. <b>The clinician decides.</b></span>

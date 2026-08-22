@@ -12,6 +12,8 @@ async function request(path, options = {}) {
   return res.json()
 }
 
+export const addPatient = (body) =>
+  request('/patients', { method: 'POST', body: JSON.stringify(body) })
 export const getQueue = () => request('/queue')
 export const getPatient = (id) => request(`/patients/${id}`)
 export const getAudit = (id) => request(`/patients/${id}/audit`)

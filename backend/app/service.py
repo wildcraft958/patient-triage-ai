@@ -81,12 +81,14 @@ class TriageService:
         })
         return fused
 
-    def record_vitals(self, patient_id: str, vitals: Vitals) -> dict:
+    def record_vitals(self, patient_id: str, vitals: Vitals,
+                      source: str = "nurse") -> dict:
         alert = self.room.record_vitals(patient_id, vitals)
         result: dict = {"alert": alert, "retriaged": None}
         if alert is not None:
             self.audit.log("alert", patient_id, self.clock.now_min,
-                           {"kind": alert.kind, "reasons": alert.reasons})
+                           {"kind": alert.kind, "reasons": alert.reasons,
+                            "source": source})
             if alert.needs_retriage:
                 entry = self.room.entries[patient_id]
                 intake = entry.intake.model_copy(update={"vitals": vitals})
@@ -233,9 +235,14 @@ class TriageService:
         return {"n": len(s), "p50_ms": pct(50), "p95_ms": pct(95)}
 
     def queue_view(self) -> list[dict]:
+        from app.engine.icd10 import code_for
+        from app.monitor.priority import action_for
+
         return [
             {
                 "patient_id": e.intake.patient_id,
+                "action": action_for(e.priority, self.profile),
+                "icd10": code_for(e.intake.complaint_category),
                 "esi": e.fused.esi,
                 "route": e.fused.route,
                 "confidence": e.fused.confidence,

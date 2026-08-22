@@ -57,9 +57,13 @@ def arrive(intake: PatientIntake):
 
 
 @router.post("/patients/{patient_id}/vitals")
-def record_vitals(patient_id: str, vitals: Vitals):
+def record_vitals(patient_id: str, vitals: Vitals, source: str = "nurse"):
+    """source: nurse spot-check, wearable stream, or kiosk self-report -
+    the three observation channels that update the acuity belief."""
     _require(patient_id)
-    result = get_service().record_vitals(patient_id, vitals)
+    if source not in ("nurse", "wearable", "kiosk"):
+        raise HTTPException(422, f"unknown vitals source '{source}'")
+    result = get_service().record_vitals(patient_id, vitals, source=source)
     return {"alert": result["alert"], "retriaged": result["retriaged"]}
 
 
@@ -161,12 +165,15 @@ def patient_detail(patient_id: str):
     _require(patient_id)
     svc = get_service()
     e = svc.room.entries[patient_id]
+    from app.engine.icd10 import code_for
     return {
         "intake": e.intake,
         "fused": e.fused,
         "status": e.status,
         "waited_min": round(svc.clock.now_min - e.last_assessed_min, 1),
         "alerts": e.alerts,
+        "belief": [round(p, 3) for p in e.belief],
+        "icd10": code_for(e.intake.complaint_category),
         "vitals_history": [
             {"at_min": t, "vitals": v} for t, v in e.vitals_history
         ],
