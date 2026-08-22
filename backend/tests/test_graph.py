@@ -55,6 +55,27 @@ def test_phi_is_redacted_before_llm_path():
     assert "PERSON" in state["phi_entities_removed"]
 
 
+def test_history_fields_are_redacted_before_llm_path():
+    seen = {}
+
+    def spying_transport(system: str, user: str) -> str:
+        seen["user"] = user
+        return json.dumps({"esi": 3, "confidence": 0.9, "reasoning": ["ok"]})
+
+    intake = make_intake(
+        has_history=True,
+        medications=["insulin, prescribed by Dr. Ramesh Kumar"],
+        conditions=["type 2 diabetes, followed up in Kolkata"],
+    )
+    state = triage(intake, transport=spying_transport)
+    assert "Ramesh" not in seen["user"]
+    assert "Kolkata" not in seen["user"]
+    assert "insulin" in seen["user"]
+    assert "diabetes" in seen["user"]
+    # the stored intake stays untouched - redaction applies to the LLM copy only
+    assert "Ramesh Kumar" in intake.medications[0]
+
+
 def test_surge_fast_path_skips_llm_and_uses_rules():
     def exploding_transport(system, user):
         raise AssertionError("LLM must not be called in rules-only mode")

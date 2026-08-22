@@ -1,8 +1,12 @@
 """PHI redaction with Microsoft Presidio.
 
-Free text is de-identified BEFORE it reaches the LLM or the audit log:
-PHI never leaves the hospital boundary un-redacted (HIPAA Safe Harbor
-alignment). Clinical content (symptoms, vitals) passes through untouched.
+Free-text fields (chief complaint, medication and condition strings) are
+de-identified BEFORE they reach the LLM. This is defense in depth, not the
+whole privacy story: the intake schema collects no name, DOB, or MRN by
+design, and patient_id is never sent to the LLM. The entity list below is
+a working subset of the 18 HIPAA Safe Harbor identifiers - a production
+deployment must extend it (dates, MRNs, ages over 89, license numbers)
+and re-warm any response caches. Clinical content passes through untouched.
 """
 
 from functools import lru_cache

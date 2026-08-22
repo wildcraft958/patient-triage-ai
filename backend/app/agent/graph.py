@@ -24,6 +24,7 @@ class TriageState(TypedDict, total=False):
     use_llm: bool          # False = surge fast path / offline: rules only
     transport: Any         # injectable LLM transport for tests
     redacted_complaint: str
+    llm_intake: PatientIntake  # de-identified copy; the only intake Path B sees
     phi_entities_removed: list[str]
     rules_result: RulesResult
     llm_result: LLMResult | None
@@ -31,8 +32,24 @@ class TriageState(TypedDict, total=False):
 
 
 def redact_node(state: TriageState) -> dict:
-    r = redact(state["intake"].chief_complaint)
-    return {"redacted_complaint": r.text, "phi_entities_removed": r.entities_removed}
+    intake = state["intake"]
+    r = redact(intake.chief_complaint)
+    entities = set(r.entities_removed)
+
+    def redact_items(items: list[str]) -> list[str]:
+        out = []
+        for item in items:
+            rr = redact(item)
+            entities.update(rr.entities_removed)
+            out.append(rr.text)
+        return out
+
+    llm_intake = intake.model_copy(update={
+        "medications": redact_items(intake.medications),
+        "conditions": redact_items(intake.conditions),
+    })
+    return {"redacted_complaint": r.text, "llm_intake": llm_intake,
+            "phi_entities_removed": sorted(entities)}
 
 
 def rules_node(state: TriageState) -> dict:
@@ -43,7 +60,7 @@ def llm_node(state: TriageState) -> dict:
     if not state.get("use_llm", True):
         return {"llm_result": None}
     result = assess(
-        state["intake"],
+        state["llm_intake"],
         state["redacted_complaint"],
         transport=state.get("transport"),
     )
