@@ -20,9 +20,13 @@ Triage today is a snapshot: a patient is scored once at arrival and then nobody 
 
 PatientTriage.ai treats the waiting room as part of triage:
 
-1. **Phase 1, Intake.** Structured first-minutes data only: chief complaint, vitals, age, medications if on file. Half of real patients have no record at all; the system is designed for that.
+1. **Phase 1, Intake.** Structured first-minutes data: chief complaint (typed or voice-dictated), vitals, age, AVPU, medications if on file, and an optional OLDCARTS structured interview (Onset, Location, Duration, Characteristics, Aggravating/Alleviating, Radiation, Timing/Triggers, Severity 1-10) whose severity answer feeds the ESI pain gate. The complaint category auto-codes to a provisional ICD-10. Half of real patients have no record at all; the system is designed for that.
 2. **Phase 2, Dual-path scoring.** Path A is a deterministic ESI v4 rules engine with age-banded vital thresholds. Path B is Claude reasoning over the redacted intake, grounded in retrieved ESI Handbook passages. A FUSE step combines them: agreement means high confidence; disagreement takes the MORE acute level, lowers confidence, and flags the clinician with both reasoning chains.
-3. **Phase 3, Dynamic reassessment (the novel loop).** Every waiting patient is ranked continuously by `deterioration_risk x wait_pressure x acuity_uncertainty x severity`. Two hard triggers fire regardless of the score: a per-ESI safe-wait breach, and a vitals recheck that worsens past thresholds or enters the age-banded danger zone. Deterioration causes automatic re-triage, which may only hold or escalate the level, never lower it.
+3. **Phase 3, Dynamic reassessment (the novel loop).** Triage is formalized as a POMDP: the hidden state is the patient's true acuity, and each patient carries a live belief - a probability distribution over ESI 1-5 - initialized from the two paths (disagreement IS the uncertainty), drifted acute-ward by a deterioration hazard while they wait, and Bayes-updated by every vitals recheck from any channel (nurse spot-check, wearable, kiosk self-report). The policy over that belief ranks the room:
+
+   `priority = deterioration_risk x time_since_last_assessment x acuity_uncertainty x esi_severity_weight`
+
+   where acuity_uncertainty is the belief's entropy and the score maps to [0,1] with a REASSESS NOW threshold. Two hard triggers fire regardless of the score: a per-ESI safe-wait breach, and a worsening or danger-zone recheck. Deterioration causes automatic re-triage, which may only hold or escalate the level, never lower it. Run the counterfactual yourself: `uv run python ../scripts/ab_demo.py` replays the same deteriorating patient with the monitor off and on.
 
 ## Safety by construction
 
@@ -62,19 +66,24 @@ Three things to read from that table. First, the fused system beats published SO
 
 Reproduce any row with one command (see Quick start), and every raw prediction is stored alongside the metrics.
 
-## The learning loop (clinician overrides as reward)
+## The learning loop (clinician actions as RL training signal)
 
-Every clinician action becomes a logged experience tuple (the experience-repository pattern from Doctor-R1, ICLR 2026). Rewards mirror the brief's asymmetric costs: acceptance +1.0; an over-triage override costs 0.2 per level; an under-triage override (the dangerous miss) costs 1.0 per level.
+Every clinician action becomes a logged experience tuple in the audit trail - the experience-repository pattern from Doctor-R1 (ICLR 2026) - scored by a **multi-axis reward structure per ResidencyRL**: diagnostic accuracy, management quality, communication, documentation, and safety (`backend/app/learning/loop.py`, per-axis means live in `/metrics`). The safety axis dominates by design, mirroring the brief's asymmetric costs: acceptance +1.0; an over-triage override costs 0.2 per level on the management axis; an under-triage override (the dangerous miss) costs 1.0 per level on the safety axis.
 
-The online learner is deliberately conservative: a calibration table over (complaint category x age band) cells. When clinicians repeatedly escalate a cell, the system learns to escalate it at triage time. The learned adjustment can only move toward MORE acute, so reinforcement learning cannot break the safety invariant by construction. Try it live: override two similar patients upward in the dashboard, and the third arrives pre-escalated with a note explaining why.
+Two learners consume the repository:
 
-Full policy optimization (GRPO per Doctor-R1, multi-axis rewards per ResidencyRL) is our stated Round 3 path once real override volume exists.
+- **Online**: a conservative calibration table over (complaint category x age band) cells. When clinicians repeatedly escalate a cell, the system escalates it at triage time. Try it live: override two similar patients upward in the console, and the third arrives pre-escalated with a note explaining why.
+- **Batch**: **GRPO** (Doctor-R1's training algorithm) over the logged experience - `backend/app/learning/grpo.py` groups episodes per cell, scores each factual outcome against the counterfactual escalated recommendation with the same reward model, normalizes advantages within the group critic-free, and writes the resulting escalation policy into the same calibration table. Run it on the audit trail: `uv run python ../scripts/train_policy.py`.
+
+Both learners share one structural invariant: the learned adjustment can only move toward MORE acute, so reinforcement learning cannot break the escalation-safety guarantee by construction. Model-weight fine-tuning is deliberately out of scope for a triage assistant that must stay auditable; the decision layer is where the override signal accumulates, and that is what trains.
 
 ## Hospital-local mode (privacy) and PHI protection
 
 - **Microsoft Presidio redacts every free-text field** (chief complaint, medication and condition strings) BEFORE any LLM call; the audit log stores derived recommendations and reasoning, not raw complaint text. Clinical content passes through untouched. This is code, not a policy paragraph. Two honest boundaries: the intake schema collects no name, DOB, or MRN by design (and never sends patient_id to the LLM), which does most of the privacy work; and the Presidio entity list is a working subset of the 18 HIPAA Safe Harbor identifiers - a production deployment must extend it (dates, MRNs, ages over 89, license numbers).
 - **Assumed jurisdiction: HIPAA (US).** The audit trail is append-only (DuckDB). A clinician override must legally record the original recommendation, the new level, the clinician identifier, the timestamp, and a stated reason; our `OverrideRecord` type makes an incomplete override unconstructable, and the API rejects an override without a reason (HTTP 422).
+- **Consent and retention.** The assumed consent model is treatment-context consent collected at ED registration (HIPAA treatment-operations basis); triage recommendations and override records are retained in the append-only audit store for the medical-record retention period of the jurisdiction (six years under HIPAA), while raw free-text intake never enters long-term storage - only redacted, derived records do.
 - **The reasoning path is pluggable.** Default is Claude on AWS Bedrock. Point one environment variable at any OpenAI-compatible local server (Ollama, mlx_lm.server) and the same pipeline runs fully on-premises; we ship an evaluated configuration using **Doctor-R1** (Qwen3-8B, MIT, RL-trained for clinical inquiry) so patient data never has to leave the hospital at all.
+- **EHR integration via FHIR.** `GET /patients/{id}/fhir` exports the full episode as a FHIR R4 Bundle: de-identified Patient, LOINC-coded Observations for every recorded vital, a RiskAssessment carrying the recommendation with the acuity belief as per-level probabilities plus both reasoning chains, and a Provenance record. Patient-record systems consume this directly; bed management and staff rosters hang off the same seam.
 
 ## Scalability: one YAML per hospital
 
@@ -124,12 +133,16 @@ flowchart LR
 | LLM reasoning path | `backend/app/agent/llm_path.py` | Claude via Bedrock (or any OpenAI-compatible local server); disk replay cache |
 | ESI Handbook RAG | `backend/app/agent/rag.py` | BM25 over page chunks, page-cited, fully offline |
 | FUSE orchestrator | `backend/app/agent/fuse.py` | LangGraph parallel fan-out, fan-in |
-| Waiting-room monitor | `backend/app/monitor/` | Sim-clock driven; production swap is a real scheduler |
-| Safety pipeline | `backend/app/safety/` | Grounding floor, completeness, red flags, bias counters |
-| Audit + overrides | `backend/app/audit/` | DuckDB append-only, HIPAA-shaped override record |
-| Learning loop | `backend/app/learning/` | Asymmetric rewards, escalate-only calibration |
+| POMDP belief state | `backend/app/monitor/belief.py` | Acuity distribution: initialized from path disagreement, hazard drift, Bayes updates on rechecks |
+| Reassessment policy | `backend/app/monitor/priority.py` | The 4-factor priority product over the belief, [0,1] with REASSESS NOW threshold |
+| Waiting-room monitor | `backend/app/monitor/waiting_room.py` | Owns the belief lifecycle; wait-breach + deterioration triggers, alert cooldown |
+| Safety pipeline | `backend/app/safety/` | Grounding floor, completeness, red flags, bias counters with alert trigger |
+| Audit + overrides | `backend/app/audit/` | DuckDB append-only, HIPAA-shaped override record, SQL analytics for /metrics |
+| Multi-axis rewards | `backend/app/learning/loop.py` | Five ResidencyRL axes; safety dominates; escalate-only calibration |
+| GRPO optimizer | `backend/app/learning/grpo.py` | Group-relative advantages over the experience repository; `scripts/train_policy.py` |
+| ICD-10 coding + FHIR export | `backend/app/engine/icd10.py`, `backend/app/fhir.py` | Provisional encounter codes; FHIR R4 Bundle per episode |
 | Evaluation harness | `eval/run_eval.py` | Published-benchmark metrics, reproducible |
-| Product site + nurse console | `frontend/` | React + Vite; landing/evidence/security pages at `/`, the console at `/console` |
+| Product site + nurse console | `frontend/` | React + Vite; landing pages at `/`, console at `/console` with OLDCARTS intake form and voice dictation |
 
 ## Quick start
 
@@ -147,7 +160,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 96 tests
+uv run pytest                     # 122 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
@@ -193,27 +206,43 @@ redaction; set `SPACY_MODEL=en_core_web_lg` on hosts with 1 GB+ RAM.
 ## Data and licenses
 
 - `data/curated_patients.json`: 22 simulated patients written by us, covering every mandated case (ambiguous presentation, pediatric, geriatric, zero-history, a sepsis-trajectory deteriorator with worsening rechecks; roughly half have prior records).
-- MIMIC-IV-ED **Demo** v2.2 (PhysioNet, open access, ODbL): fetched at setup, never committed. The full 440K-visit MIMIC-IV-ED replay is our Round 3 evaluation path.
+- MIMIC-IV-ED **Demo** v2.2 (PhysioNet, open access, ODbL): fetched at setup, never committed. The full 440K-visit MIMIC-IV-ED set is the scale-up evaluation once PhysioNet credentialing completes.
 - ESI scenario benchmarks and ESI v4 Handbook: fetched from the MIT-licensed [ED-Triage-Agent](https://github.com/Karthick47v2/ED-Triage-Agent) repository (c) Karthick T. Sharma; the three test sets originate from [TriageAgent](https://aclanthology.org/2024.findings-emnlp.329/) (EMNLP 2024 Findings).
 - No real patient data is used anywhere. Presidio redaction runs regardless, because the pipeline is built as if data were real.
 
-## Round 3 roadmap
+## Brief compliance, mapped
 
-Each item below has its seam already built into the codebase:
+Every minimum prototype expectation from the problem statement, and where it runs:
 
-- **Structured interview intake** (OLDCARTS-style, the ED-Triage-Agent two-phase pattern) feeding the same dual-path engine; today's intake is deliberately the first-minutes data that exists before any interview.
-- **GRPO policy optimization** on the override experience repository once a pilot produces real volume; the escalate-only calibration table is the conservative online learner until then.
-- **Full HIPAA Safe Harbor entity coverage** in the redaction layer, plus HL7/FHIR vitals ingestion from monitors and the EHR.
-- **MIMIC-IV-ED full replay** (440K visits) as the large-scale evaluation, using the same DuckDB analytical layer that powers `/metrics` today.
-- **Protected-attribute bias auditing** with the governance a pilot requires; the per-age-band monitor and its alert thresholds are the running skeleton.
-- **Production scheduling**: the sim clock swaps for a background worker driving the same `tick()` and enrichment queue.
+| Mandated | Where it lives |
+|---|---|
+| Triage scoring on 15-20+ simulated records | 24-patient curated cohort (`data/curated_patients.json`), plus 276 published benchmark cases |
+| Ambiguous, pediatric/geriatric, and zero-history cases | Tagged in the cohort (`ambiguous`, `pediatric`, `geriatric`, `zero_history`, plus three adversarial presentations); covered by tests |
+| Simulated surge at 3x volume | `replay_demo.py --speedup 3 --profile rural_100`; deterministic fast path + deferred enrichment queue |
+| No score without a confidence indicator | `FusedResult.confidence` is a required field; every recommendation carries it plus the full acuity belief |
+| Capture an override and show what is logged | Override modal -> `OverrideRecord` (original, new level, clinician id, timestamp, mandatory reason) + multi-axis reward, all visible in the audit drawer |
+| Re-assessment on per-severity wait thresholds or worsening vitals | Profile `max_wait_min` table + deterioration triggers; both fire in the demo |
+| Age-banded thresholds (38.5 C in a 3-year-old vs a 75-year-old) | `engine/thresholds.py` bands; the exact fever divergence is a unit test |
+| Escalation bias demonstrated explicitly | More-acute-wins fusion, escalate-only learning, danger-zone gate for all categories; measured as the under-triage vs over-triage trade in the benchmark table |
+| Stated jurisdiction, audit, consent, retention | HIPAA section above |
+
+## Key risks and mitigations
+
+| Risk | Mitigation in this prototype |
+|---|---|
+| The LLM is wrong or unavailable | Rules floor the LLM cannot talk down; fail-safe rules-only fallback with clinician flag; red-flag layer reads raw data |
+| Both scoring paths are wrong | The waiting-room monitor re-examines everyone: wait-breach and worsening-vitals triggers fire regardless of the initial score |
+| Automation bias (rubber-stamping) | Both reasoning chains always shown; high-risk downgrades demand explicit acknowledgment; override rate and direction tracked in /metrics |
+| Alert fatigue kills adoption | Passive priority queue, only two hard triggers, per-profile alert cooldown, thresholds in hospital YAML not code |
+| Demographic skew in recommendations | Per-age-band bias monitor with a deviation alert; protected-attribute auditing is governance work a pilot adds |
+| Patient data leaves the boundary | Presidio redaction on all free text pre-LLM, schema collects no direct identifiers, fully on-premises model option evaluated and shipped |
 
 ## References
 
 1. ED-Triage-Agent: a framework for human-AI collaborative emergency triage. medRxiv, 2026. (Baseline system and 60-case evaluation protocol.)
 2. TriageAgent: multi-agent collaboration for LLM-based clinical triage. EMNLP 2024 Findings. (Public benchmark and human-expert baseline.)
-3. Doctor-R1: mastering clinical inquiry with experiential agentic reinforcement learning. ICLR 2026. (Experience repository pattern; hospital-local model.)
-4. ResidencyRL: reinforcement learning for clinical agents via simulated encounters. arXiv, Aug 2026. (Multi-axis reward design for the Round 3 path.)
+3. Doctor-R1: mastering clinical inquiry with experiential agentic reinforcement learning. ICLR 2026. (Experience repository, POMDP formalization, and the GRPO estimator we run on the override log; also the hospital-local model.)
+4. ResidencyRL: reinforcement learning for clinical agents via simulated encounters. arXiv, Aug 2026. (The five-axis reward structure implemented in our learning loop.)
 5. NEJM AI study of AI-assisted ED triage across 174,648 visits. (33% time-to-care reduction; 78.8% to 83.1% critical-care identification.)
 6. Kumar et al., duration of hypotension before antimicrobial therapy in septic shock. (The mortality-per-hour figure behind the danger window.)
 7. Emergency Severity Index v4 Implementation Handbook. (Path A rules and the age-banded danger-zone vitals.)

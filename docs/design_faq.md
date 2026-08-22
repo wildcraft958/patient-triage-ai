@@ -54,25 +54,47 @@ under-triage versus the published SOTA's 2.3% and 2.8%. A hospital that wants
 a different point on that curve tunes it in one place (the FUSE rule and the
 calibration threshold), not by retraining a model.
 
-## Why did you not fine-tune a model? You claimed RL
+## Where does the POMDP actually live in your code?
 
-The learning loop we ship is the part of RL that is defensible at prototype
-scale: an experience repository of (state, recommendation, clinician action,
-reward) tuples with asymmetric rewards, plus a conservative online policy
-improvement (the escalate-only calibration table). It demonstrably changes
-behavior within a session, and it cannot violate the safety invariant by
-construction. Full policy optimization (GRPO per Doctor-R1, multi-axis rewards
-per ResidencyRL) needs override volume that does not exist until a pilot runs;
-it is our stated Round 3 path. We did benchmark the closest released
-RL-trained clinical model (Doctor-R1 8B) inside our pipeline as the
-hospital-local option, with honest numbers.
+`backend/app/monitor/belief.py`. The hidden state is the patient's true
+acuity; the belief is a 5-way distribution over ESI levels. It initializes
+from the dual-path result via pseudo-counts, so Path A/B disagreement IS the
+uncertainty (a disagreeing pair produces a bimodal, higher-entropy belief);
+waiting advances it through an escalation-hazard transition model; every
+vitals recheck is an observation with an explicit likelihood table, applied
+by Bayes rule. The policy over that belief is the reassessment priority
+(`monitor/priority.py`): the pitched 4-factor product, where
+acuity_uncertainty is the belief entropy and deterioration_risk doubles as
+the transition hazard. The belief only ranks - the assigned ESI moves solely
+through re-triage or a clinician, so the POMDP can never silently rescore a
+patient. The console renders the belief as the 5-bar strip on the detail
+card, and the FHIR export carries it as per-level probabilities.
+
+## Show me GRPO and the RL training signal in the code
+
+Three pieces. The reward model (`learning/loop.py`) scores every clinician
+action on the five ResidencyRL axes (diagnostic accuracy, management
+quality, communication, documentation, safety) with safety dominant; the
+experience repository is the audit trail itself, each override or acceptance
+logged with state, action, correction, and the reward vector. The optimizer
+(`learning/grpo.py`) is GRPO's estimator on the policy we actually learn:
+group episodes per (category x age band) cell, score the factual outcome and
+the counterfactual escalated recommendation with the same reward model,
+normalize advantages within the group (critic-free, GRPO's defining move),
+and write the resulting escalation policy into the calibration table the
+live service consumes. `scripts/train_policy.py` runs the whole pass. What
+we deliberately do NOT do is fine-tune model weights: a triage assistant
+must stay auditable, and the decision layer is where override volume
+accumulates - so the decision layer is what trains. We did benchmark the
+closest released RL-trained clinical model (Doctor-R1 8B) inside our
+pipeline as the hospital-local option, with honest numbers.
 
 ## Why BM25 retrieval instead of embeddings?
 
 The corpus is one handbook (95 chunks). BM25 is deterministic, offline,
 dependency-light, and every retrieved excerpt carries a page citation the
 clinician can check. An embedding store adds infrastructure and
-non-determinism without measurable benefit at this corpus size. At Round 3
+non-determinism without measurable benefit at this corpus size. At deployment
 scale (institution-specific protocols, multiple handbooks) we would revisit.
 
 ## What does LangGraph actually buy you here?
@@ -81,8 +103,8 @@ Today: a declarative parallel fan-out with a superstep barrier (redact, then
 rules and LLM concurrently, then fuse) that reads as a graph instead of thread
 plumbing (`backend/app/agent/graph.py`). We will not pretend the current
 four-node graph could not be a function with a thread pool. The honest value
-is the shape it leaves us: the Round 3 pipeline adds nodes (structured
-interview, escalation consult, enrichment re-fuse) and conditional edges, and
+is the shape it leaves us: the deployment pipeline adds nodes (escalation
+consult, enrichment re-fuse, interview follow-ups) and conditional edges, and
 those compose in a StateGraph without rewriting orchestration.
 
 ## Why DuckDB for the audit log and not SQLite or Postgres?
@@ -93,7 +115,7 @@ override rate, in which direction, with what latency" - `AuditLog.stats()`
 answers those with SQL aggregation over the JSON payloads and feeds
 `/metrics`. DuckDB is built for exactly that read pattern, embeds like SQLite
 (no server to run in a demo or an air-gapped hospital), and reads Parquet
-natively for the Round 3 MIMIC replay. Postgres would be justified at
+natively for the full MIMIC-IV-ED replay. Postgres would be justified at
 multi-writer production scale; SQLite would work but makes the analytics the
 awkward part.
 
@@ -131,14 +153,19 @@ per-profile cooldown (`alert_cooldown_min`; danger-zone vitals always fire,
 never muted). Thresholds live in the hospital profile YAML because fatigue
 tuning is a per-site clinical decision, not a code constant.
 
-## Why not OLDCARTS for intake?
+## Walk me through OLDCARTS in your intake
 
-We considered it and chose not to fake it. Our intake is the data that exists
-in the first minutes: chief complaint, vitals, age, AVPU, history if on file.
-OLDCARTS is a structured interview - it assumes a conversation, which is
-exactly the two-phase design ED-Triage-Agent uses and the natural Round 3
-upgrade once an interview agent exists. Claiming OLDCARTS fields that nothing
-populates would be checkbox architecture.
+The console's New Patient form runs the eight-field structured interview
+(Onset, Location, Duration, Characteristics, Aggravating/Alleviating,
+Radiation, Timing/Triggers, Severity on the 1-10 scale) with voice dictation
+on the chief complaint. The fields are first-class in the intake schema
+(`models.Oldcarts`), the severity answer backs up the ESI decision-B
+severe-pain gate when no pain vital is recorded (`engine/esi_rules.py`),
+free-text answers pass through Presidio like every other free-text field,
+and captured interviews travel to the reasoning path as a dedicated prompt
+section. All of it is optional by design: the system still triages the
+patient who cannot answer a single question, because the mandate is to work
+with whatever the first minutes actually yield.
 
 ## Why a simulation clock instead of a background scheduler?
 
