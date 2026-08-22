@@ -35,6 +35,55 @@ def test_allergic_reaction_recognized_at_lowest_precedence():
     assert classify_category("allergic reaction, hives everywhere") == "rash"
 
 
+# --- second pass: misspellings, accents, Spanish, Hinglish, synonyms ---
+
+def test_misspelled_anaphylaxis_still_classifies():
+    assert classify_category("having an anaphlaxis episode") == "allergic_reaction"
+    assert classify_category("looks like anaphalaxis") == "allergic_reaction"
+
+
+def test_anaphylaxis_synonym_phrases_classify():
+    assert classify_category("my throat is closing and my tongue is swelling") \
+        == "allergic_reaction"
+    # bare tokens never match: sore throats and sprains stay uncategorized
+    assert classify_category("my throat is on fire") == "other"
+    assert classify_category("swollen ankle after a game") == "other"
+
+
+def test_spanish_complaints_classify():
+    assert classify_category("dolor en el pecho y sudoracion") == "chest_pain"
+    assert classify_category("no puedo respirar bien") == "breathing_difficulty"
+    assert classify_category("reacción alérgica grave") == "allergic_reaction"
+
+
+def test_hinglish_complaints_classify():
+    assert classify_category("seene mein dard ho raha hai") == "chest_pain"
+    assert classify_category("saans nahi aa rahi") == "breathing_difficulty"
+    assert classify_category("tez bukhar hai") == "fever"
+
+
+def test_pregnancy_complication_needs_context_plus_sign():
+    assert classify_category(
+        "28 weeks pregnant with a sudden severe headache, vomited twice") \
+        == "pregnancy_complication"
+    assert classify_category(
+        "10 days post partum, heavy bleeding and passing clots") \
+        == "pregnancy_complication"
+    assert classify_category("preclampsia at last visit, feet swelling") \
+        == "pregnancy_complication"
+    # pregnancy WITHOUT a complication sign is not an obstetric emergency
+    assert classify_category("I think I'm pregnant and scared to tell my mom") \
+        == "other"
+    assert classify_category("the condom broke and I don't want to get pregnant") \
+        == "other"
+
+
+def test_first_pass_precedence_beats_second_pass():
+    # a pregnant patient whose complaint names chest pain follows the chest
+    # pain protocol; pregnancy context alone never reroutes a matched case
+    assert classify_category("32 weeks pregnant with chest pain") == "chest_pain"
+
+
 def test_fahrenheit_converted():
     assert to_celsius(101.3, "F") == 38.5
     assert to_celsius(101.3, None) == 38.5  # heuristic: >45 must be Fahrenheit
