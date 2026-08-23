@@ -78,6 +78,13 @@ def test_concurrent_mutations_hold_invariants():
             svc.override(f"C{i}", 4, "RN-1", "stable, low suspicion")
         return True
 
+    import time
+    started = time.perf_counter()
     with ThreadPoolExecutor(max_workers=8) as ex:
         assert all(ex.map(op, range(24)))
+    elapsed = time.perf_counter() - started
     assert svc.state_view()["total_patients"] == 24
+    # the serialization ceiling: the busiest shipped profile (urban_500)
+    # sees ~0.006 arrivals/second; the fully locked pipeline must clear a
+    # floor orders of magnitude above that
+    assert 24 / elapsed >= 50, f"locked throughput {24 / elapsed:.0f}/s below floor"

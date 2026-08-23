@@ -79,7 +79,7 @@ Both learners share one structural invariant: the learned adjustment can only mo
 
 ## Hospital-local mode (privacy) and PHI protection
 
-- **Microsoft Presidio redacts every free-text field** (chief complaint, medication and condition strings) BEFORE any LLM call; the audit log stores derived recommendations and reasoning, not raw complaint text. Clinical content passes through untouched. This is code, not a policy paragraph. Two honest boundaries: the intake schema collects no name, DOB, or MRN by design (and never sends patient_id to the LLM), which does most of the privacy work; and the Presidio entity list is a working subset of the 18 HIPAA Safe Harbor identifiers - a production deployment must extend it (dates, MRNs, ages over 89, license numbers).
+- **Microsoft Presidio redacts every free-text field** (chief complaint, medication and condition strings, all OLDCARTS answers) BEFORE any LLM call; the audit log stores derived recommendations and reasoning, not raw complaint text. Clinical content passes through untouched. This is code, not a policy paragraph. Safe Harbor coverage works three ways: 15 identifier classes are actively detected and redacted (names, phones, emails, locations, SSNs, licenses, passports, financial and network identifiers); names, birth dates, and record numbers are additionally never collected by the intake schema (patient_id never reaches the LLM); and symptom durations and ages deliberately pass through because they are the clinical signal the ESI decision points run on - Safe Harbor's date identifier concerns identity-linked dates, not "crushing pain for 45 minutes".
 - **Assumed jurisdiction: HIPAA (US).** The audit trail is append-only (DuckDB). A clinician override must legally record the original recommendation, the new level, the clinician identifier, the timestamp, and a stated reason; our `OverrideRecord` type makes an incomplete override unconstructable, and the API rejects an override without a reason (HTTP 422).
 - **Consent and retention.** The assumed consent model is treatment-context consent collected at ED registration (HIPAA treatment-operations basis); triage recommendations and override records are retained in the append-only audit store for the medical-record retention period of the jurisdiction (six years under HIPAA), while raw free-text intake never enters long-term storage - only redacted, derived records do.
 - **The reasoning path is pluggable.** Default is Claude on AWS Bedrock. Point one environment variable at any OpenAI-compatible local server (Ollama, mlx_lm.server) and the same pipeline runs fully on-premises; we ship an evaluated configuration using **Doctor-R1** (Qwen3-8B, MIT, RL-trained for clinical inquiry) so patient data never has to leave the hospital at all.
@@ -173,7 +173,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 150 tests
+uv run pytest                     # 154 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 

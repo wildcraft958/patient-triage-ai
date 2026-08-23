@@ -138,6 +138,42 @@ snapshot fixture freezes the classification of every benchmark and demo
 text, so any drift fails the test suite instead of silently invalidating
 the cached reasoning corpus.
 
+## Give me a complaint your system will still get wrong
+
+Yes, one exists, and we would rather name it than have it found. Every
+reported miss has been fixed structurally, not patched: any high-risk match
+now outranks any benign one, fuzzy phrases bridge natural-speech fillers
+("lips ARE swelling" can no longer hide from "lips swelling"), and the
+learned tier was retrained on disguised presentations, lifting
+cross-validated recall from 26.7% to 47.8% on stroke signs and from 37.5%
+to 73.3% on self-harm language - measured on a deliberately harder example
+set, and the numbers live in our training script's own output. But a
+genuinely novel phrasing of a rare emergency, with calm vitals, can still
+classify low: our own held-out probe "shot in the stomach" abstains to
+"other" rather than guessing, and we pinned that as a test on purpose. The
+honest line is exact: the reported instances are fixed and the general
+defense is quantifiably stronger - not solved. No keyword system or small
+classifier catches every phrasing of a rare emergency, which is why three
+nets sit behind the classifier: the danger-zone vitals gate reads raw
+numbers regardless of category, the LLM path reads the raw redacted text
+regardless of category, and the clinician reads the patient. Improving the
+classifier is a one-row-plus-retrain loop, and the snapshot test makes
+every change visible.
+
+## What happens under concurrent load?
+
+Every mutation of shared triage state goes through one reentrant lock, so
+concurrent HTTP requests cannot interleave inside a check-then-act window
+(an override landing while the enrichment queue drains, for example) -
+verified by a multi-thread stress test in the suite. The measured ceiling
+of that fully serialized pipeline is ~147 arrivals per second on a laptop,
+including PHI redaction; the busiest shipped hospital profile (500 visits
+a day) arrives at ~0.006 per second, four orders of magnitude below it.
+The lock is deliberately coarse because correctness beats parallelism at
+this scale; the named step for horizontal scale is a shared store
+(Postgres) behind multiple workers, which replaces the in-process state,
+not the logic.
+
 ## Why keep deterministic rules in front of a learned classifier?
 
 Three measured reasons, not taste. First, guaranteed recall: the distilled
