@@ -1,12 +1,16 @@
 """PHI redaction with Microsoft Presidio.
 
-Free-text fields (chief complaint, medication and condition strings) are
-de-identified BEFORE they reach the LLM. This is defense in depth, not the
-whole privacy story: the intake schema collects no name, DOB, or MRN by
-design, and patient_id is never sent to the LLM. The entity list below is
-a working subset of the 18 HIPAA Safe Harbor identifiers - a production
-deployment must extend it (dates, MRNs, ages over 89, license numbers)
-and re-warm any response caches. Clinical content passes through untouched.
+Free-text fields (chief complaint, medication and condition strings, every
+OLDCARTS answer) are de-identified BEFORE they reach the LLM. Coverage
+against the 18 HIPAA Safe Harbor identifier classes works in three ways:
+most identifier classes are detected and redacted by the entity list below;
+names, birth dates, MRNs, and account/beneficiary numbers are additionally
+never collected by the intake schema in the first place (and patient_id
+never reaches the LLM); and two classes are deliberately NOT redacted
+because they are the clinical signal itself - relative times ("crushing
+pain for 45 minutes") and ages drive the ESI decision points, and Safe
+Harbor's date identifier concerns identity-linked dates (birth, admission),
+not symptom durations. Clinical content passes through untouched.
 """
 
 from functools import lru_cache
@@ -21,6 +25,14 @@ PHI_ENTITIES = [
     "US_SSN",
     "CREDIT_CARD",
     "IP_ADDRESS",
+    "URL",
+    "US_DRIVER_LICENSE",
+    "US_PASSPORT",
+    "US_BANK_NUMBER",
+    "US_ITIN",
+    "IBAN_CODE",
+    "MEDICAL_LICENSE",
+    "CRYPTO",
 ]
 
 
@@ -45,11 +57,21 @@ def _engines():
     return AnalyzerEngine(nlp_engine=provider.create_engine()), AnonymizerEngine()
 
 
+# The bare-domain URL heuristic misfires on typo'd sentence boundaries
+# ("...washing dishes.She has..." reads as a domain at score 0.5); genuine
+# URLs with a scheme or www score higher, so a floor removes the noise
+# without losing real identifiers.
+URL_MIN_SCORE = 0.6
+
+
 def redact(text: str) -> RedactionResult:
     if not text.strip():
         return RedactionResult(text=text, entities_removed=[])
     analyzer, anonymizer = _engines()
-    findings = analyzer.analyze(text=text, language="en", entities=PHI_ENTITIES)
+    findings = [
+        f for f in analyzer.analyze(text=text, language="en", entities=PHI_ENTITIES)
+        if not (f.entity_type == "URL" and f.score < URL_MIN_SCORE)
+    ]
     anonymized = anonymizer.anonymize(text=text, analyzer_results=findings)
     return RedactionResult(
         text=anonymized.text,

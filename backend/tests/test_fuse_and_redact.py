@@ -46,6 +46,20 @@ def test_routes_cover_all_levels():
 
 # --- Presidio redaction ---
 
+def test_extended_identifiers_are_redacted():
+    r = redact("chest pain, my email is r.kumar@example.com, "
+               "license D1234567 posted at https://myblog.example.com")
+    assert "example.com" not in r.text.replace("<URL>", "")
+    assert "r.kumar" not in r.text
+    assert "chest pain" in r.text
+
+
+def test_clinical_times_and_ages_pass_through():
+    # symptom durations and ages are the clinical signal, not identity
+    r = redact("crushing chest pain for 45 minutes in an 84-year-old")
+    assert "45 minutes" in r.text and "84-year-old" in r.text
+
+
 def test_redacts_name_and_phone_keeps_clinical_content():
     r = redact("Ramesh Kumar, phone 9876543210, has crushing chest pain")
     assert "Ramesh" not in r.text
