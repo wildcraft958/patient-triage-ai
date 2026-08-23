@@ -7,6 +7,17 @@ from app.api import router
 from app.config import REPO_ROOT, settings
 
 app = FastAPI(title="PatientTriage.ai", version="0.1.0")
+
+
+@app.on_event("startup")
+def warm_intake_classifier() -> None:
+    # eager-load the distilled classifier so its one-time model load never
+    # lands inside a patient's triage latency (fail-safe if unavailable)
+    from app.engine import complaint_ml
+
+    complaint_ml.available()
+
+
 app.include_router(router)
 # same surface under /api for single-origin production serving
 app.include_router(router, prefix="/api", include_in_schema=False)
