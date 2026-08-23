@@ -26,10 +26,14 @@ log = logging.getLogger(__name__)
 EMBED_MODEL = "minishlab/potion-base-8M"
 HEAD_PATH = REPO_ROOT / "data" / "complaint_model" / "head.npz"
 
-# softmax probability floors: escalation-friendly asymmetry - a high-risk
-# category is accepted at lower confidence than a benign one
+# softmax probability floors: escalation-friendly asymmetry - a category
+# that is dangerous to MISS is accepted at lower confidence than a benign
+# one. chest_pain joins the always-high-risk set here because the rules
+# treat it as conditionally high risk (age/cardiac history) and the missed
+# atypical MI is the classic triage error.
 HIGH_RISK_THRESHOLD = 0.45
 BENIGN_THRESHOLD = 0.60
+MISS_CRITICAL_EXTRAS = frozenset({"chest_pain"})
 
 # the head was trained on chief complaints (MIMIC-IV-ED style short strings);
 # long narrative vignettes are out of its domain and are left to the
@@ -102,7 +106,8 @@ def predict(text: str) -> tuple[str, float] | None:
         return None
     if category == "other":
         return None
-    floor = s["t_high"] if category in ALWAYS_HIGH_RISK else s["t_benign"]
+    miss_critical = category in ALWAYS_HIGH_RISK or category in MISS_CRITICAL_EXTRAS
+    floor = s["t_high"] if miss_critical else s["t_benign"]
     if prob < floor:
         return None
     return category, prob

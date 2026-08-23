@@ -49,6 +49,24 @@ def test_distilled_layer_catches_lexicon_blind_spots():
 
 
 @needs_model
+def test_disguised_presentations_classify():
+    """Held-out phrasings (not in the training bank) of the presentations
+    that hide from keywords: atypical stroke, MI, anaphylaxis, self-harm."""
+    assert classify_category("my speech went funny and one arm wont lift") \
+        == "stroke_signs"
+    assert classify_category(
+        "crushing ache in the jaw and cold sweat climbing stairs") == "chest_pain"
+    assert classify_category(
+        "throat feels tight and welts spreading after lunch") == "allergic_reaction"
+    assert classify_category(
+        "I keep thinking my family is better off without me") == "self_harm"
+    # the honest ceiling, pinned: an ambiguous penetrating-trauma phrasing
+    # abstains to "other" rather than guessing a wrong category - the
+    # danger-zone vitals gate and the LLM path remain the net behind it
+    assert classify_category("shot in the stomach") == "other"
+
+
+@needs_model
 def test_distilled_layer_abstains_on_benign_and_ambiguous():
     # 'shot' without violence context, and plain minor complaints, must not
     # be dragged into a clinical category by embedding proximity
