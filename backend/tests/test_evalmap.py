@@ -27,12 +27,37 @@ def test_category_first_match_wins():
     assert classify_category("stubbed toe") == "other"
 
 
-def test_allergic_reaction_recognized_at_lowest_precedence():
+def test_allergic_reaction_recognized():
     assert classify_category("anaphylaxis after eating peanuts") == "allergic_reaction"
     assert classify_category("swelling after a bee sting") == "allergic_reaction"
-    # earlier keywords keep precedence so benchmark classifications never shift
+    # both categories are high-risk: list order breaks the tie toward the
+    # airway presentation, which is the more specific emergency here
     assert classify_category("allergic reaction with wheezing") == "breathing_difficulty"
-    assert classify_category("allergic reaction, hives everywhere") == "rash"
+
+
+def test_high_risk_match_beats_benign_match_from_either_pass():
+    """Matches resolve by clinical risk tier, not list order: a benign
+    keyword like 'hives' must never claim a sentence that also carries a
+    high-risk signal, even one only the fuzzy pass can see."""
+    assert classify_category("throat closing up, hives, after eating shellfish") \
+        == "allergic_reaction"
+    assert classify_category("hives everywhere and my tongue is swelling") \
+        == "allergic_reaction"
+    assert classify_category("rash on arms, throat tightness after peanuts") \
+        == "allergic_reaction"
+    assert classify_category("allergic reaction, hives everywhere") == "allergic_reaction"
+    # benign stays benign when no high-risk signal is present
+    assert classify_category("rash on my arm for a week") == "rash"
+    assert classify_category("itchy rash after new detergent") == "rash"
+
+
+def test_pregnancy_complication_outranks_benign_abdominal_pain():
+    # the handbook's rule-out-ectopic presentation: benign pass-1 category
+    # must not mask the obstetric emergency
+    assert classify_category(
+        "low abdominal pain for 4 days, this morning she began spotting, "
+        "last menstrual period 7 weeks ago, previous ectopic pregnancy") \
+        == "pregnancy_complication"
 
 
 # --- second pass: misspellings, accents, Spanish, Hinglish, synonyms ---

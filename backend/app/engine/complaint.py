@@ -1,17 +1,20 @@
 """Intake NLP: chief complaint text -> complaint category.
 
-Two passes. Pass 1 is an exact keyword scan in clinical precedence order; it
-is deliberately frozen because every category it assigns is also the key
-into the cached reasoning corpus. Pass 2 runs only when pass 1 finds
-nothing: phrase-level matching with a length-bounded edit distance over
+Two passes, resolved by clinical risk tier. Pass 1 is an exact keyword scan;
+pass 2 is phrase-level matching with a length-bounded edit distance over
 accent-folded tokens (misspellings, Spanish, Hinglish, synonym
-presentations), plus a compound pregnancy-complication predicate. The
-category then drives resource estimation, the high-risk gate, ICD-10
-seeding, and retrieval for the reasoning path.
+presentations), plus a compound pregnancy-complication predicate.
+Resolution: a match against any always-high-risk category, from either
+pass, beats any benign match - list order only breaks ties within the same
+risk tier. A benign word like "hives" must never claim a sentence that also
+carries "throat closing". The category then drives resource estimation, the
+high-risk gate, ICD-10 seeding, and retrieval for the reasoning path.
 """
 
 import re
 import unicodedata
+
+from app.engine.esi_rules import ALWAYS_HIGH_RISK
 
 CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
     ("self_harm", ["suicid", "overdose", "self-harm", "hurt himself", "hurt herself"]),
@@ -71,10 +74,11 @@ FUZZY_LEXICON: list[tuple[str, list[str]]] = [
 _PREG_DIRECT = ["preeclampsia", "eclampsia"]
 _PREG_CONTEXT = ["pregnant", "pregnancy", "pregnancies", "postpartum",
                  "post partum", "embarazada", "embarazo", "gestation"]
-_PREG_SIGNS = ["bleed", "clot", "headache", "seiz", "convuls", "vision",
-               "blurr", "swelling", "swollen", "contraction", "vomit",
-               "cramp", "dizz", "faint", "pass out", "unresponsive",
-               "not respond", "baby not moving", "no fetal movement"]
+_PREG_SIGNS = ["bleed", "spotting", "clot", "ectopic", "headache", "seiz",
+               "convuls", "vision", "blurr", "swelling", "swollen",
+               "contraction", "vomit", "cramp", "dizz", "faint", "pass out",
+               "unresponsive", "not respond", "baby not moving",
+               "no fetal movement"]
 
 
 def _normalize(text: str) -> str:
@@ -129,20 +133,29 @@ def _is_pregnancy_complication(norm: str, tokens: list[str]) -> bool:
             and any(s in norm for s in _PREG_SIGNS))
 
 
-def _classify_second_pass(text: str) -> str:
+def _second_pass_matches(text: str) -> list[str]:
     norm = _normalize(text)
     tokens = norm.split()
-    for category, phrases in FUZZY_LEXICON:
-        if any(_phrase_in(tokens, p) for p in phrases):
-            return category
+    matches = [category for category, phrases in FUZZY_LEXICON
+               if any(_phrase_in(tokens, p) for p in phrases)]
     if _is_pregnancy_complication(norm, tokens):
-        return "pregnancy_complication"
-    return "other"
+        matches.append("pregnancy_complication")
+    return matches
 
 
 def classify_category(text: str) -> str:
     lowered = text.lower()
-    for category, keywords in CATEGORY_KEYWORDS:
-        if any(kw in lowered for kw in keywords):
-            return category
-    return _classify_second_pass(text)
+    pass1 = [category for category, keywords in CATEGORY_KEYWORDS
+             if any(kw in lowered for kw in keywords)]
+    if pass1 and pass1[0] in ALWAYS_HIGH_RISK:
+        return pass1[0]
+    # the best exact match is benign (or absent): a high-risk signal from
+    # either pass still outranks it
+    pass2 = _second_pass_matches(text)
+    high_risk = ([c for c in pass1 if c in ALWAYS_HIGH_RISK]
+                 or [c for c in pass2 if c in ALWAYS_HIGH_RISK])
+    if high_risk:
+        return high_risk[0]
+    if pass1:
+        return pass1[0]
+    return pass2[0] if pass2 else "other"
