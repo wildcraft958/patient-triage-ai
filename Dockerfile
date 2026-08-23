@@ -26,6 +26,11 @@ COPY --from=frontend /build/dist frontend/dist
 # Fetch the ESI handbook, eval sets, and MIMIC demo (~3 MB) at build time
 RUN cd backend && uv run python ../scripts/fetch_data.py
 
+# Bake the distilled intake-classifier embeddings (~30 MB, MIT) into the
+# image so the running container never downloads anything
+RUN cd backend && uv run python -c "from model2vec import StaticModel; \
+    StaticModel.from_pretrained('minishlab/potion-base-8M')"
+
 ENV HOSPITAL_PROFILE=urban_500
 EXPOSE 7860
 CMD ["sh", "-c", "cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}"]

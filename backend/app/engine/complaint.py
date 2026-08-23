@@ -158,4 +158,11 @@ def classify_category(text: str) -> str:
         return high_risk[0]
     if pass1:
         return pass1[0]
-    return pass2[0] if pass2 else "other"
+    if pass2:
+        return pass2[0]
+    # both deterministic layers abstained: the distilled classifier may
+    # speak (short-complaint domain only, risk-tiered confidence floors)
+    from app.engine import complaint_ml
+
+    ml = complaint_ml.predict(text)
+    return ml[0] if ml else "other"

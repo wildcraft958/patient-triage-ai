@@ -1,0 +1,99 @@
+"""Layer 3 of the intake classifier: a distilled static-embedding model.
+
+Model2Vec static embeddings (a sentence-transformer distilled into per-token
+vectors; numpy-only inference, ~30MB, MIT) plus a committed multinomial
+logistic-regression head trained by scripts/train_complaint_classifier.py on
+teacher-labeled chief complaints (real MIMIC-IV-ED strings reviewed label by
+label, plus adversarial synthetic phrasings). It speaks ONLY when the
+deterministic lexicon layers abstain, and only inside its training domain
+(short chief-complaint text); softmax gives bounded, calibrated
+probabilities, so the accept thresholds are asymmetric by clinical risk:
+a high-risk call needs less confidence than a benign one.
+
+Fail-safe by design: if the embedding model or head cannot load (no network
+on first run, missing artifact), the layer reports itself unavailable and
+classification falls back to the deterministic lexicon alone.
+"""
+
+import logging
+import threading
+
+from app.config import REPO_ROOT
+
+log = logging.getLogger(__name__)
+
+EMBED_MODEL = "minishlab/potion-base-8M"
+HEAD_PATH = REPO_ROOT / "data" / "complaint_model" / "head.npz"
+
+# softmax probability floors: escalation-friendly asymmetry - a high-risk
+# category is accepted at lower confidence than a benign one
+HIGH_RISK_THRESHOLD = 0.45
+BENIGN_THRESHOLD = 0.60
+
+# the head was trained on chief complaints (MIMIC-IV-ED style short strings);
+# long narrative vignettes are out of its domain and are left to the
+# deterministic layers and the LLM reasoning path
+MAX_TOKENS = 24
+
+_lock = threading.Lock()
+_state: dict | None = None
+
+
+def _load() -> dict | None:
+    global _state
+    if _state is not None:
+        return _state or None
+    with _lock:
+        if _state is not None:
+            return _state or None
+        try:
+            import numpy as np
+            from model2vec import StaticModel
+
+            head = np.load(HEAD_PATH, allow_pickle=False)
+            model = StaticModel.from_pretrained(EMBED_MODEL)
+            _state = {
+                "np": np, "model": model,
+                "w": head["w"], "b": head["b"],
+                "classes": [str(c) for c in head["classes"]],
+                "t_high": float(head["high_risk_threshold"]),
+                "t_benign": float(head["benign_threshold"]),
+            }
+        except Exception as e:
+            log.warning("distilled classifier unavailable (%s: %s) - "
+                        "falling back to lexicon-only classification",
+                        type(e).__name__, e)
+            _state = {}
+    return _state or None
+
+
+def available() -> bool:
+    return _load() is not None
+
+
+def predict(text: str) -> tuple[str, float] | None:
+    """Best (category, probability) for a short complaint, or None when the
+    layer is unavailable, the input is out of domain, or confidence is below
+    the risk-tiered threshold."""
+    from app.engine.esi_rules import ALWAYS_HIGH_RISK
+
+    if len(text.split()) > MAX_TOKENS:
+        return None
+    s = _load()
+    if s is None:
+        return None
+    np = s["np"]
+    v = s["model"].encode([text]).astype(np.float64)[0]
+    v = v / max(float(np.linalg.norm(v)), 1e-9)
+    logits = v @ s["w"] + s["b"]
+    logits -= logits.max()
+    p = np.exp(logits)
+    p /= p.sum()
+    i = int(p.argmax())
+    category, prob = s["classes"][i], float(p[i])
+    if category == "other":
+        return None
+    floor = s["t_high"] if category in ALWAYS_HIGH_RISK else s["t_benign"]
+    if prob < floor:
+        return None
+    return category, prob
