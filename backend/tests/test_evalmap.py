@@ -103,7 +103,7 @@ def test_pregnancy_complication_needs_context_plus_sign():
         == "other"
 
 
-def test_first_pass_precedence_beats_second_pass():
+def test_exact_match_wins_ties_within_a_risk_tier():
     # a pregnant patient whose complaint names chest pain follows the chest
     # pain protocol; pregnancy context alone never reroutes a matched case
     assert classify_category("32 weeks pregnant with chest pain") == "chest_pain"

@@ -1,22 +1,37 @@
 """Intake NLP: chief complaint text -> complaint category.
 
-Two passes, resolved by clinical risk tier. Pass 1 is an exact keyword scan;
-pass 2 is phrase-level matching with a length-bounded edit distance over
-accent-folded tokens (misspellings, Spanish, Hinglish, synonym
-presentations), plus a compound pregnancy-complication predicate.
-Resolution: a match against any always-high-risk category, from either
-pass, beats any benign match - list order only breaks ties within the same
-risk tier. A benign word like "hives" must never claim a sentence that also
-carries "throat closing". The category then drives resource estimation, the
-high-risk gate, ICD-10 seeding, and retrieval for the reasoning path.
+Two tiers, in a fixed order:
+
+1. RULES - one deterministic layer. An exact keyword scan (cheap, checked
+   first) and a fuzzy phrase scan (accent-folded tokens, length-bounded
+   edit distance; misspellings, Spanish, Hinglish, synonym presentations)
+   feed a single resolution: any match against an always-high-risk category
+   beats any benign match, and list order only breaks ties within the same
+   risk tier. A benign word like "hives" can never claim a sentence that
+   also carries "throat closing". These rules are the guaranteed-recall
+   contract: their behavior is pinned by tests and anchors the committed
+   reasoning caches.
+2. MODEL - the distilled static-embedding classifier (engine.complaint_ml).
+   Consulted only when the rules abstain, only for short chief-complaint
+   text, and free to abstain itself. It covers phrasings nobody enumerated;
+   it can never override a rule.
+
+The category drives resource estimation, the high-risk ESI floor, ICD-10
+seeding, and retrieval for the reasoning path. Unknown or empty input
+always resolves to "other" - never an exception.
 """
 
 import re
 import unicodedata
 
+from app.engine import complaint_ml
 from app.engine.esi_rules import ALWAYS_HIGH_RISK
 
-CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
+# category signal lives in the opening of a complaint; a hard cap keeps the
+# fuzzy scan O(1) even against pathologically long free text
+MAX_ANALYZED_CHARS = 2000
+
+EXACT_KEYWORDS: list[tuple[str, list[str]]] = [
     ("self_harm", ["suicid", "overdose", "self-harm", "hurt himself", "hurt herself"]),
     ("stroke_signs", ["slurred", "facial droop", "droop", "stroke", "one-sided weakness"]),
     ("breathing_difficulty", ["short of breath", "shortness of breath", "difficulty breathing",
@@ -34,18 +49,15 @@ CATEGORY_KEYWORDS: list[tuple[str, list[str]]] = [
     ("sprain", ["sprain", "twisted ankle", "twisted his ankle", "twisted her ankle"]),
     ("rash", ["rash", "hives"]),
     ("medication_refill", ["refill", "out of medication", "ran out of med"]),
-    # lowest precedence on purpose: verified to reclassify zero benchmark
-    # cases, so the committed LLM replay cache stays byte-identical
+    # kept last: verified against the benchmark so committed reasoning
+    # caches stay byte-identical (risk-tier resolution outranks order anyway)
     ("allergic_reaction", ["anaphyla", "allergic reaction", "bee sting", "epipen"]),
 ]
 
-# Second-pass lexicon: phrase-level matching with bounded edit distance over
-# accent-folded tokens, covering misspellings, Spanish, Hinglish, and synonym
-# presentations. Runs ONLY when the exact first pass returns "other", so every
-# case the first pass already categorizes keeps its category (and its cached
-# reasoning) untouched. Phrases, never bare tokens: "throat closing" matches,
-# a sore "throat" alone never does.
-FUZZY_LEXICON: list[tuple[str, list[str]]] = [
+# Fuzzy phrases, never bare tokens: "throat closing" can match, a sore
+# "throat" alone never can. Covers misspellings (via bounded edit distance),
+# Spanish, romanized Hinglish, and synonym presentations.
+FUZZY_PHRASES: list[tuple[str, list[str]]] = [
     ("stroke_signs", ["derrame cerebral", "cara caida", "face drooping",
                       "lakwa mar gaya"]),
     ("breathing_difficulty", ["dificultad para respirar", "no puedo respirar",
@@ -71,23 +83,32 @@ FUZZY_LEXICON: list[tuple[str, list[str]]] = [
 # context alone ("I think I'm pregnant") is not an obstetric emergency, and
 # treating it as one would over-triage routine visits. Context AND a
 # complication sign are both required; preeclampsia terms match alone.
-_PREG_DIRECT = ["preeclampsia", "eclampsia"]
-_PREG_CONTEXT = ["pregnant", "pregnancy", "pregnancies", "postpartum",
-                 "post partum", "embarazada", "embarazo", "gestation"]
-_PREG_SIGNS = ["bleed", "spotting", "clot", "ectopic", "headache", "seiz",
-               "convuls", "vision", "blurr", "swelling", "swollen",
-               "contraction", "vomit", "cramp", "dizz", "faint", "pass out",
-               "unresponsive", "not respond", "baby not moving",
-               "no fetal movement"]
+PREGNANCY_DIRECT_TERMS = ["preeclampsia", "eclampsia"]
+PREGNANCY_CONTEXT = ["pregnant", "pregnancy", "pregnancies", "postpartum",
+                     "post partum", "embarazada", "embarazo", "gestation"]
+PREGNANCY_SIGNS = ["bleed", "spotting", "clot", "ectopic", "headache", "seiz",
+                   "convuls", "vision", "blurr", "swelling", "swollen",
+                   "contraction", "vomit", "cramp", "dizz", "faint",
+                   "pass out", "unresponsive", "not respond",
+                   "baby not moving", "no fetal movement"]
+
+KNOWN_CATEGORIES = frozenset(
+    [category for category, _ in EXACT_KEYWORDS]
+    + [category for category, _ in FUZZY_PHRASES]
+    + ["pregnancy_complication", "minor", "other"]
+)
 
 
-def _normalize(text: str) -> str:
-    folded = unicodedata.normalize("NFKD", text.lower())
-    stripped = "".join(c for c in folded if not unicodedata.combining(c))
-    return " ".join(re.sub(r"[^a-z0-9]+", " ", stripped).split())
+def _fold_accents(text: str) -> str:
+    decomposed = unicodedata.normalize("NFKD", text.lower())
+    return "".join(c for c in decomposed if not unicodedata.combining(c))
 
 
-def _osa_distance(a: str, b: str, cap: int) -> int:
+def _tokenize(text: str) -> list[str]:
+    return re.sub(r"[^a-z0-9]+", " ", _fold_accents(text)).split()
+
+
+def _edit_distance(a: str, b: str, cap: int) -> int:
     """Optimal string alignment distance (edits + adjacent transpositions),
     early-exited once every path exceeds cap."""
     prev2: list[int] = []
@@ -106,63 +127,68 @@ def _osa_distance(a: str, b: str, cap: int) -> int:
     return prev[len(b)]
 
 
-def _within_edits(token: str, term: str) -> bool:
-    """Distance budget scales with term length, conservatively: short terms
-    must match exactly so common words can never fuzz into clinical ones."""
+def _tokens_match(token: str, term: str) -> bool:
+    """Edit budget scales with term length, conservatively: short terms must
+    match exactly so common words can never fuzz into clinical ones."""
     cap = 0 if len(term) < 7 else (1 if len(term) < 10 else 2)
     if token == term:
         return True
     if cap == 0 or abs(len(token) - len(term)) > cap:
         return False
-    return _osa_distance(token, term, cap) <= cap
+    return _edit_distance(token, term, cap) <= cap
 
 
-def _phrase_in(tokens: list[str], phrase: str) -> bool:
+def _phrase_matches(tokens: list[str], phrase: str) -> bool:
     terms = phrase.split()
     span = len(terms)
     return any(
-        all(_within_edits(tokens[i + j], terms[j]) for j in range(span))
+        all(_tokens_match(tokens[i + j], terms[j]) for j in range(span))
         for i in range(len(tokens) - span + 1)
     )
 
 
-def _is_pregnancy_complication(norm: str, tokens: list[str]) -> bool:
-    if any(_within_edits(t, term) for t in tokens for term in _PREG_DIRECT):
+def _pregnancy_complication(folded: str, tokens: list[str]) -> bool:
+    if any(_tokens_match(t, term) for t in tokens for term in PREGNANCY_DIRECT_TERMS):
         return True
-    return (any(c in norm for c in _PREG_CONTEXT)
-            and any(s in norm for s in _PREG_SIGNS))
+    return (any(c in folded for c in PREGNANCY_CONTEXT)
+            and any(s in folded for s in PREGNANCY_SIGNS))
 
 
-def _second_pass_matches(text: str) -> list[str]:
-    norm = _normalize(text)
-    tokens = norm.split()
-    matches = [category for category, phrases in FUZZY_LEXICON
-               if any(_phrase_in(tokens, p) for p in phrases)]
-    if _is_pregnancy_complication(norm, tokens):
-        matches.append("pregnancy_complication")
-    return matches
+def _rule_matches(text: str) -> tuple[list[str], list[str]]:
+    """All rule matches, as (exact, fuzzy) category lists in list order."""
+    lowered = text.lower()
+    exact = [category for category, keywords in EXACT_KEYWORDS
+             if any(kw in lowered for kw in keywords)]
+    tokens = _tokenize(text)
+    folded = " ".join(tokens)
+    fuzzy = [category for category, phrases in FUZZY_PHRASES
+             if any(_phrase_matches(tokens, p) for p in phrases)]
+    if _pregnancy_complication(folded, tokens):
+        fuzzy.append("pregnancy_complication")
+    return exact, fuzzy
+
+
+def _rules_category(text: str) -> str | None:
+    """Tier 1: the deterministic rule layer. None means the rules abstain."""
+    exact, fuzzy = _rule_matches(text)
+    high_risk = ([c for c in exact if c in ALWAYS_HIGH_RISK]
+                 or [c for c in fuzzy if c in ALWAYS_HIGH_RISK])
+    if high_risk:
+        return high_risk[0]
+    if exact:
+        return exact[0]
+    if fuzzy:
+        return fuzzy[0]
+    return None
 
 
 def classify_category(text: str) -> str:
-    lowered = text.lower()
-    pass1 = [category for category, keywords in CATEGORY_KEYWORDS
-             if any(kw in lowered for kw in keywords)]
-    if pass1 and pass1[0] in ALWAYS_HIGH_RISK:
-        return pass1[0]
-    # the best exact match is benign (or absent): a high-risk signal from
-    # either pass still outranks it
-    pass2 = _second_pass_matches(text)
-    high_risk = ([c for c in pass1 if c in ALWAYS_HIGH_RISK]
-                 or [c for c in pass2 if c in ALWAYS_HIGH_RISK])
-    if high_risk:
-        return high_risk[0]
-    if pass1:
-        return pass1[0]
-    if pass2:
-        return pass2[0]
-    # both deterministic layers abstained: the distilled classifier may
-    # speak (short-complaint domain only, risk-tiered confidence floors)
-    from app.engine import complaint_ml
-
-    ml = complaint_ml.predict(text)
-    return ml[0] if ml else "other"
+    if not text or not text.strip():
+        return "other"
+    analyzed = text[:MAX_ANALYZED_CHARS]
+    ruled = _rules_category(analyzed)
+    if ruled is not None:
+        return ruled
+    # Tier 2: the distilled model may speak where the rules are silent
+    prediction = complaint_ml.predict(analyzed)
+    return prediction[0] if prediction else "other"

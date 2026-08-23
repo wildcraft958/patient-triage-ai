@@ -19,6 +19,7 @@ import logging
 import threading
 
 from app.config import REPO_ROOT
+from app.engine.esi_rules import ALWAYS_HIGH_RISK
 
 log = logging.getLogger(__name__)
 
@@ -73,24 +74,32 @@ def available() -> bool:
 
 def predict(text: str) -> tuple[str, float] | None:
     """Best (category, probability) for a short complaint, or None when the
-    layer is unavailable, the input is out of domain, or confidence is below
-    the risk-tiered threshold."""
-    from app.engine.esi_rules import ALWAYS_HIGH_RISK
-
-    if len(text.split()) > MAX_TOKENS:
+    layer is unavailable, the input is empty or out of domain, or confidence
+    is below the risk-tiered threshold. Never raises."""
+    if not text or not text.strip() or len(text.split()) > MAX_TOKENS:
         return None
     s = _load()
     if s is None:
         return None
-    np = s["np"]
-    v = s["model"].encode([text]).astype(np.float64)[0]
-    v = v / max(float(np.linalg.norm(v)), 1e-9)
-    logits = v @ s["w"] + s["b"]
-    logits -= logits.max()
-    p = np.exp(logits)
-    p /= p.sum()
-    i = int(p.argmax())
-    category, prob = s["classes"][i], float(p[i])
+    try:
+        np = s["np"]
+        v = s["model"].encode([text]).astype(np.float64)[0]
+        norm = float(np.linalg.norm(v))
+        if norm < 1e-9 or not np.isfinite(norm):
+            return None  # nothing the embedding model recognized
+        v = v / norm
+        logits = v @ s["w"] + s["b"]
+        logits -= logits.max()
+        p = np.exp(logits)
+        p /= p.sum()
+        if not np.isfinite(p).all():
+            return None
+        i = int(p.argmax())
+        category, prob = s["classes"][i], float(p[i])
+    except Exception as e:
+        log.warning("distilled classifier prediction failed (%s: %s) - "
+                    "abstaining", type(e).__name__, e)
+        return None
     if category == "other":
         return None
     floor = s["t_high"] if category in ALWAYS_HIGH_RISK else s["t_benign"]
