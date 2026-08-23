@@ -196,6 +196,17 @@ def test_metrics_audit_stats_aggregate_clinician_decisions():
                          "communication", "documentation", "safety"}
 
 
+def test_unrecognized_category_string_is_normalized():
+    """An integration typo in the category field must never silently
+    degrade a patient: the intake classifier reroutes it."""
+    r = client.post("/patients", json=patient(
+        chief_complaint="crushing chest pressure and sweating",
+        complaint_category="cardiac-ish"))
+    fused = r.json()["fused"]
+    assert any("auto-categorized as chest_pain" in n for n in fused["notes"])
+    assert fused["esi"] == 2  # age 45 chest pain: high-risk ACS rule
+
+
 def test_uncategorized_arrival_is_auto_classified():
     """The intake NLP runs on live arrivals: no dropdown category needed."""
     r = client.post("/patients", json=patient(

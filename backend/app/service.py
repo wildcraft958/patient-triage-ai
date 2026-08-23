@@ -12,7 +12,7 @@ import time
 from app.agent.fuse import ROUTES, FusedResult
 from app.agent.graph import triage
 from app.audit.log import AuditLog, OverrideRecord
-from app.engine.complaint import classify_category
+from app.engine.complaint import KNOWN_CATEGORIES, classify_category
 from app.learning.loop import CalibrationTable, age_band, compute_reward_vector
 from app.models import PatientIntake, Vitals
 from app.monitor.waiting_room import Alert, SimClock, WaitingRoom
@@ -74,9 +74,12 @@ class TriageService:
         # + safety - the full pipeline a clinician actually waits on
         started = time.perf_counter()
         auto_note = None
-        if intake.complaint_category == "other" and intake.chief_complaint.strip():
+        # run the intake classifier when no usable category was supplied:
+        # "other" is the console's auto-detect default, and an unrecognized
+        # string (an integration typo) must never silently degrade a patient
+        if intake.complaint_category == "other" or intake.complaint_category not in KNOWN_CATEGORIES:
             detected = classify_category(intake.chief_complaint)
-            if detected != "other":
+            if detected != intake.complaint_category:
                 intake = intake.model_copy(update={"complaint_category": detected})
                 auto_note = (f"Complaint auto-categorized as {detected} "
                              f"from the chief complaint text")
