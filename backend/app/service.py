@@ -5,6 +5,8 @@ vitals recheck -> deterioration trigger -> automatic re-triage
 clinician accept/override -> reward -> calibration update -> audit trail
 """
 
+import functools
+import threading
 import time
 
 from app.agent.fuse import ROUTES, FusedResult
@@ -30,9 +32,21 @@ class UnacknowledgedDowngrade(ValueError):
     levels requires an explicit acknowledgment so it cannot happen by slip."""
 
 
+def _locked(method):
+    """Serialize state-mutating entry points on the shared service: API
+    handlers run on a threadpool, so concurrent requests would otherwise
+    interleave inside check-then-act windows (override vs enrichment drain)."""
+    @functools.wraps(method)
+    def wrapper(self, *args, **kwargs):
+        with self._lock:
+            return method(self, *args, **kwargs)
+    return wrapper
+
+
 class TriageService:
     def __init__(self, profile_name: str | None = None, audit_path: str | None = None,
                  transport=None, calibration_path=None):
+        self._lock = threading.RLock()  # reentrant: advance_clock -> process_enrichment
         self.profile = load_profile(profile_name)
         self.clock = SimClock()
         self.room = WaitingRoom(profile=self.profile, clock=self.clock)
@@ -54,6 +68,7 @@ class TriageService:
 
     # --- core flows ---
 
+    @_locked
     def arrive(self, intake: PatientIntake, use_llm: bool = True) -> FusedResult:
         # intake-to-recommendation latency: redact + both paths + calibration
         # + safety - the full pipeline a clinician actually waits on
@@ -91,6 +106,7 @@ class TriageService:
         })
         return fused
 
+    @_locked
     def record_vitals(self, patient_id: str, vitals: Vitals,
                       source: str = "nurse") -> dict:
         alert = self.room.record_vitals(patient_id, vitals)
@@ -121,6 +137,7 @@ class TriageService:
                 result["retriaged"] = fused
         return result
 
+    @_locked
     def advance_clock(self, minutes: float) -> list[Alert]:
         self.clock.advance(minutes)
         self.process_enrichment()
@@ -130,6 +147,7 @@ class TriageService:
                            {"kind": alert.kind, "reasons": alert.reasons})
         return alerts
 
+    @_locked
     def process_enrichment(self) -> list[dict]:
         """Drain Path-B work deferred at surge arrivals.
 
@@ -192,6 +210,7 @@ class TriageService:
 
     # --- clinician actions ---
 
+    @_locked
     def accept(self, patient_id: str, clinician_id: str) -> float:
         entry = self.room.entries[patient_id]
         vector = compute_reward_vector(entry.fused.esi, None,
@@ -205,6 +224,7 @@ class TriageService:
         self.room.to_treatment(patient_id)
         return vector.total
 
+    @_locked
     def override(self, patient_id: str, new_esi: int, clinician_id: str,
                  reason: str, acknowledge_risk: bool = False) -> dict:
         entry = self.room.entries[patient_id]
@@ -269,6 +289,7 @@ class TriageService:
             return s[min(len(s) - 1, int(p / 100 * len(s)))]
         return {"n": len(s), "p50_ms": pct(50), "p95_ms": pct(95)}
 
+    @_locked
     def queue_view(self) -> list[dict]:
         from app.engine.icd10 import code_for
         from app.monitor.priority import action_for

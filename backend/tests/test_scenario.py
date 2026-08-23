@@ -48,3 +48,36 @@ def test_scenario_steps_through_all_events():
 
     extra = client.post("/scenario/step").json()
     assert extra["done"] is True and extra["event"] is None
+
+
+# --- concurrency: the shared service serializes mutations ---
+
+def test_concurrent_mutations_hold_invariants():
+    """FastAPI runs sync handlers on a threadpool, so the shared service
+    sees genuinely concurrent calls; mutations must serialize."""
+    from concurrent.futures import ThreadPoolExecutor
+
+    from app.models import PatientIntake, Vitals
+    from app.service import TriageService
+
+    svc = TriageService(profile_name="urban_500", audit_path=":memory:",
+                        transport=fake_transport)
+
+    def intake(i: int) -> PatientIntake:
+        return PatientIntake(
+            patient_id=f"C{i}", age_years=40,
+            chief_complaint="abdominal pain for two days",
+            complaint_category="abdominal_pain",
+            vitals=Vitals(hr=88, rr=16, spo2=98, temp_c=37.0, sbp=120, pain=5))
+
+    def op(i: int) -> bool:
+        svc.arrive(intake(i))
+        svc.advance_clock(1)
+        svc.queue_view()
+        if i % 3 == 0:
+            svc.override(f"C{i}", 4, "RN-1", "stable, low suspicion")
+        return True
+
+    with ThreadPoolExecutor(max_workers=8) as ex:
+        assert all(ex.map(op, range(24)))
+    assert svc.state_view()["total_patients"] == 24
