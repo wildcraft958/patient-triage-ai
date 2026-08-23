@@ -75,6 +75,19 @@ def test_anaphylaxis_synonym_phrases_classify():
     assert classify_category("swollen ankle after a game") == "other"
 
 
+def test_filler_words_never_defeat_a_high_risk_phrase():
+    """Natural speech inserts fillers inside clinical phrases; a bounded
+    bridge over a closed filler list must absorb them."""
+    assert classify_category(
+        "lips are swelling and I have a headache, took my allergy meds already") \
+        == "allergic_reaction"
+    assert classify_category("my tongue is really swelling up") == "allergic_reaction"
+    assert classify_category("throat keeps closing when I swallow") == "allergic_reaction"
+    # only filler tokens may bridge: content words never do
+    assert classify_category("throat hurts, closing time at work") == "other"
+    assert classify_category("sore throat since closing shift") == "other"
+
+
 def test_spanish_complaints_classify():
     assert classify_category("dolor en el pecho y sudoracion") == "chest_pain"
     assert classify_category("no puedo respirar bien") == "breathing_difficulty"

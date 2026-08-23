@@ -72,12 +72,22 @@ FUZZY_PHRASES: list[tuple[str, list[str]]] = [
     ("fever", ["fiebre alta", "fiebre", "bukhar", "high temperature"]),
     ("allergic_reaction", ["anaphylaxis", "anaphylactic", "anafilaxia",
                            "reaccion alergica", "alergia grave",
-                           "throat closing", "throat is closing",
-                           "throat tightness", "tongue swelling",
-                           "tongue is swelling", "swollen tongue",
+                           "throat closing", "throat tightness",
+                           "tongue swelling", "swollen tongue",
                            "lips swelling", "swollen lips", "face swelling",
                            "hives all over"]),
 ]
+
+# Tokens allowed to sit INSIDE a fuzzy phrase (at most two in a row):
+# natural speech says "lips are swelling" and "tongue is really swelling",
+# and none of these words can flip a phrase's clinical meaning. A content
+# word ("hurts", "since") never bridges, so "sore throat since closing
+# shift" cannot reach "throat closing".
+FILLER_TOKENS = frozenset(
+    "is are was be been am feels feeling getting gets keeps keep really "
+    "very so my his her the a an still now just kind of esta se me muy".split()
+)
+MAX_FILLERS_BRIDGED = 2
 
 # Pregnancy complication is a compound predicate, not a keyword: pregnancy
 # context alone ("I think I'm pregnant") is not an obstetric emergency, and
@@ -139,12 +149,32 @@ def _tokens_match(token: str, term: str) -> bool:
 
 
 def _phrase_matches(tokens: list[str], phrase: str) -> bool:
+    """Phrase terms must appear in order, each within its edit budget, with
+    at most MAX_FILLERS_BRIDGED consecutive filler tokens between terms."""
     terms = phrase.split()
-    span = len(terms)
-    return any(
-        all(_tokens_match(tokens[i + j], terms[j]) for j in range(span))
-        for i in range(len(tokens) - span + 1)
-    )
+    for start in range(len(tokens)):
+        if not _tokens_match(tokens[start], terms[0]):
+            continue
+        pos, matched = start + 1, 1
+        while matched < len(terms) and pos < len(tokens):
+            if _tokens_match(tokens[pos], terms[matched]):
+                matched += 1
+                pos += 1
+                continue
+            bridged = 0
+            while (pos < len(tokens) and tokens[pos] in FILLER_TOKENS
+                   and bridged < MAX_FILLERS_BRIDGED):
+                pos += 1
+                bridged += 1
+            if (bridged and pos < len(tokens)
+                    and _tokens_match(tokens[pos], terms[matched])):
+                matched += 1
+                pos += 1
+            else:
+                break
+        if matched == len(terms):
+            return True
+    return False
 
 
 def _pregnancy_complication(folded: str, tokens: list[str]) -> bool:
