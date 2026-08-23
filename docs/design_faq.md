@@ -111,23 +111,47 @@ remains active for everyone - new clinical evidence may still escalate, never
 downgrade - which is exactly the division of authority a hospital expects:
 machines may raise concern, only people decide.
 
-## What happens with a misspelled, Spanish, or Hinglish complaint?
+## What happens with a misspelled, Spanish, Hinglish, or never-seen complaint?
 
-The intake classifier (`engine/complaint.py`) runs two passes. Pass 1 is an
-exact clinical keyword scan in precedence order. Pass 2 fires only when
-pass 1 finds nothing: tokens are lowercased and accent-folded, then matched
-phrase-by-phrase against a multilingual lexicon with a length-bounded edit
-distance (transposition-aware, distance 1 for 7-9 character terms, 2 for
-longer, exact below 7 - so "anaphlaxis" and "anaphalaxis" match anaphylaxis
-while a sore "throat" alone never matches "throat closing"). Spanish
-("dolor de pecho", "no puedo respirar") and Hinglish ("seene mein dard",
-"saans nahi aa rahi", "bukhar") phrasings classify directly. Pregnancy
-complications use a compound predicate: pregnancy context AND a complication
-sign are both required, so "I think I'm pregnant" stays a routine visit
-while "28 weeks pregnant, sudden severe headache" is an obstetric emergency
-(ESI-2 floor, ICD-10 O26.90, ACOG severe-range SBP flag). The two-pass
-design also has an engineering property: pass 1 is frozen, so every cached
-reasoning replay keys on exactly the category it was recorded under.
+The intake classifier (`engine/complaint.py`) is two tiers. The RULE tier
+combines exact clinical keywords with fuzzy phrases (accent-folded tokens, a
+length-bounded transposition-aware edit distance - "anaphlaxis" matches
+anaphylaxis while a sore "throat" never matches "throat closing") and a
+compound pregnancy predicate (context AND a complication sign, so "I think
+I'm pregnant" stays a routine visit while "28 weeks pregnant, sudden severe
+headache" is an obstetric emergency: ESI-2 floor, ICD-10 O26.90, ACOG
+severe-range SBP flag). Matches resolve by clinical risk: any always-high-
+risk match beats any benign one. Spanish ("dolor de pecho") and Hinglish
+("seene mein dard", "bukhar") phrasings classify deterministically here -
+measured fact: an English embedding model scores them near zero, so
+multilingual coverage must be rules, not vectors.
+
+Where the rules are silent, the MODEL tier speaks
+(`engine/complaint_ml.py`): Model2Vec static embeddings with a logistic
+head trained on clinically reviewed real MIMIC-IV-ED chief complaints. It
+catches what nobody enumerated - "he has been shot", "elephant sitting on my
+chest", "cant catch my breath" - with bounded softmax probabilities, a lower
+acceptance bar for high-risk categories than benign ones, and abstention
+below both. It never overrides a rule, only fills silence, and if its
+artifacts cannot load the system falls back to rules alone. A committed
+snapshot fixture freezes the classification of every benchmark and demo
+text, so any drift fails the test suite instead of silently invalidating
+the cached reasoning corpus.
+
+## Why keep deterministic rules in front of a learned classifier?
+
+Three measured reasons, not taste. First, guaranteed recall: the distilled
+model's cross-validated recall on small high-risk classes is honest but
+imperfect (it trains on a few hundred examples), while the rule tier catches
+"facial droop" or a suicidal statement 100% of the time, provably, on every
+retrain - in triage, red-flag phrases must be a contract, not a probability.
+Second, language coverage the embeddings measurably lack (see above). Third,
+auditability: "this phrase always routes to this protocol" is answerable
+with a rule table and a test; a softmax score cannot sign that contract. In
+a production deployment the rule tier would live on as a single versioned,
+clinician-owned table - the regulatory requirement is exactly that mapping
+being inspectable and frozen between reviews, with the learned tier retrained
+on the hospital's own labeled complaints underneath it.
 
 ## Why BM25 retrieval instead of embeddings?
 
@@ -216,10 +240,11 @@ adapter, documented in `backend/app/monitor/waiting_room.py`.
 
 ## What would break first in a real hospital?
 
-Honest list: (1) the two-pass intake classifier covers exact clinical terms,
-misspellings, and Spanish/Hinglish phrasings, but a hospital's full intake
-language (regional scripts, compound narratives) needs a learned NLP layer
-trained on that site's own triage notes; (2) vitals arrive from monitors and
+Honest list: (1) the intake classifier's learned tier is trained on a few
+hundred reviewed examples; a hospital deployment retrains it on that site's
+own labeled complaint stream (regional scripts and compound narratives
+included), which is a data exercise the architecture is already shaped for;
+(2) vitals arrive from monitors and
 EHR integration (HL7/FHIR), which we mock; (3) the ESI resource-count
 estimate should learn from the hospital's own historical data; (4) alert
 thresholds need tuning per site to avoid alarm fatigue, which is why they

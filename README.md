@@ -20,7 +20,7 @@ Triage today is a snapshot: a patient is scored once at arrival and then nobody 
 
 PatientTriage.ai treats the waiting room as part of triage:
 
-1. **Phase 1, Intake.** Structured first-minutes data: chief complaint (typed or voice-dictated), vitals, age, AVPU, medications if on file, and an optional OLDCARTS structured interview (Onset, Location, Duration, Characteristics, Aggravating/Alleviating, Radiation, Timing/Triggers, Severity 1-10) whose severity answer feeds the ESI pain gate. A two-pass intake classifier (`backend/app/engine/complaint.py`) reads the complaint text: an exact clinical keyword pass, then a fuzzy pass with bounded edit distance over accent-folded phrases that absorbs misspellings and Spanish and Hinglish phrasings, plus a compound obstetric-emergency predicate (pregnancy context AND a complication sign, so a routine pregnancy visit is never over-triaged). The category auto-codes to a provisional ICD-10. Half of real patients have no record at all; the system is designed for that.
+1. **Phase 1, Intake.** Structured first-minutes data: chief complaint (typed or voice-dictated), vitals, age, AVPU, medications if on file, and an optional OLDCARTS structured interview (Onset, Location, Duration, Characteristics, Aggravating/Alleviating, Radiation, Timing/Triggers, Severity 1-10) whose severity answer feeds the ESI pain gate. A **two-tier intake classifier** reads the complaint text (`backend/app/engine/complaint.py`): a deterministic rule tier (exact clinical keywords, fuzzy phrases with bounded edit distance over accent-folded tokens for misspellings and Spanish and Hinglish phrasings, and a compound obstetric-emergency predicate) resolved by clinical risk so a high-risk match always beats a benign one; and, only where the rules are silent, a **distilled machine-learned tier** (`complaint_ml.py`): Model2Vec static embeddings (a sentence transformer distilled to a 30MB numpy-only artifact) with a logistic head trained on clinically reviewed real MIMIC-IV-ED chief complaints, speaking only above risk-tiered confidence floors and abstaining otherwise. The category auto-codes to a provisional ICD-10. Half of real patients have no record at all; the system is designed for that.
 2. **Phase 2, Dual-path scoring.** Path A is a deterministic ESI v4 rules engine with age-banded vital thresholds. Path B is Claude reasoning over the redacted intake, grounded in retrieved ESI Handbook passages. A FUSE step combines them: agreement means high confidence; disagreement takes the MORE acute level, lowers confidence, and flags the clinician with both reasoning chains.
 3. **Phase 3, Dynamic reassessment (the novel loop).** Triage is formalized as a POMDP: the hidden state is the patient's true acuity, and each patient carries a live belief - a probability distribution over ESI 1-5 - initialized from the two paths (disagreement IS the uncertainty), drifted acute-ward by a deterioration hazard while they wait, and Bayes-updated by every vitals recheck from any channel (nurse spot-check, wearable, kiosk self-report). The policy over that belief ranks the room:
 
@@ -130,6 +130,7 @@ flowchart LR
 | Component | Where | Notes |
 |---|---|---|
 | ESI v4 rules engine | `backend/app/engine/` | Deterministic, auditable, no LLM |
+| Intake classifier | `backend/app/engine/complaint.py`, `complaint_ml.py` | Two tiers: risk-resolved rules, then a distilled static-embedding model (numpy-only) that fills rule silence |
 | LLM reasoning path | `backend/app/agent/llm_path.py` | Claude via Bedrock (or any OpenAI-compatible local server); disk replay cache |
 | ESI Handbook RAG | `backend/app/agent/rag.py` | BM25 over page chunks, page-cited, fully offline |
 | FUSE orchestrator | `backend/app/agent/fuse.py` | LangGraph parallel fan-out, fan-in |
@@ -143,6 +144,18 @@ flowchart LR
 | ICD-10 coding + FHIR export | `backend/app/engine/icd10.py`, `backend/app/fhir.py` | Provisional encounter codes; FHIR R4 Bundle per episode |
 | Evaluation harness | `eval/run_eval.py` | Published-benchmark metrics, reproducible |
 | Product site + nurse console | `frontend/` | React + Vite; landing pages at `/`, console at `/console` with OLDCARTS intake form and voice dictation |
+
+### The intake classifier: distillation end to end
+
+Free-text complaint understanding is a studied, hard problem (published supervised models reach F1 near 47 on chief complaints), and we engineered it rather than hand-waving it. The design was chosen by elimination against hard constraints - deterministic and key-free for anyone reproducing this repo, a 512MB deployment budget, and guaranteed recall on red-flag presentations:
+
+- **Keyword lists alone** are brittle against misspellings, paraphrase, and other languages.
+- **BM25 or TF-IDF nearest-neighbor** was evaluated and rejected: retrieval scores are unbounded and not comparable across queries, so the risk-tiered confidence thresholds this design needs cannot be calibrated on them, and every added example silently shifts every score.
+- **Full transformers** (clinical BERT trained on 1.8M ED complaints exists) blow the memory budget and add a torch or ONNX runtime for marginal gain at this category granularity.
+
+What ships instead: a deterministic rule tier that is the guaranteed-recall contract (a red-flag phrase maps to its protocol 100% of the time, provably, pinned by tests), and beneath it a **distilled classifier** - [Model2Vec](https://github.com/MinishLab/model2vec) static embeddings (a full sentence transformer distilled into a 30MB, numpy-only artifact, MIT) with a class-balanced logistic head trained by `scripts/train_complaint_classifier.py` on **clinically reviewed labels over real MIMIC-IV-ED chief complaints** plus adversarial phrasings. Softmax gives bounded, calibrated probabilities, so the model accepts a high-risk call at lower confidence than a benign one and abstains below both floors; training is zero-init on a convex objective, so the committed artifact is bit-reproducible with no random seed. A committed snapshot fixture freezes the classification of every benchmark and demo text, making any drift a visible, reviewed event. Fixing the next unseen phrasing is one labeled row in `data/complaint_examples.json` and a deterministic retrain.
+
+The pattern is the same one that runs through the whole system: Claude's reasoning is distilled into the replay corpus, Doctor-R1 is a distilled clinician for the hospital-local option, and the intake classifier is a transformer distilled into an artifact small enough to run anywhere - with the deterministic layers as the safety floor and the dual-path fusion as the net beneath everything.
 
 ## Quick start
 
@@ -160,7 +173,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 136 tests
+uv run pytest                     # 150 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
