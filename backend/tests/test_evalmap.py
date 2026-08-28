@@ -1,4 +1,4 @@
-from app.engine.complaint import _phrase_matches, _tokenize
+from app.engine.complaint import _phrase_matches, _rules_category, _tokenize
 from app.evalmap import (
     case_to_intake,
     classify_category,
@@ -99,10 +99,12 @@ def test_a_phrase_never_bridges_a_clause_boundary():
 
 
 def test_articles_inside_a_phrase_are_bridged_not_required():
-    assert classify_category("sharp pain in the chest since this morning") \
+    # the deterministic tier owns these: a phrase requiring the exact
+    # article would leave them to the learned tier, which may abstain
+    assert _rules_category("sharp pain in the chest since this morning") \
         == "chest_pain"
-    assert classify_category("pain in my chest") == "chest_pain"
-    assert classify_category("bad pain in the stomach all night") == "abdominal_pain"
+    assert _rules_category("pain in my chest") == "chest_pain"
+    assert _rules_category("bad pain in the stomach all night") == "abdominal_pain"
 
 
 def test_a_filler_token_that_is_also_a_phrase_term_still_matches():
