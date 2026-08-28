@@ -66,6 +66,30 @@ def test_disguised_presentations_classify():
     assert classify_category("shot in the stomach") == "other"
 
 
+# --- acceptance thresholds: pure functions, no model needed ---
+
+def test_a_miss_critical_class_clears_its_floor_even_when_a_benign_class_leads():
+    # the asymmetry exists to protect exactly these categories; taking the
+    # top class first would bury a chest pain that already cleared its floor
+    probs = {"other": 0.30, "abdominal_pain": 0.24, "chest_pain": 0.46}
+    assert complaint_ml._accept(probs, 0.45, 0.60) == ("chest_pain", 0.46)
+
+
+def test_a_benign_leader_below_its_own_floor_abstains():
+    probs = {"abdominal_pain": 0.55, "chest_pain": 0.20, "other": 0.25}
+    assert complaint_ml._accept(probs, 0.45, 0.60) is None
+
+
+def test_a_confident_benign_class_is_accepted():
+    probs = {"fever": 0.70, "chest_pain": 0.10, "other": 0.20}
+    assert complaint_ml._accept(probs, 0.45, 0.60) == ("fever", 0.70)
+
+
+def test_a_leading_other_abstains():
+    probs = {"other": 0.80, "fever": 0.15, "chest_pain": 0.05}
+    assert complaint_ml._accept(probs, 0.45, 0.60) is None
+
+
 @needs_model
 def test_distilled_layer_abstains_on_benign_and_ambiguous():
     # 'shot' without violence context, and plain minor complaints, must not

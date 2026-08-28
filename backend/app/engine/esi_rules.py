@@ -37,6 +37,13 @@ ALWAYS_HIGH_RISK = {"stroke_signs", "breathing_difficulty", "trauma_major",
                     "sepsis_concern", "self_harm", "allergic_reaction",
                     "pregnancy_complication"}
 
+# Categories where a MISS is the dangerous error, so any tier that assigns a
+# category may accept them at lower confidence. Chest pain is not in
+# ALWAYS_HIGH_RISK (it is high risk conditionally, on age or cardiac
+# history) but the missed atypical MI is the classic triage error. One
+# taxonomy, imported by every tier - two copies would drift.
+MISS_CRITICAL = ALWAYS_HIGH_RISK | {"chest_pain"}
+
 
 def _resources(intake: PatientIntake) -> int:
     base = BASE_RESOURCES.get(intake.complaint_category, 1)

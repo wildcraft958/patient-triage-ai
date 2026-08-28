@@ -19,7 +19,7 @@ import logging
 import threading
 
 from app.config import REPO_ROOT
-from app.engine.esi_rules import ALWAYS_HIGH_RISK
+from app.engine.esi_rules import MISS_CRITICAL
 
 log = logging.getLogger(__name__)
 
@@ -27,13 +27,11 @@ EMBED_MODEL = "minishlab/potion-base-8M"
 HEAD_PATH = REPO_ROOT / "data" / "complaint_model" / "head.npz"
 
 # softmax probability floors: escalation-friendly asymmetry - a category
-# that is dangerous to MISS is accepted at lower confidence than a benign
-# one. chest_pain joins the always-high-risk set here because the rules
-# treat it as conditionally high risk (age/cardiac history) and the missed
-# atypical MI is the classic triage error.
+# that is dangerous to MISS (esi_rules.MISS_CRITICAL) is accepted at lower
+# confidence than a benign one, and it is checked BEFORE the top-scoring
+# class, so a benign category that merely leads cannot bury it.
 HIGH_RISK_THRESHOLD = 0.45
 BENIGN_THRESHOLD = 0.60
-MISS_CRITICAL_EXTRAS = frozenset({"chest_pain"})
 
 # the head was trained on chief complaints (MIMIC-IV-ED style short strings);
 # long narrative vignettes are out of its domain and are left to the
@@ -98,16 +96,25 @@ def predict(text: str) -> tuple[str, float] | None:
         p /= p.sum()
         if not np.isfinite(p).all():
             return None
-        i = int(p.argmax())
-        category, prob = s["classes"][i], float(p[i])
+        probabilities = dict(zip(s["classes"], (float(x) for x in p)))
     except Exception as e:
         log.warning("distilled classifier prediction failed (%s: %s) - "
                     "abstaining", type(e).__name__, e)
         return None
-    if category == "other":
+    return _accept(probabilities, s["t_high"], s["t_benign"])
+
+
+def _accept(probabilities: dict[str, float], t_high: float,
+            t_benign: float) -> tuple[str, float] | None:
+    """Escalation-friendly acceptance. A miss-critical category that clears
+    its lower floor is taken even when a benign category scores higher -
+    checking the top class first would silently bury exactly the categories
+    the asymmetry exists to protect."""
+    critical = max((c for c in probabilities if c in MISS_CRITICAL),
+                   key=probabilities.get, default=None)
+    if critical is not None and probabilities[critical] >= t_high:
+        return critical, probabilities[critical]
+    best = max(probabilities, key=probabilities.get)
+    if best == "other" or probabilities[best] < t_benign:
         return None
-    miss_critical = category in ALWAYS_HIGH_RISK or category in MISS_CRITICAL_EXTRAS
-    floor = s["t_high"] if miss_critical else s["t_benign"]
-    if prob < floor:
-        return None
-    return category, prob
+    return best, probabilities[best]
