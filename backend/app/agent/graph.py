@@ -16,7 +16,7 @@ from app.agent.fuse import FusedResult, LLMResult, fuse
 from app.agent.llm_path import assess
 from app.engine.esi_rules import score
 from app.models import PatientIntake, RulesResult
-from app.privacy.redact import redact
+from app.privacy.redact import aggregate_age, redact
 
 
 class TriageState(TypedDict, total=False):
@@ -47,6 +47,9 @@ def redact_node(state: TriageState) -> dict:
     update = {
         "medications": redact_items(intake.medications),
         "conditions": redact_items(intake.conditions),
+        # Safe Harbor: the exact age of a patient over 89 never leaves the
+        # building. The rules path scores the untouched intake.
+        "age_years": aggregate_age(intake.age_years),
     }
     if intake.oldcarts is not None:
         oc = intake.oldcarts.model_dump()
