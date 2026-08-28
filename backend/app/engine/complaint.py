@@ -3,11 +3,12 @@
 Two tiers, in a fixed order:
 
 1. RULES - one deterministic layer. An exact keyword scan (cheap, checked
-   first) and a fuzzy phrase scan (accent-folded tokens, length-bounded
-   edit distance; misspellings, Spanish, Hinglish, synonym presentations)
-   feed a single resolution: any match against an always-high-risk category
-   beats any benign match, and list order only breaks ties within the same
-   risk tier. A benign word like "hives" can never claim a sentence that
+   first) and a fuzzy scan over accent-folded tokens, clause by clause:
+   ordered phrases with a length-bounded edit distance (misspellings and
+   synonym presentations) plus order-free clinical term pairs (Spanish and
+   Hinglish, where the article and the word order move). Both feed a single
+   resolution: any match against an always-high-risk category beats any
+   benign match, and list order only breaks ties within the same risk tier. A benign word like "hives" can never claim a sentence that
    also carries "throat closing". These rules are the guaranteed-recall
    contract: their behavior is pinned by tests and anchors the committed
    reasoning caches.
