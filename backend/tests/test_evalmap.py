@@ -1,3 +1,4 @@
+from app.engine.complaint import _phrase_matches, _tokenize
 from app.evalmap import (
     case_to_intake,
     classify_category,
@@ -86,6 +87,40 @@ def test_filler_words_never_defeat_a_high_risk_phrase():
     # only filler tokens may bridge: content words never do
     assert classify_category("throat hurts, closing time at work") == "other"
     assert classify_category("sore throat since closing shift") == "other"
+
+
+def test_a_phrase_never_bridges_a_clause_boundary():
+    """Punctuation ends a clause. Without that boundary two unrelated
+    sentences can assemble a clinical phrase between them."""
+    assert classify_category("My throat. Is closing time soon?") == "other"
+    assert classify_category("tongue. Is swelling of the river") == "other"
+    # the same words inside one clause still match
+    assert classify_category("my throat is closing") == "allergic_reaction"
+
+
+def test_articles_inside_a_phrase_are_bridged_not_required():
+    assert classify_category("sharp pain in the chest since this morning") \
+        == "chest_pain"
+    assert classify_category("pain in my chest") == "chest_pain"
+    assert classify_category("bad pain in the stomach all night") == "abdominal_pain"
+
+
+def test_a_filler_token_that_is_also_a_phrase_term_still_matches():
+    # the bridge must not swallow a token the phrase itself needs
+    assert _phrase_matches(_tokenize("pain in the my chest"), "pain in my chest")
+
+
+def test_spanish_word_order_and_articles_do_not_defeat_the_rules():
+    """Spanish moves the modifier and swaps the article, so ordered phrases
+    alone under-cover it; clinical term pairs inside one clause do not."""
+    assert classify_category("dolor muy fuerte en el pecho") == "chest_pain"
+    assert classify_category("dolor en mi pecho") == "chest_pain"
+    assert classify_category("me falta el aire") == "breathing_difficulty"
+    assert classify_category("dolor fuerte de estomago desde ayer") \
+        == "abdominal_pain"
+    # a pair split across clauses is not one complaint
+    assert classify_category("tengo dolor. el pecho de mi padre esta bien") \
+        == "other"
 
 
 def test_spanish_complaints_classify():

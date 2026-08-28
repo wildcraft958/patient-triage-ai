@@ -65,10 +65,10 @@ FUZZY_PHRASES: list[tuple[str, list[str]]] = [
                               "saans nahi aa rahi", "saans lene mein dikkat",
                               "struggling to breathe", "gasping for air"]),
     ("chest_pain", ["dolor de pecho", "dolor en el pecho", "seene mein dard",
-                    "chhati mein dard", "pain in my chest"]),
+                    "chhati mein dard", "pain in chest"]),
     ("abdominal_pain", ["dolor abdominal", "dolor de estomago",
                         "dolor de barriga", "pet mein dard", "pet dard",
-                        "pain in my stomach", "pain in my belly"]),
+                        "pain in stomach", "pain in belly"]),
     ("fever", ["fiebre alta", "fiebre", "bukhar", "high temperature"]),
     ("allergic_reaction", ["anaphylaxis", "anaphylactic", "anafilaxia",
                            "reaccion alergica", "alergia grave",
@@ -85,9 +85,23 @@ FUZZY_PHRASES: list[tuple[str, list[str]]] = [
 # shift" cannot reach "throat closing".
 FILLER_TOKENS = frozenset(
     "is are was be been am feels feeling getting gets keeps keep really "
-    "very so my his her the a an still now just kind of esta se me muy".split()
+    "very so my his her the a an still now just kind of".split()
 )
 MAX_FILLERS_BRIDGED = 2
+
+# Clinical term PAIRS, matched in any order inside one clause. Spanish and
+# Hinglish move the modifier and swap the article ("dolor muy fuerte en el
+# pecho"), so an ordered phrase list under-covers them the moment a patient
+# speaks naturally; a pair of unambiguous clinical terms does not depend on
+# word order at all. English keeps the ordered phrases: its category words
+# ("chest", "pain") are common enough that order carries meaning.
+CO_OCCURRING_TERMS: list[tuple[str, list[list[str]]]] = [
+    ("chest_pain", [["dolor", "pecho"], ["dard", "seene"], ["dard", "chhati"]]),
+    ("abdominal_pain", [["dolor", "estomago"], ["dolor", "barriga"],
+                        ["dolor", "panza"], ["dard", "pet"]]),
+    ("breathing_difficulty", [["falta", "aire"], ["dificultad", "respirar"],
+                              ["saans", "dikkat"]]),
+]
 
 # Pregnancy complication is a compound predicate, not a keyword: pregnancy
 # context alone ("I think I'm pregnant") is not an obstetric emergency, and
@@ -105,8 +119,13 @@ PREGNANCY_SIGNS = ["bleed", "spotting", "clot", "ectopic", "headache", "seiz",
 KNOWN_CATEGORIES = frozenset(
     [category for category, _ in EXACT_KEYWORDS]
     + [category for category, _ in FUZZY_PHRASES]
+    + [category for category, _ in CO_OCCURRING_TERMS]
     + ["pregnancy_complication", "minor", "other"]
 )
+
+
+_NON_TOKEN = re.compile(r"[^a-z0-9]+")
+_CLAUSE_BREAK = re.compile(r"[.;:!?,\n]+")
 
 
 def _fold_accents(text: str) -> str:
@@ -115,7 +134,15 @@ def _fold_accents(text: str) -> str:
 
 
 def _tokenize(text: str) -> list[str]:
-    return re.sub(r"[^a-z0-9]+", " ", _fold_accents(text)).split()
+    return _NON_TOKEN.sub(" ", _fold_accents(text)).split()
+
+
+def _clauses(text: str) -> list[list[str]]:
+    """Tokens grouped by clause. A phrase has to live inside one clause:
+    punctuation ends a thought, and a bridge that crossed it would let two
+    unrelated sentences assemble a clinical phrase between them."""
+    return [tokens for part in _CLAUSE_BREAK.split(_fold_accents(text))
+            if (tokens := _NON_TOKEN.sub(" ", part).split())]
 
 
 def _edit_distance(a: str, b: str, cap: int) -> int:
@@ -150,31 +177,42 @@ def _tokens_match(token: str, term: str) -> bool:
 
 def _phrase_matches(tokens: list[str], phrase: str) -> bool:
     """Phrase terms must appear in order, each within its edit budget, with
-    at most MAX_FILLERS_BRIDGED consecutive filler tokens between terms."""
+    at most MAX_FILLERS_BRIDGED consecutive filler tokens between terms.
+    A term is always claimed before the bridge may consume it, so a filler
+    that is itself the next term ("my" in "pain in my chest") still matches."""
     terms = phrase.split()
     for start in range(len(tokens)):
         if not _tokens_match(tokens[start], terms[0]):
             continue
-        pos, matched = start + 1, 1
+        pos, matched, bridged = start + 1, 1, 0
         while matched < len(terms) and pos < len(tokens):
             if _tokens_match(tokens[pos], terms[matched]):
-                matched += 1
-                pos += 1
-                continue
-            bridged = 0
-            while (pos < len(tokens) and tokens[pos] in FILLER_TOKENS
-                   and bridged < MAX_FILLERS_BRIDGED):
-                pos += 1
+                matched, bridged = matched + 1, 0
+            elif tokens[pos] in FILLER_TOKENS and bridged < MAX_FILLERS_BRIDGED:
                 bridged += 1
-            if (bridged and pos < len(tokens)
-                    and _tokens_match(tokens[pos], terms[matched])):
-                matched += 1
-                pos += 1
             else:
                 break
+            pos += 1
         if matched == len(terms):
             return True
     return False
+
+
+def _terms_co_occur(tokens: list[str], terms: list[str]) -> bool:
+    """Every term present in one clause, in any order."""
+    return all(any(_tokens_match(t, term) for t in tokens) for term in terms)
+
+
+def _fuzzy_categories(clauses: list[list[str]]) -> list[str]:
+    """Fuzzy-layer matches in table order: ordered phrases first, then the
+    order-free clinical term pairs."""
+    matched = [category for category, phrases in FUZZY_PHRASES
+               if any(_phrase_matches(c, p) for c in clauses for p in phrases)]
+    for category, term_pairs in CO_OCCURRING_TERMS:
+        if category not in matched and any(_terms_co_occur(c, pair)
+                                           for c in clauses for pair in term_pairs):
+            matched.append(category)
+    return matched
 
 
 def _pregnancy_complication(folded: str, tokens: list[str]) -> bool:
@@ -191,8 +229,7 @@ def _rule_matches(text: str) -> tuple[list[str], list[str]]:
              if any(kw in lowered for kw in keywords)]
     tokens = _tokenize(text)
     folded = " ".join(tokens)
-    fuzzy = [category for category, phrases in FUZZY_PHRASES
-             if any(_phrase_matches(tokens, p) for p in phrases)]
+    fuzzy = _fuzzy_categories(_clauses(text))
     if _pregnancy_complication(folded, tokens):
         fuzzy.append("pregnancy_complication")
     return exact, fuzzy
