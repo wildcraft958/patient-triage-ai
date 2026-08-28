@@ -33,6 +33,7 @@ CURATED_PATH = REPO_ROOT / "data" / "curated_patients.json"
 L2 = 1e-3
 LR = 2.0
 STEPS = 4000
+CONVERGENCE_TOL = 1e-4
 
 
 def load_dataset() -> tuple[list[str], list[str]]:
@@ -55,7 +56,7 @@ def embed(texts: list[str]) -> np.ndarray:
 
 
 def train_softmax(x: np.ndarray, y: np.ndarray, k: int,
-                  steps: int = STEPS) -> tuple[np.ndarray, np.ndarray]:
+                  steps: int = STEPS) -> tuple[np.ndarray, np.ndarray, list[float]]:
     n, d = x.shape
     w = np.zeros((d, k))
     b = np.zeros(k)
@@ -64,15 +65,17 @@ def train_softmax(x: np.ndarray, y: np.ndarray, k: int,
     # by the large "other" class - the safety asymmetry starts in training
     counts = onehot.sum(axis=0)
     sample_w = (n / (k * counts[y]))[:, None]
+    losses = []
     for _ in range(steps):
         logits = x @ w + b
         logits -= logits.max(axis=1, keepdims=True)
         p = np.exp(logits)
         p /= p.sum(axis=1, keepdims=True)
+        losses.append(float(-(sample_w * onehot * np.log(p + 1e-12)).sum() / n))
         grad = (sample_w * (p - onehot)) / n
         w -= LR * (x.T @ grad + L2 * w)
         b -= LR * grad.sum(axis=0)
-    return w, b
+    return w, b, losses
 
 
 def predict(x, w, b) -> np.ndarray:
@@ -89,7 +92,7 @@ def cross_validate(x, y, classes, folds: int = 5) -> None:
     for f in range(folds):
         test = idx[f::folds]
         train = np.setdiff1d(idx, test)
-        w, b = train_softmax(x[train], y[train], len(classes))
+        w, b, _ = train_softmax(x[train], y[train], len(classes))
         pred = predict(x[test], w, b).argmax(axis=1)
         for t, p in zip(y[test], pred):
             per_class[classes[t]][1] += 1
@@ -115,9 +118,20 @@ def main() -> None:
 
     cross_validate(x, y, classes)
 
-    w, b = train_softmax(x, y, len(classes))
+    w, b, losses = train_softmax(x, y, len(classes))
     train_acc = (predict(x, w, b).argmax(axis=1) == y).mean() * 100
     print(f"full-fit train accuracy: {train_acc:.1f}%")
+
+    # a fixed step count is only honest if the run actually converged: the
+    # objective is convex, so a flat final tenth means the fit is done and
+    # the class-balanced trade-offs above are deliberate, not premature
+    tail = len(losses) // 10
+    drift = losses[-tail] - losses[-1]
+    print(f"loss {losses[-1]:.4f}, last {tail} steps improved it by {drift:.2e}")
+    if drift > CONVERGENCE_TOL:
+        raise SystemExit(
+            f"not converged: the final {tail} steps still improved the loss by "
+            f"{drift:.2e} (tolerance {CONVERGENCE_TOL:.0e}). Raise STEPS.")
 
     if args.write:
         HEAD_PATH.parent.mkdir(parents=True, exist_ok=True)

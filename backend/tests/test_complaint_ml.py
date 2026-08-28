@@ -48,22 +48,60 @@ def test_distilled_layer_catches_lexicon_blind_spots():
     assert classify_category("my face is drooping on one side") == "stroke_signs"
 
 
+# The generalization claim: presentations that hide from keywords, in
+# phrasings the model has never seen. "Never seen" is enforced, not
+# asserted - see the paraphrase-distance test below.
+HELD_OUT_PROBES = {
+    "my speech went funny and one arm wont lift": "stroke_signs",
+    "chest heavy walking the dog, better sitting down": "chest_pain",
+    "my face puffed up and I am covered in itchy bumps": "allergic_reaction",
+    "I have written a note and I am ready": "self_harm",
+}
+
+# Measured on this embedding model: true paraphrase pairs ("gunshot to the
+# abdomen" / "shot in the stomach") score 0.63 to 0.88 cosine, while
+# same-concept-different-words pairs score 0.28 to 0.58.
+PARAPHRASE_SIMILARITY = 0.6
+
+
+def _nearest_training_row(text: str) -> tuple[float, str]:
+    """Closest row in the bank the head was fitted on, by cosine."""
+    state = complaint_ml._load()
+    np, model = state["np"], state["model"]
+    data = Path(__file__).resolve().parents[2] / "data"
+    rows = [r["text"] for r in
+            json.loads((data / "complaint_examples.json").read_text())["examples"]]
+    rows += [p["chief_complaint"] for p in
+             json.loads((data / "curated_patients.json").read_text())]
+    bank = model.encode(rows).astype(np.float64)
+    bank /= np.linalg.norm(bank, axis=1, keepdims=True)
+    v = model.encode([text]).astype(np.float64)[0]
+    sims = bank @ (v / np.linalg.norm(v))
+    i = int(sims.argmax())
+    return float(sims[i]), rows[i]
+
+
 @needs_model
 def test_disguised_presentations_classify():
-    """Held-out phrasings (not in the training bank) of the presentations
-    that hide from keywords: atypical stroke, MI, anaphylaxis, self-harm."""
-    assert classify_category("my speech went funny and one arm wont lift") \
-        == "stroke_signs"
-    assert classify_category(
-        "crushing ache in the jaw and cold sweat climbing stairs") == "chest_pain"
-    assert classify_category(
-        "throat feels tight and welts spreading after lunch") == "allergic_reaction"
-    assert classify_category(
-        "I keep thinking my family is better off without me") == "self_harm"
+    assert {t: classify_category(t) for t in HELD_OUT_PROBES} == HELD_OUT_PROBES
     # the honest ceiling, pinned: an ambiguous penetrating-trauma phrasing
     # abstains to "other" rather than guessing a wrong category - the
     # danger-zone vitals gate and the LLM path remain the net behind it
     assert classify_category("shot in the stomach") == "other"
+
+
+@needs_model
+def test_the_disguised_probes_are_not_paraphrases_of_training_rows():
+    """A generalization claim is only worth something if the probes are
+    genuinely unseen. A training row added later that paraphrases one of
+    them turns this red instead of quietly inflating the claim."""
+    too_close = {
+        text: nearest
+        for text, (similarity, nearest) in
+        ((t, _nearest_training_row(t)) for t in HELD_OUT_PROBES)
+        if similarity >= PARAPHRASE_SIMILARITY
+    }
+    assert too_close == {}, f"probes paraphrase the training bank: {too_close}"
 
 
 # --- acceptance thresholds: pure functions, no model needed ---

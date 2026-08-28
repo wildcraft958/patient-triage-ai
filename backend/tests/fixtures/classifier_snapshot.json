@@ -149,7 +149,7 @@
 "Chest pain radiating to left arm for 45 minutes, sweating": "chest_pain",
 "Chest tightness and tingling in hands during exam week": "chest_pain",
 "Cut palm with kitchen knife, bleeding controlled with pressure": "laceration",
-"Daughter reports new confusion since yesterday, feels hot": "fever",
+"Daughter reports new confusion since yesterday, feels hot": "other",
 "Daughter reports she is just not herself since yesterday": "other",
 "Fall at home, hit head on cabinet, small bruise, on blood thinner": "trauma_major",
 "Fell 3 meters from ladder, right chest wall pain, short of breath": "breathing_difficulty",
