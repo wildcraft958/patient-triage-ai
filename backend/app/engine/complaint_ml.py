@@ -1,11 +1,11 @@
-"""Layer 3 of the intake classifier: a distilled static-embedding model.
+"""Tier 2 of the intake classifier: a distilled static-embedding model.
 
 Model2Vec static embeddings (a sentence-transformer distilled into per-token
 vectors; numpy-only inference, ~30MB, MIT) plus a committed multinomial
 logistic-regression head trained by scripts/train_complaint_classifier.py on
 teacher-labeled chief complaints (real MIMIC-IV-ED strings reviewed label by
 label, plus adversarial synthetic phrasings). It speaks ONLY when the
-deterministic lexicon layers abstain, and only inside its training domain
+deterministic rule tier abstains, and only inside its training domain
 (short chief-complaint text); softmax gives bounded, calibrated
 probabilities, so the accept thresholds are asymmetric by clinical risk:
 a high-risk call needs less confidence than a benign one.
