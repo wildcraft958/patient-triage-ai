@@ -121,10 +121,15 @@ compound pregnancy predicate (context AND a complication sign, so "I think
 I'm pregnant" stays a routine visit while "28 weeks pregnant, sudden severe
 headache" is an obstetric emergency: ESI-2 floor, ICD-10 O26.90, ACOG
 severe-range SBP flag). Matches resolve by clinical risk: any always-high-
-risk match beats any benign one. Spanish ("dolor de pecho") and Hinglish
-("seene mein dard", "bukhar") phrasings classify deterministically here -
-measured fact: an English embedding model scores them near zero, so
-multilingual coverage must be rules, not vectors.
+risk match beats any benign one. Phrases match inside one clause, so
+natural speech bridges ("lips ARE swelling") while a full stop does not
+("my throat. Is closing time soon?" is not anaphylaxis). Spanish ("dolor
+de pecho") and Hinglish ("seene mein dard", "bukhar") phrasings classify
+deterministically here - measured fact: an English embedding model scores
+them near zero, so multilingual coverage must be rules, not vectors. Those
+languages also move the modifier and swap the article ("dolor muy fuerte
+en el pecho"), which no ordered phrase list survives, so they additionally
+match on order-free clinical term pairs inside a clause.
 
 Where the rules are silent, the MODEL tier speaks
 (`engine/complaint_ml.py`): Model2Vec static embeddings with a logistic
@@ -144,13 +149,16 @@ Yes, one exists, and we would rather name it than have it found. Every
 reported miss has been fixed structurally, not patched: any high-risk match
 now outranks any benign one, fuzzy phrases bridge natural-speech fillers
 ("lips ARE swelling" can no longer hide from "lips swelling"), and the
-learned tier was retrained on disguised presentations, lifting
-cross-validated recall from 26.7% to 47.8% on stroke signs and from 37.5%
-to 73.3% on self-harm language - measured on a deliberately harder example
-set, and the numbers live in our training script's own output. But a
-genuinely novel phrasing of a rare emergency, with calm vitals, can still
-classify low: our own held-out probe "shot in the stomach" abstains to
-"other" rather than guessing, and we pinned that as a test on purpose. The
+learned tier was retrained twice on disguised presentations, lifting
+cross-validated recall on stroke signs from 26.7% to 57.6% and on
+self-harm language from 37.5% to 70.4% while both classes roughly doubled
+in size - a harder example set each time, and the numbers are printed by
+our own training script. The generalization claim is enforced rather than
+asserted: the probes in that test are checked against every training row
+and fail the suite if any of them is a paraphrase. But a genuinely novel
+phrasing of a rare emergency, with calm vitals, can still classify low:
+our pinned probe "shot in the stomach" abstains to "other" rather than
+guessing, and that abstention is a test on purpose. The
 honest line is exact: the reported instances are fixed and the general
 defense is quantifiably stronger - not solved. No keyword system or small
 classifier catches every phrasing of a rare emergency, which is why three
@@ -166,9 +174,11 @@ Every mutation of shared triage state goes through one reentrant lock, so
 concurrent HTTP requests cannot interleave inside a check-then-act window
 (an override landing while the enrichment queue drains, for example) -
 verified by a multi-thread stress test in the suite. The measured ceiling
-of that fully serialized pipeline is ~147 arrivals per second on a laptop,
-including PHI redaction; the busiest shipped hospital profile (500 visits
-a day) arrives at ~0.006 per second, four orders of magnitude below it.
+of that fully serialized pipeline is ~284 arrivals per second on a laptop
+(median of five runs), including PHI redaction and classification; the test
+asserts a floor of 50 per second so it stays true on slower hardware. The
+busiest shipped hospital profile (500 visits a day) arrives at ~0.006 per
+second, four orders of magnitude below the floor.
 The lock is deliberately coarse because correctness beats parallelism at
 this scale; the named step for horizontal scale is a shared store
 (Postgres) behind multiple workers, which replaces the in-process state,
