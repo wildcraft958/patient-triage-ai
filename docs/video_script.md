@@ -80,8 +80,8 @@ When the alert appears:
 
 Action: click **Reassess** on the alert. Then open R. Castillo, click
 **Override level**, try to confirm with no reason (the button stays disabled),
-pick ESI-2, type "sepsis picture, starting fluids", confirm. Open the audit
-trail on the card.
+pick ESI-1, type "septic shock picture, starting fluids", confirm. Open the
+audit trail on the card.
 
 > "Answering an alert is two clicks. Reassess records that a clinician
 > actually laid eyes on the patient, restarts the safe wait clock, and is
@@ -117,7 +117,7 @@ Action: open the **Audit and evidence** tab.
 > repository: on 216 held-out cases, under-triage of 1.4 percent against the
 > rules engine's 37.5, zero significant under-triage, and every one of the
 > sickest patients caught. Below it, live bias counters by age band and every
-> clinician decision this shift with a name attached. PHI is redacted by
+> clinician decision with a name attached. PHI is redacted by
 > Microsoft Presidio before any model call, and the reasoning path can run
 > entirely on-premises."
 
