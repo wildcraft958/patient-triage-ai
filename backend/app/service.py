@@ -356,7 +356,10 @@ class TriageService:
             "decided_by": e.decided_by,
             "status": e.status,
             "priority": round(e.priority, 3) if active else None,
+            # two different clocks: how long since anyone assessed them, and
+            # how long they have been in the department at all
             "waited_min": round(self.clock.now_min - e.last_assessed_min, 1),
+            "in_ed_min": round(self.clock.now_min - e.triaged_at_min, 1),
             "chief_complaint": e.intake.chief_complaint,
             "age_years": e.intake.age_years,
             "age_months": e.intake.age_months,

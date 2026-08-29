@@ -283,6 +283,10 @@ def test_reassess_answers_the_alert_and_resets_the_wait_clock():
     row = client.get("/queue").json()["queue"][0]
     assert row["waited_min"] == 0.0 and row["alert_acknowledged"]
 
+    # the reassessment restarts the safe-wait clock without rewriting how
+    # long the patient has actually been in the department
+    assert row["in_ed_min"] == 45.0
+
     check = next(e for e in client.get("/patients/P1/audit").json()["events"]
                  if e["event_type"] == "reassessment_check")
     assert check["payload"]["clinician_id"] == "RN-07"
