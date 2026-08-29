@@ -391,3 +391,13 @@ def test_enrichment_escalates_but_never_downgrades():
     client.post("/surge", json={"forced": None})
     client.post("/clock/advance", json={"minutes": 1})
     assert client.get("/patients/P2").json()["fused"]["esi"] == 2  # held
+
+
+def test_benchmark_endpoint_reads_the_committed_eval_results():
+    """The console's evidence tab shows numbers from the real result files,
+    never numbers typed into the UI."""
+    body = client.get("/benchmark").json()["benchmarks"]
+    assert len(body) == 2
+    big = next(b for b in body if b["n"] == 216)
+    assert big["configs"]["fused"]["high_acuity_sens"] == 100.0
+    assert big["configs"]["fused"]["under_triage"] < big["configs"]["rules"]["under_triage"]

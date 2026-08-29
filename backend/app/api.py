@@ -164,6 +164,34 @@ def scenario_step():
     return result
 
 
+# Offline benchmark outputs, committed under eval/results. Named here so the
+# console reads real result files rather than numbers typed into a slide.
+BENCHMARKS = [
+    ("ESI handbook cases", "test_1_test_2_test_3_sonnet.json", "Sonnet 5"),
+    ("Competency cases", "practice_cases_competency_cases_sonnet.json", "Sonnet 5"),
+]
+
+
+@router.get("/benchmark")
+def benchmark():
+    """Held-out benchmark results, read from disk. Kept apart from /metrics:
+    those are live numbers from the running shift, these are 276 scored cases
+    from an offline run, and mixing the two would flatter both."""
+    import json
+
+    from app.config import REPO_ROOT
+
+    out = []
+    for label, filename, model in BENCHMARKS:
+        path = REPO_ROOT / "eval" / "results" / filename
+        if not path.exists():
+            continue
+        report = json.loads(path.read_text())["report"]
+        out.append({"label": label, "model": model, "n": report["n"],
+                    "sets": report["sets"], "configs": report["configs"]})
+    return {"benchmarks": out}
+
+
 @router.get("/metrics")
 def metrics():
     svc = get_service()
