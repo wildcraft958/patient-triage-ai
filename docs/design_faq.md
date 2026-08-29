@@ -306,6 +306,29 @@ stays overdue on the board. An acknowledgment that quietly cleared the
 overdue state would be a way to make a queue look safe without making it
 safe.
 
+## You benchmark with one spaCy model and deploy with a smaller one. Does that change anything?
+
+It did, and finding it is the reason the redaction of coded clinical fields
+looks the way it does. The hosted container runs `en_core_web_sm` to fit its
+memory budget while the benchmark runs `en_core_web_lg`. The small model
+reads "lisinopril" as a person, so on the deployed build two patients had
+their medication list redacted to `<PERSON>` while the benchmarked build
+left it intact. Those two prompts then no longer matched the committed
+replay cache, and both patients silently lost their reasoning path in the
+live demo, one of them the atypical-MI case.
+
+The fix is in `privacy/redact.py`: a name-class finding that claims the
+entire value of a coded clinical field is dropped, because the field itself
+says the value is a drug or a condition. A name inside a longer entry
+("insulin, prescribed by Dr. R Kumar") is still removed, which a test pins.
+All 24 demo prompts are now byte-identical under both models. Free-text
+prose is untouched by the rule: there, name detection is exactly right.
+
+The general lesson we took from it: a de-identification pipeline is part of
+the model's input contract, so anything that changes its output changes the
+prompt. Pinning the NLP model per environment is the deployment answer;
+making the clinically material fields model-independent is the better one.
+
 ## Why does the status bar not show bed availability?
 
 Because we do not model beds. Every number in that bar is one the service
