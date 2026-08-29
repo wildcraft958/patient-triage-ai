@@ -72,6 +72,8 @@ def test_override_requires_reason():
                           "reason": "looks septic to me"})
     assert r.status_code == 200
     assert r.json()["reward"] == -1.0 and r.json()["under_triage"] is True
+    # the card shows who owns the level once a clinician has decided it
+    assert client.get("/patients/P1").json()["decided_by"] == "RN-07"
 
 
 def test_dangerous_downgrade_requires_acknowledgment():
