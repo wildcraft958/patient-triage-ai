@@ -189,7 +189,7 @@ npm run dev                       # http://localhost:5173
 #    real time, or press N to step the shift one event at a time
 ```
 
-**LLM access.** Set `LLM_API_KEY` (AWS Bedrock API key) and `LLM_REGION` in `.env`; the default model is `anthropic.claude-sonnet-5`, which is the model the committed replay cache and every benchmark table below were produced with. The cache is keyed by model id, so pointing `LLM_MODEL` at a different model means new prompts, not cached ones. Without a key the demo still replays in full from `data/cache/` and anything uncached falls back to the deterministic rules path, which every recommendation says on its face.
+**LLM access.** Set `LLM_API_KEY` (AWS Bedrock API key) and `LLM_REGION` in `.env`; the default model is `anthropic.claude-sonnet-5`, which is the model the committed replay cache and the benchmark tables above were produced with. The cache is keyed by model id, so pointing `LLM_MODEL` at a different model means new prompts, not cached ones. Without a key the demo still replays in full from `data/cache/` and anything uncached falls back to the deterministic rules path, which every recommendation says on its face.
 
 **Hospital-local mode (no cloud):** serve any OpenAI-compatible model locally (for example `ollama serve` or `mlx_lm.server`) and pass `--local-url`/`--local-model` to the eval harness, or point the transport at it. We benchmarked `unicornftk/Doctor-R1` this way.
 
