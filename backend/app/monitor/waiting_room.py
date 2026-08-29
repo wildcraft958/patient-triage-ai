@@ -64,6 +64,7 @@ class Alert(BaseModel):
     reasons: list[str] = PField(default_factory=list)
     needs_retriage: bool = False
     message: str = ""  # nurse-facing rendering of the alert
+    acknowledged_by: str | None = None  # clinician who has seen it
 
 
 @dataclass

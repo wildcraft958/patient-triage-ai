@@ -267,6 +267,54 @@ def test_uncategorized_arrival_is_auto_classified():
     assert row["icd10"]["code"] == "O26.90"
 
 
+# --- the two alert-band actions: both are real, both are logged ---
+
+def test_reassess_answers_the_alert_and_resets_the_wait_clock():
+    """A nurse laying eyes on a patient is an assessment even when no new
+    vitals are taken: it resets the safe-wait clock, clears the standing
+    alert, and is recorded with who did it."""
+    client.post("/patients", json=patient())
+    client.post("/clock/advance", json={"minutes": 45})  # ESI-3 limit is 30
+    row = client.get("/queue").json()["queue"][0]
+    assert row["status"] == "reassess_due" and "safe wait limit" in row["alert"]
+
+    r = client.post("/patients/P1/reassess", json={"clinician_id": "RN-07"})
+    assert r.json()["status"] == "waiting"
+    row = client.get("/queue").json()["queue"][0]
+    assert row["waited_min"] == 0.0 and row["alert_acknowledged"]
+
+    check = next(e for e in client.get("/patients/P1/audit").json()["events"]
+                 if e["event_type"] == "reassessment_check")
+    assert check["payload"]["clinician_id"] == "RN-07"
+    assert check["payload"]["waited_min"] == 45.0
+
+
+def test_acknowledging_an_alert_is_logged_and_changes_nothing_clinical():
+    client.post("/patients", json=patient())
+    client.post("/clock/advance", json={"minutes": 45})
+    before = client.get("/patients/P1").json()
+
+    client.post("/patients/P1/acknowledge", json={"clinician_id": "RN-07"})
+    after = client.get("/patients/P1").json()
+    row = client.get("/queue").json()["queue"][0]
+    # seen, not answered: the alert leaves the band, the patient keeps both
+    # the level and the overdue status until someone actually assesses them
+    assert row["alert_acknowledged"] and row["status"] == "reassess_due"
+    assert after["fused"]["esi"] == before["fused"]["esi"]
+    assert after["waited_min"] == before["waited_min"]
+
+    ack = next(e for e in client.get("/patients/P1/audit").json()["events"]
+               if e["event_type"] == "alert_ack")
+    assert ack["payload"]["clinician_id"] == "RN-07"
+    assert ack["payload"]["kind"] == "WAIT_BREACH"
+
+
+def test_acknowledging_with_no_standing_alert_is_rejected():
+    client.post("/patients", json=patient())
+    r = client.post("/patients/P1/acknowledge", json={"clinician_id": "RN-07"})
+    assert r.status_code == 409
+
+
 # --- surge deferred enrichment: Path B is queued, not dropped ---
 
 def test_surge_arrival_queues_enrichment_and_next_tick_attaches_llm():

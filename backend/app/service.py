@@ -24,6 +24,10 @@ from app.config import REPO_ROOT
 CALIBRATION_PATH = REPO_ROOT / "data" / "cache" / "calibration.json"
 
 
+class NoStandingAlert(LookupError):
+    """Acknowledge was called on a patient with no alert to acknowledge."""
+
+
 class UnacknowledgedDowngrade(ValueError):
     """A high-risk downgrade override submitted without explicit confirmation.
 
@@ -228,6 +232,40 @@ class TriageService:
         return vector.total
 
     @_locked
+    def reassess(self, patient_id: str, clinician_id: str) -> dict:
+        """A bedside check with no new vitals recorded. It is still an
+        assessment: the safe-wait clock restarts, the standing alert is
+        answered, and the audit trail names who looked."""
+        entry = self.room.entries[patient_id]
+        waited = round(self.clock.now_min - entry.last_assessed_min, 1)
+        status_before = entry.status
+        self.room.mark_assessed(patient_id)
+        if entry.alerts:
+            entry.alerts[-1].acknowledged_by = clinician_id
+        self.audit.log("reassessment_check", patient_id, self.clock.now_min, {
+            "clinician_id": clinician_id, "esi": entry.fused.esi,
+            "waited_min": waited, "status_before": status_before,
+        })
+        return {"status": entry.status, "waited_min": 0.0,
+                "esi": entry.fused.esi}
+
+    @_locked
+    def acknowledge_alert(self, patient_id: str, clinician_id: str) -> dict:
+        """Seen, not answered. The alert leaves the band so it stops
+        competing for attention; the patient keeps their level and their
+        overdue status, and the acknowledgment is on the record."""
+        entry = self.room.entries[patient_id]
+        if not entry.alerts:
+            raise NoStandingAlert(f"{patient_id} has no alert to acknowledge")
+        alert = entry.alerts[-1]
+        alert.acknowledged_by = clinician_id
+        self.audit.log("alert_ack", patient_id, self.clock.now_min, {
+            "clinician_id": clinician_id, "kind": alert.kind,
+            "reasons": alert.reasons, "alerted_at_min": alert.at_min,
+        })
+        return {"acknowledged": True, "kind": alert.kind}
+
+    @_locked
     def override(self, patient_id: str, new_esi: int, clinician_id: str,
                  reason: str, acknowledge_risk: bool = False) -> dict:
         entry = self.room.entries[patient_id]
@@ -332,6 +370,7 @@ class TriageService:
             ),
             "alert": e.alerts[-1].message if e.alerts else None,
             "alert_kind": e.alerts[-1].kind if e.alerts else None,
+            "alert_acknowledged": bool(e.alerts and e.alerts[-1].acknowledged_by),
             "belief_peak": {"esi": peak + 1, "p": round(e.belief[peak], 3)},
         }
 

@@ -2,7 +2,12 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
 from app.models import PatientIntake, Vitals
-from app.service import CALIBRATION_PATH, TriageService, UnacknowledgedDowngrade
+from app.service import (
+    CALIBRATION_PATH,
+    NoStandingAlert,
+    TriageService,
+    UnacknowledgedDowngrade,
+)
 
 router = APIRouter()
 
@@ -83,6 +88,23 @@ def override(patient_id: str, body: OverrideBody):
 def accept(patient_id: str, body: ClinicianBody):
     _require(patient_id)
     return {"reward": get_service().accept(patient_id, body.clinician_id)}
+
+
+@router.post("/patients/{patient_id}/reassess")
+def reassess(patient_id: str, body: ClinicianBody):
+    """A bedside check with no new vitals: restarts the safe-wait clock and
+    answers the standing alert. Recording vitals goes through /vitals."""
+    _require(patient_id)
+    return get_service().reassess(patient_id, body.clinician_id)
+
+
+@router.post("/patients/{patient_id}/acknowledge")
+def acknowledge(patient_id: str, body: ClinicianBody):
+    _require(patient_id)
+    try:
+        return get_service().acknowledge_alert(patient_id, body.clinician_id)
+    except NoStandingAlert as e:
+        raise HTTPException(409, str(e))
 
 
 @router.get("/queue")
