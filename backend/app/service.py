@@ -292,31 +292,59 @@ class TriageService:
             return s[min(len(s) - 1, int(p / 100 * len(s)))]
         return {"n": len(s), "p50_ms": pct(50), "p95_ms": pct(95)}
 
-    @_locked
-    def queue_view(self) -> list[dict]:
+    def _board_row(self, e) -> dict:
+        """One row of the shift board. Everything the console renders per
+        patient comes from here, so the queue, the reassessment board and the
+        alert band cannot drift apart."""
         from app.engine.icd10 import code_for
         from app.monitor.priority import action_for
+        from app.monitor.waiting_room import ACTIVE_STATUSES, worsening_reasons
 
-        return [
-            {
-                "patient_id": e.intake.patient_id,
-                "action": action_for(e.priority, self.profile),
-                "icd10": code_for(e.intake.complaint_category),
-                "esi": e.fused.esi,
-                "route": e.fused.route,
-                "confidence": e.fused.confidence,
-                "paths_agree": e.fused.paths_agree,
-                "status": e.status,
-                "priority": round(e.priority, 3),
-                "waited_min": round(self.clock.now_min - e.last_assessed_min, 1),
-                "chief_complaint": e.intake.chief_complaint,
-                "age_years": e.intake.age_years,
-                "age_months": e.intake.age_months,
-                "category": e.intake.complaint_category,
-                "max_wait_min": self.profile.max_wait_min.get(e.fused.esi),
-            }
-            for e in self.room.queue()
-        ]
+        active = e.status in ACTIVE_STATUSES
+        history = e.vitals_history
+        peak = max(range(len(e.belief)), key=e.belief.__getitem__)
+        return {
+            "patient_id": e.intake.patient_id,
+            "display_name": e.intake.display_name,
+            # priority ranks who to reassess next: meaningless once a patient
+            # is in care, so it is absent rather than stale
+            "action": action_for(e.priority, self.profile) if active else None,
+            "icd10": code_for(e.intake.complaint_category),
+            "esi": e.fused.esi,
+            "route": e.fused.route,
+            "confidence": e.fused.confidence,
+            "paths_agree": e.fused.paths_agree,
+            "clinician_flag": e.fused.clinician_flag,
+            "decided_by": e.decided_by,
+            "status": e.status,
+            "priority": round(e.priority, 3) if active else None,
+            "waited_min": round(self.clock.now_min - e.last_assessed_min, 1),
+            "chief_complaint": e.intake.chief_complaint,
+            "age_years": e.intake.age_years,
+            "age_months": e.intake.age_months,
+            "category": e.intake.complaint_category,
+            "max_wait_min": self.profile.max_wait_min.get(e.fused.esi),
+            "vitals_latest": history[-1][1],
+            "vitals_worsening": (
+                worsening_reasons(history[0][1], history[-1][1],
+                                  self.profile.deterioration)
+                if len(history) > 1 else []
+            ),
+            "alert": e.alerts[-1].message if e.alerts else None,
+            "alert_kind": e.alerts[-1].kind if e.alerts else None,
+            "belief_peak": {"esi": peak + 1, "p": round(e.belief[peak], 3)},
+        }
+
+    @_locked
+    def queue_view(self) -> list[dict]:
+        return [self._board_row(e) for e in self.room.queue()]
+
+    @_locked
+    def in_care_view(self) -> list[dict]:
+        """Patients moved to treatment. A sibling of the queue, never part of
+        it: the waiting count and the surge threshold both read the queue."""
+        return [self._board_row(e) for e in self.room.entries.values()
+                if e.status == "in_treatment"]
 
     def state_view(self) -> dict:
         return {

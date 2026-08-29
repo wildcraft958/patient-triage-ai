@@ -167,6 +167,42 @@ def test_queue_rows_carry_action_and_icd10_and_detail_carries_belief():
     assert abs(sum(detail["belief"]) - 1.0) < 0.01
 
 
+def test_queue_rows_carry_the_board_columns():
+    """Everything the shift board renders per row comes from one call: name,
+    the latest vitals, the trend the monitor would alert on, the standing
+    alert text, and the belief peak the acuity column shows."""
+    client.post("/patients", json=patient(display_name="M. Chen"))
+    row = client.get("/queue").json()["queue"][0]
+    assert row["display_name"] == "M. Chen"
+    assert row["vitals_latest"]["hr"] == 88
+    assert row["vitals_worsening"] == []
+    assert row["alert"] is None
+    peak = row["belief_peak"]
+    assert peak["esi"] == 3 and 0 < peak["p"] <= 1
+
+
+def test_a_deteriorating_row_carries_its_trend_and_alert_text():
+    client.post("/patients", json=patient())
+    client.post("/patients/P1/vitals", json={
+        "hr": 118, "rr": 24, "spo2": 91, "temp_c": 38.9, "sbp": 95, "pain": 6})
+    row = client.get("/queue").json()["queue"][0]
+    assert row["vitals_worsening"][0].startswith("HR 88 -> 118")
+    assert "immediate reassessment" in row["alert"]
+
+
+def test_patients_in_care_are_listed_beside_the_waiting_queue():
+    """in_care is a sibling key, never folded into queue: the waiting count
+    and the surge threshold both read the queue itself."""
+    client.post("/patients", json=patient(display_name="M. Chen"))
+    client.post("/patients/P1/accept", json={"clinician_id": "RN-07"})
+    body = client.get("/queue").json()
+    assert body["queue"] == []
+    assert body["state"]["waiting"] == 0
+    assert [r["patient_id"] for r in body["in_care"]] == ["P1"]
+    assert body["in_care"][0]["display_name"] == "M. Chen"
+    assert body["in_care"][0]["action"] is None
+
+
 def test_vitals_source_channels_are_recorded():
     client.post("/patients", json=patient())
     r = client.post("/patients/P1/vitals?source=wearable", json={

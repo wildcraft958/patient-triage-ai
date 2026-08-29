@@ -90,6 +90,7 @@ def queue():
     svc = get_service()
     return {
         "queue": svc.queue_view(),
+        "in_care": svc.in_care_view(),
         "state": svc.state_view(),
         "scenario_remaining": _player.remaining if _player is not None else None,
     }

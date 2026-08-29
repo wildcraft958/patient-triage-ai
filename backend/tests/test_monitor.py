@@ -173,3 +173,32 @@ def test_queue_sorted_by_priority_and_excludes_treated():
     q = room.queue()
     assert [e.intake.patient_id for e in q] == ["HIGH", "LOW"]
     assert q[0].priority >= q[1].priority
+
+
+def test_worsening_reasons_is_the_definition_the_alert_uses():
+    """The queue's vitals column and the DETERIORATION trigger must never
+    disagree, so both read the same function against the same profile
+    thresholds. A board that showed a trend the monitor ignores would teach
+    nurses to distrust the trend column."""
+    from app.monitor.waiting_room import worsening_reasons
+
+    base = Vitals(hr=88, rr=16, spo2=98, temp_c=37.0, sbp=140)
+    worse = Vitals(hr=112, rr=24, spo2=90, temp_c=38.6, sbp=104)
+    reasons = worsening_reasons(base, worse, URBAN.deterioration)
+    assert len(reasons) == 4
+    assert reasons[0].startswith("HR 88 -> 112")
+
+    room, clock = make_room()
+    room.add(intake("P1", vitals=base), fused(3))
+    clock.advance(5)
+    alert = room.record_vitals("P1", worse)
+    assert alert is not None
+    assert all(r in alert.reasons for r in reasons)
+
+
+def test_a_stable_recheck_reports_no_worsening():
+    from app.monitor.waiting_room import worsening_reasons
+
+    base = Vitals(hr=88, rr=16, spo2=98, temp_c=37.0, sbp=140)
+    steady = Vitals(hr=90, rr=16, spo2=98, temp_c=37.1, sbp=138)
+    assert worsening_reasons(base, steady, URBAN.deterioration) == []

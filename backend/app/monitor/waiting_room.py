@@ -19,10 +19,34 @@ from app.models import PatientIntake, Vitals
 from app.monitor.belief import classify_recheck, initial_belief, observe
 from app.monitor.belief import advance as advance_belief
 from app.monitor.priority import deterioration_risk, reassessment_priority
-from app.profiles import HospitalProfile
+from app.profiles import DeteriorationThresholds, HospitalProfile
 
 # scales the deterioration-risk estimate into the belief's per-hour hazard
 BELIEF_HAZARD_SCALE = 0.4
+
+
+def worsening_reasons(baseline: Vitals, vitals: Vitals,
+                      thresholds: DeteriorationThresholds) -> list[str]:
+    """Trend breaches against the profile's deterioration thresholds, one
+    line per vital. Read by the DETERIORATION trigger below and by the queue
+    view's trend column: a board that showed a trend the monitor ignores
+    would teach nurses to distrust the column."""
+    reasons = []
+    if baseline.hr and vitals.hr:
+        rise = (vitals.hr - baseline.hr) / baseline.hr * 100
+        if rise >= thresholds.hr_rise_pct:
+            reasons.append(f"HR {baseline.hr:.0f} -> {vitals.hr:.0f} (+{rise:.0f}%)")
+    if baseline.sbp and vitals.sbp:
+        drop = (baseline.sbp - vitals.sbp) / baseline.sbp * 100
+        if drop >= thresholds.sbp_drop_pct:
+            reasons.append(f"SBP {baseline.sbp:.0f} -> {vitals.sbp:.0f} (-{drop:.0f}%)")
+    if baseline.spo2 and vitals.spo2:
+        if baseline.spo2 - vitals.spo2 >= thresholds.spo2_drop_points:
+            reasons.append(f"SpO2 {baseline.spo2:.0f} -> {vitals.spo2:.0f}")
+    if baseline.temp_c and vitals.temp_c:
+        if vitals.temp_c - baseline.temp_c >= thresholds.temp_rise_c:
+            reasons.append(f"Temp {baseline.temp_c:.1f} -> {vitals.temp_c:.1f}")
+    return reasons
 
 
 class SimClock:
@@ -120,22 +144,7 @@ class WaitingRoom:
         _, baseline = entry.vitals_history[0]
         entry.vitals_history.append((now, vitals))
 
-        d = self.profile.deterioration
-        reasons = []
-        if baseline.hr and vitals.hr:
-            rise = (vitals.hr - baseline.hr) / baseline.hr * 100
-            if rise >= d.hr_rise_pct:
-                reasons.append(f"HR {baseline.hr:.0f} -> {vitals.hr:.0f} (+{rise:.0f}%)")
-        if baseline.sbp and vitals.sbp:
-            drop = (baseline.sbp - vitals.sbp) / baseline.sbp * 100
-            if drop >= d.sbp_drop_pct:
-                reasons.append(f"SBP {baseline.sbp:.0f} -> {vitals.sbp:.0f} (-{drop:.0f}%)")
-        if baseline.spo2 and vitals.spo2:
-            if baseline.spo2 - vitals.spo2 >= d.spo2_drop_points:
-                reasons.append(f"SpO2 {baseline.spo2:.0f} -> {vitals.spo2:.0f}")
-        if baseline.temp_c and vitals.temp_c:
-            if vitals.temp_c - baseline.temp_c >= d.temp_rise_c:
-                reasons.append(f"Temp {baseline.temp_c:.1f} -> {vitals.temp_c:.1f}")
+        reasons = worsening_reasons(baseline, vitals, self.profile.deterioration)
 
         danger, danger_reasons = in_danger_zone(
             entry.intake.model_copy(update={"vitals": vitals})
