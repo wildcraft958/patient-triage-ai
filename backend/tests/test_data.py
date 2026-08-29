@@ -82,3 +82,12 @@ def test_esi_eval_cases_load():
     assert all(1 <= c["category"] <= 5 for c in cases)
     with_vitals = [c for c in cases if c["vitals"] is not None]
     assert len(with_vitals) > 100
+
+
+def test_every_curated_patient_has_a_distinct_display_name(patients):
+    """The board is read by name; the record ID stays alongside it for the
+    audit trail. Duplicates would make two patients indistinguishable at a
+    glance, which is the failure the name is there to prevent."""
+    names = [p.display_name for p in patients]
+    assert all(n and n.strip() for n in names)
+    assert len(set(names)) == len(names)

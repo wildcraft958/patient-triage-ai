@@ -148,6 +148,15 @@ def test_fhir_bundle_export():
     assert len(probs) == 5 and abs(sum(probs) - 1.0) < 0.01
 
 
+def test_fhir_export_stays_de_identified_for_a_named_patient():
+    """Two boundaries, both closed: the reasoning path never sees the name
+    (test_graph) and neither does the EHR bundle. The name lives only in the
+    local queue view the clinician is looking at."""
+    client.post("/patients", json=patient(display_name="M. Chen"))
+    bundle = client.get("/patients/P1/fhir").json()
+    assert "Chen" not in json.dumps(bundle)
+
+
 def test_queue_rows_carry_action_and_icd10_and_detail_carries_belief():
     client.post("/patients", json=patient())
     row = client.get("/queue").json()["queue"][0]

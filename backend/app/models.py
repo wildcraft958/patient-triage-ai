@@ -27,6 +27,10 @@ class Oldcarts(BaseModel):
 
 class PatientIntake(BaseModel):
     patient_id: str
+    # Nurse-facing identity. Never rendered into the reasoning prompt and
+    # never exported in the FHIR bundle: the clinician's screen is inside the
+    # trust boundary, the model and the EHR bundle are outside it.
+    display_name: str | None = None
     age_years: int
     # For infants: age in months overrides age_years for threshold banding
     age_months: float | None = None

@@ -1,6 +1,7 @@
 [
  {
   "patient_id": "SIM-001",
+  "display_name": "M. Chen",
   "age_years": 61,
   "chief_complaint": "Chest pain radiating to left arm for 45 minutes, sweating",
   "complaint_category": "chest_pain",
@@ -27,6 +28,7 @@
  },
  {
   "patient_id": "SIM-002",
+  "display_name": "A. Okafor",
   "age_years": 3,
   "chief_complaint": "Fever since last night, irritable, pulling at right ear",
   "complaint_category": "fever",
@@ -47,6 +49,7 @@
  },
  {
   "patient_id": "SIM-003",
+  "display_name": "N. Haddad",
   "age_years": 0,
   "age_months": 0.75,
   "chief_complaint": "3-week-old with fever and poor feeding since morning",
@@ -66,6 +69,7 @@
  },
  {
   "patient_id": "SIM-004",
+  "display_name": "E. Kowalski",
   "age_years": 78,
   "chief_complaint": "Daughter reports new confusion since yesterday, feels hot",
   "complaint_category": "fever",
@@ -94,6 +98,7 @@
  },
  {
   "patient_id": "SIM-005",
+  "display_name": "D. Ferreira",
   "age_years": 45,
   "chief_complaint": "Weakness and fatigue for 3 days, just not feeling right",
   "complaint_category": "other",
@@ -120,6 +125,7 @@
  },
  {
   "patient_id": "SIM-006",
+  "display_name": "P. Nakamura",
   "age_years": 28,
   "chief_complaint": "Right lower abdominal pain since yesterday, worse with movement",
   "complaint_category": "abdominal_pain",
@@ -140,6 +146,7 @@
  },
  {
   "patient_id": "SIM-007",
+  "display_name": "R. Castillo",
   "age_years": 52,
   "chief_complaint": "Abdominal pain with chills since this morning",
   "complaint_category": "abdominal_pain",
@@ -187,6 +194,7 @@
  },
  {
   "patient_id": "SIM-008",
+  "display_name": "J. Mwangi",
   "age_years": 24,
   "chief_complaint": "Asthma attack, inhaler not helping, speaking in short phrases",
   "complaint_category": "breathing_difficulty",
@@ -210,6 +218,7 @@
  },
  {
   "patient_id": "SIM-009",
+  "display_name": "H. Lindqvist",
   "age_years": 68,
   "chief_complaint": "Sudden facial droop and slurred speech starting 40 minutes ago",
   "complaint_category": "stroke_signs",
@@ -235,6 +244,7 @@
  },
  {
   "patient_id": "SIM-010",
+  "display_name": "T. Bui",
   "age_years": 19,
   "chief_complaint": "Cut palm with kitchen knife, bleeding controlled with pressure",
   "complaint_category": "laceration",
@@ -255,6 +265,7 @@
  },
  {
   "patient_id": "SIM-011",
+  "display_name": "L. Andersen",
   "age_years": 24,
   "chief_complaint": "Twisted ankle playing football, swollen, can partially bear weight",
   "complaint_category": "sprain",
@@ -273,6 +284,7 @@
  },
  {
   "patient_id": "SIM-012",
+  "display_name": "G. Sharma",
   "age_years": 47,
   "chief_complaint": "Ran out of blood pressure medication, needs refill",
   "complaint_category": "medication_refill",
@@ -296,6 +308,7 @@
  },
  {
   "patient_id": "SIM-013",
+  "display_name": "C. Duval",
   "age_years": 33,
   "chief_complaint": "Itchy raised rash on both arms for 2 days, no swelling of lips",
   "complaint_category": "rash",
@@ -316,6 +329,7 @@
  },
  {
   "patient_id": "SIM-014",
+  "display_name": "S. Rodriguez",
   "age_years": 36,
   "chief_complaint": "Severe migraine 9/10 with photophobia, similar to previous ones",
   "complaint_category": "other",
@@ -340,6 +354,7 @@
  },
  {
   "patient_id": "SIM-015",
+  "display_name": "B. O'Neill",
   "age_years": 55,
   "chief_complaint": "Fell 3 meters from ladder, right chest wall pain, short of breath",
   "complaint_category": "trauma_major",
@@ -360,6 +375,7 @@
  },
  {
   "patient_id": "SIM-016",
+  "display_name": "W. Petrov",
   "age_years": 82,
   "chief_complaint": "Fall at home, hit head on cabinet, small bruise, on blood thinner",
   "complaint_category": "trauma_major",
@@ -386,6 +402,7 @@
  },
  {
   "patient_id": "SIM-017",
+  "display_name": "K. Tanaka",
   "age_years": 40,
   "chief_complaint": "Lower back pain after lifting boxes, no leg weakness or numbness",
   "complaint_category": "other",
@@ -404,6 +421,7 @@
  },
  {
   "patient_id": "SIM-018",
+  "display_name": "F. Rahman",
   "age_years": 29,
   "chief_complaint": "Burning with urination and frequency for 2 days",
   "complaint_category": "other",
@@ -424,6 +442,7 @@
  },
  {
   "patient_id": "SIM-019",
+  "display_name": "I. Silva",
   "age_years": 2,
   "chief_complaint": "Toddler crying and pulling at left ear since evening",
   "complaint_category": "other",
@@ -444,6 +463,7 @@
  },
  {
   "patient_id": "SIM-020",
+  "display_name": "Y. Park",
   "age_years": 22,
   "chief_complaint": "Chest tightness and tingling in hands during exam week",
   "complaint_category": "chest_pain",
@@ -465,6 +485,7 @@
  },
  {
   "patient_id": "SIM-021",
+  "display_name": "V. Moreau",
   "age_years": 31,
   "chief_complaint": "12 weeks pregnant, abdominal cramping and light spotting",
   "complaint_category": "abdominal_pain",
@@ -489,6 +510,7 @@
  },
  {
   "patient_id": "SIM-022",
+  "display_name": "A. Weber",
   "age_years": 66,
   "chief_complaint": "Burning indigestion for 2 hours with nausea and sweating",
   "complaint_category": "abdominal_pain",
@@ -518,6 +540,7 @@
  },
  {
   "patient_id": "SIM-023",
+  "display_name": "M. Halvorsen",
   "age_years": 58,
   "chief_complaint": "Says it is nothing, just some back ache and feeling washed out",
   "complaint_category": "other",
@@ -546,6 +569,7 @@
  },
  {
   "patient_id": "SIM-024",
+  "display_name": "D. Iyer",
   "age_years": 84,
   "chief_complaint": "Daughter reports she is just not herself since yesterday",
   "complaint_category": "other",

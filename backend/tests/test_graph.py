@@ -113,3 +113,25 @@ def test_malformed_llm_output_falls_back_to_rules():
     state = triage(make_intake(), transport=lambda s, u: "not json at all")
     fused = state["fused"]
     assert fused.esi == 3 and fused.llm is None
+
+
+def test_display_name_never_reaches_the_reasoning_path():
+    """The nurse's screen shows a name, the model never does. Free text is
+    protected by redaction; the identity field is protected structurally, by
+    never being rendered into the prompt at all - so it cannot leak through a
+    recognizer gap, and it cannot move a cached prompt."""
+    from app.agent.llm_path import build_user_prompt
+
+    named = make_intake(display_name="M. Chen")
+    plain = make_intake()
+    assert build_user_prompt(named, named.chief_complaint) == \
+        build_user_prompt(plain, plain.chief_complaint)
+
+    seen = {}
+
+    def spying_transport(system: str, user: str) -> str:
+        seen["user"] = user
+        return json.dumps({"esi": 3, "confidence": 0.9, "reasoning": ["ok"]})
+
+    triage(named, transport=spying_transport)
+    assert "Chen" not in seen["user"]
