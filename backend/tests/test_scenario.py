@@ -99,3 +99,41 @@ def test_concurrent_mutations_hold_invariants():
     # sees ~0.006 arrivals/second; the fully locked pipeline must clear a
     # floor orders of magnitude above that on any hardware
     assert 24 / elapsed >= 50, f"locked throughput {24 / elapsed:.0f}/s below floor"
+
+
+# --- the demo must replay from the committed cache in BOTH environments ---
+
+@pytest.mark.parametrize("spacy_model", ["en_core_web_lg", "en_core_web_sm"])
+def test_every_curated_arrival_replays_from_the_committed_cache(spacy_model,
+                                                                monkeypatch):
+    """The benchmark runs the large spaCy model and the container runs the
+    small one, so redaction has to agree across both: the prompt is the cache
+    key, and a model that reads a drug name as a person silently costs those
+    patients their reasoning path in the hosted demo. Any transport call here
+    means a prompt drifted."""
+    import app.agent.llm_path as lp
+    from app.config import settings
+    from app.data_io import load_curated_patients
+    from app.privacy import redact as redact_module
+    from app.service import CALIBRATION_PATH, TriageService
+
+    spacy = pytest.importorskip("spacy")
+    if not spacy.util.is_package(spacy_model):
+        pytest.skip(f"{spacy_model} not installed")
+
+    monkeypatch.setattr(settings, "spacy_model", spacy_model)
+    redact_module._engines.cache_clear()
+    monkeypatch.setattr(lp, "_default_transport", lambda s, u: (_ for _ in ()).throw(
+        AssertionError("cache miss: the demo tried to call the model")))
+
+    try:
+        # a service of our own: the module fixture hands every caller a fake
+        # transport, which would answer instead of the cache and make this
+        # test pass without ever reading a cached prompt
+        svc = TriageService(profile_name="urban_500", audit_path=":memory:",
+                            calibration_path=CALIBRATION_PATH)
+        without = [p.patient_id for p in load_curated_patients()
+                   if svc.arrive(p, use_llm=True).llm is None]
+        assert without == [], f"no cached reasoning under {spacy_model}: {without}"
+    finally:
+        redact_module._engines.cache_clear()
