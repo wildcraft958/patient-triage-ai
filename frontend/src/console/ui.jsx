@@ -50,7 +50,7 @@ export function BeliefPeak({ peak, pathsAgree }) {
 
 export function Sparkline({ values, worseIfUp, width = 62, height = 18 }) {
   const points = values.filter((v) => v != null)
-  if (points.length < 2) return <span className="spark-flat">no trend yet</span>
+  if (points.length < 2) return null  // the card already says it is a single reading
   const min = Math.min(...points)
   const max = Math.max(...points)
   const span = max - min || 1

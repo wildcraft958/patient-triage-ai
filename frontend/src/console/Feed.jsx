@@ -2,7 +2,7 @@ import { fmt } from './format'
 
 export default function Feed({ items }) {
   return (
-    <div className="panel">
+    <div className="panel activity">
       <h2>Shift activity</h2>
       {items.length === 0 && (
         <div className="empty">Arrivals, alerts and decisions appear here as they happen.</div>

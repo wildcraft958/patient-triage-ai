@@ -49,6 +49,13 @@ def worsening_reasons(baseline: Vitals, vitals: Vitals,
     return reasons
 
 
+def _who(entry) -> str:
+    """Nurse-facing subject of an alert. The message is rendered for a human
+    reading the board; the audit payload keys on the record ID."""
+    intake = entry.intake
+    return intake.display_name or f"Patient {intake.patient_id}"
+
+
 class SimClock:
     def __init__(self, now_min: float = 0.0):
         self.now_min = now_min
@@ -126,7 +133,7 @@ class WaitingRoom:
                     kind="WAIT_BREACH",
                     reasons=[f"waiting {waited:.0f} min exceeds the {limit} min "
                              f"limit for ESI-{entry.fused.esi}"],
-                    message=(f"Patient {entry.intake.patient_id} "
+                    message=(f"{_who(entry)} "
                              f"(ESI-{entry.fused.esi}, {entry.intake.complaint_category}, "
                              f"{waited:.0f} min wait) - safe wait limit exceeded. "
                              f"Consider reassessment."),
@@ -175,7 +182,7 @@ class WaitingRoom:
             alert = Alert(
                 patient_id=patient_id, at_min=now, kind="DETERIORATION",
                 reasons=reasons, needs_retriage=True,
-                message=(f"Patient {patient_id} (ESI-{entry.fused.esi}, "
+                message=(f"{_who(entry)} (ESI-{entry.fused.esi}, "
                          f"{entry.intake.complaint_category}, {waited:.0f} min wait) - "
                          f"{'; '.join(reasons)}. Recommend immediate reassessment."),
             )

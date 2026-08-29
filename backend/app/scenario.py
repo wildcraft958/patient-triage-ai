@@ -17,7 +17,8 @@ class ScenarioPlayer:
             self.events.append((p.arrival_offset_min / speedup, "arrive", p))
             for r in p.vitals_rechecks:
                 self.events.append(
-                    (r.offset_min / speedup, "vitals", (p.patient_id, r.vitals))
+                    (r.offset_min / speedup, "vitals",
+                     (p.patient_id, p.display_name, r.vitals))
                 )
         self.events.sort(key=lambda e: e[0])
         self.index = 0
@@ -45,10 +46,11 @@ class ScenarioPlayer:
                 "age_years": payload.age_years, "fused": fused,
             }
         else:
-            patient_id, vitals = payload
+            patient_id, display_name, vitals = payload
             result = self.service.record_vitals(patient_id, vitals)
             event = {
                 "kind": "vitals", "patient_id": patient_id,
+                "display_name": display_name,
                 "vitals": vitals, "alert": result["alert"],
                 "retriaged": result["retriaged"],
             }

@@ -90,33 +90,38 @@ export default function Console() {
 
       const audit = await api.getRecentAudit().catch(() => null)
       if (!audit) return
+      // the audit trail keys on the record ID; the board speaks in names, so
+      // the rebuilt activity is translated back through the current roster
+      const names = Object.fromEntries(
+        [...q.queue, ...(q.in_care ?? [])].map((r) => [r.patient_id, r.display_name]))
       const rebuilt = audit.events.map((e) => {
         const p = e.payload
+        const who = names[e.patient_id] ?? e.patient_id
         if (e.event_type === 'triage')
           return { at: e.sim_min, esi: p.esi,
-                   text: `Arrival ${e.patient_id}, ${p.confidence} confidence` }
+                   text: `Arrival ${who}, ${p.confidence} confidence` }
         if (e.event_type === 'alert')
           return { at: e.sim_min, dot: 'alert',
-                   text: `${p.kind} ${e.patient_id}: ${(p.reasons || []).join('; ')}` }
+                   text: `${p.kind} ${who}: ${(p.reasons || []).join('; ')}` }
         if (e.event_type === 'reassessment')
           return { at: e.sim_min,
-                   text: `Re-triage ${e.patient_id} ESI-${p.previous_esi} to ESI-${p.new_esi}` }
+                   text: `Re-triage ${who} ESI-${p.previous_esi} to ESI-${p.new_esi}` }
         if (e.event_type === 'reassessment_check')
           return { at: e.sim_min, dot: 'accept',
-                   text: `${p.clinician_id} reassessed ${e.patient_id} at the bedside` }
+                   text: `${p.clinician_id} reassessed ${who} at the bedside` }
         if (e.event_type === 'alert_ack')
-          return { at: e.sim_min, text: `${p.clinician_id} acknowledged ${e.patient_id}` }
+          return { at: e.sim_min, text: `${p.clinician_id} acknowledged ${who}` }
         if (e.event_type === 'override')
           return { at: e.sim_min, dot: 'override',
-                   text: `Override ${e.patient_id} to ESI-${p.new_esi}` }
+                   text: `Override ${who} to ESI-${p.new_esi}` }
         if (e.event_type === 'override_safety_flag')
           return { at: e.sim_min, dot: 'alert',
-                   text: `Safety flag ${e.patient_id}: ESI-${p.original_esi} downgraded to ESI-${p.new_esi}` }
+                   text: `Safety flag ${who}: ESI-${p.original_esi} downgraded to ESI-${p.new_esi}` }
         if (e.event_type === 'surge_enrichment' && p.escalated)
           return { at: e.sim_min, dot: 'override',
-                   text: `Deferred reasoning escalated ${e.patient_id} to ESI-${p.new_esi}` }
+                   text: `Deferred reasoning escalated ${who} to ESI-${p.new_esi}` }
         if (e.event_type === 'acceptance')
-          return { at: e.sim_min, dot: 'accept', text: `Accepted ${e.patient_id}` }
+          return { at: e.sim_min, dot: 'accept', text: `Accepted ${who}` }
         return null
       }).filter(Boolean).reverse()
       setFeed(rebuilt.slice(0, 120))
@@ -149,9 +154,10 @@ export default function Console() {
                         text: `Arrival ${who}: ${e.chief_complaint}` })
         await refresh(e.patient_id)
       } else if (e?.kind === 'vitals') {
+        const who = e.display_name ?? e.patient_id
         items.unshift({
           at: r.sim_min,
-          text: `Vitals recheck ${e.patient_id}${e.retriaged ? `, re-triaged to ESI-${e.retriaged.esi}` : ', stable'}`,
+          text: `Vitals recheck ${who}${e.retriaged ? `, re-triaged to ESI-${e.retriaged.esi}` : ', stable'}`,
         })
         await refresh(e.patient_id)
       } else {
@@ -262,7 +268,10 @@ export default function Console() {
   }
 
   const onRestart = () => {
+    // back to the opener with a clean bar: choosing a shift calls
+    // /scenario/load, which resets the service itself
     setRemaining(null); setQueue([]); setInCare([]); setFeed([]); setDetail(null)
+    setState(null); setMetrics(null); setTab('queue')
     setAuto(false); setLive(false); selectedRef.current = null; setSelectedId(null)
   }
 
@@ -300,7 +309,8 @@ export default function Console() {
 
           {tab !== 'evidence' && (
             <AlertBand rows={queue} busy={busy} onSelect={onSelect}
-                       onReassess={onReassess} onAcknowledge={onAcknowledge} />
+                       onReassess={onReassess} onAcknowledge={onAcknowledge}
+                       onSeeAll={() => setTab('waiting')} />
           )}
 
           {tab === 'queue' && (

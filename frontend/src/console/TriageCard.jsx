@@ -136,7 +136,7 @@ export default function TriageCard({ detail, feedback, busy,
                                      onAccept, onOverride, onReassess }) {
   if (!detail) {
     return (
-      <div className="panel">
+      <div className="panel detail">
         <h2>Triage recommendation</h2>
         <div className="empty">Select a patient from the board.</div>
       </div>
@@ -146,9 +146,12 @@ export default function TriageCard({ detail, feedback, busy,
   const { intake, fused, status, waited_min, vitals_history, decided_by } = detail
   const inTreatment = status === 'in_treatment'
   const disagreeNote = fused.notes.find((n) => n.startsWith('Paths disagree'))
+  // the recommendation band already states agreement; repeating it as a note
+  // is noise, and everything else in notes is something the band cannot say
+  const notes = fused.notes.filter((n) => n !== disagreeNote && n !== 'Paths agree')
 
   return (
-    <div className="panel">
+    <div className="panel detail">
       <h2>Triage recommendation</h2>
       <div className="card">
         <div className="tc-head">
@@ -160,7 +163,7 @@ export default function TriageCard({ detail, feedback, busy,
           </div>
           <div className="tc-when">
             {inTreatment ? 'In care' : `${Math.round(waited_min)} min since assessment`}
-            <br />responsiveness {intake.responsiveness}
+            <br />AVPU {intake.responsiveness}
           </div>
         </div>
         <div className="tc-complaint">{intake.chief_complaint}</div>
@@ -190,7 +193,7 @@ export default function TriageCard({ detail, feedback, busy,
         <Paths fused={fused} />
 
         <div className="notes">
-          {fused.notes.filter((n) => n !== disagreeNote).map((n, i) => <div key={i}>· {n}</div>)}
+          {notes.map((n, i) => <div key={i}>{n}</div>)}
         </div>
 
         <Vitals history={vitals_history} />

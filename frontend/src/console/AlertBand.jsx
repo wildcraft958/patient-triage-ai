@@ -1,20 +1,37 @@
 import { EsiBadge } from './ui'
 
 // Alerts sit above the queue because they are the one thing on this screen
-// that cannot wait for a scan of the board. Acuity first, then whoever has
-// been unattended longest.
-const order = (a, b) => a.esi - b.esi || b.waited_min - a.waited_min
+// that cannot wait for a scan of the board. A patient who is actively
+// getting worse outranks a clock that ran out, however long it has been:
+// then acuity, then whoever has gone unattended longest.
+const KIND_RANK = { DETERIORATION: 0, WAIT_BREACH: 1 }
+const order = (a, b) =>
+  (KIND_RANK[a.alert_kind] ?? 9) - (KIND_RANK[b.alert_kind] ?? 9)
+  || a.esi - b.esi
+  || b.waited_min - a.waited_min
 
-export default function AlertBand({ rows, onSelect, onReassess, onAcknowledge, busy }) {
+// A band that grows without limit is a band nobody reads. The most acute
+// few stay in front of the nurse; the rest are one click away on the board
+// that exists to rank them.
+const SHOWN = 4
+
+export default function AlertBand({ rows, onSelect, onReassess, onAcknowledge,
+                                    onSeeAll, busy }) {
   const alerts = rows.filter((r) => r.alert && !r.alert_acknowledged).sort(order)
   if (!alerts.length) return null
+  const shown = alerts.slice(0, SHOWN)
 
   return (
     <div className="alert-band">
       <div className="alert-band-head">
         REASSESSMENT ALERTS ({alerts.length})
+        {alerts.length > SHOWN && (
+          <button className="btn btn-outline" onClick={onSeeAll}>
+            {alerts.length - SHOWN} more on the waiting room board
+          </button>
+        )}
       </div>
-      {alerts.map((r) => {
+      {shown.map((r) => {
         const wait = r.alert_kind === 'WAIT_BREACH'
         return (
           <div key={r.patient_id} className={`alert-row ${wait ? 'wait' : ''}`}>

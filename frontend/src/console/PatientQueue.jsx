@@ -16,7 +16,10 @@ const STATUS = {
 function Row({ row, rank, selected, onSelect }) {
   const [tone, label] = STATUS[row.status] ?? ['', row.status]
   const done = row.status === 'in_treatment'
-  const alarm = !!row.alert && !row.alert_acknowledged
+  // only an actively worsening patient tints a row. Wait breaches already
+  // read as OVERDUE with a full red wait bar, and if half the board glows
+  // the glow stops meaning anything.
+  const alarm = row.alert_kind === 'DETERIORATION' && !row.alert_acknowledged
   const pct = row.max_wait_min
     ? Math.min(100, (row.waited_min / row.max_wait_min) * 100) : 0
 
