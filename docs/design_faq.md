@@ -277,6 +277,45 @@ section. All of it is optional by design: the system still triages the
 patient who cannot answer a single question, because the mandate is to work
 with whatever the first minutes actually yield.
 
+## The console shows patient names. Does that not break your PHI claim?
+
+The claim was never that names do not exist; it is that identifying data
+never crosses a boundary it should not cross, and there are two of those.
+The nurse's screen is inside the trust boundary and needs the name, because
+"is this M. Chen?" is how a real patient gets called from a waiting room.
+The reasoning path and the FHIR export are outside it. `display_name` is a
+field on the intake that `llm_path.build_user_prompt` never renders and
+`fhir.triage_bundle` never emits, and both boundaries are pinned by tests
+(`test_display_name_never_reaches_the_reasoning_path`,
+`test_fhir_export_stays_de_identified_for_a_named_patient`) that fail if a
+future change starts including it. That is a stronger guarantee than
+redaction gives us on free text: the complaint has to survive a recognizer
+gauntlet, while the name is simply never in the string.
+
+## Is an acknowledged alert actually recorded, or does it just disappear?
+
+Recorded. The alert band offers two responses and they mean different things.
+Reassess (`POST /patients/{id}/reassess`) says a clinician assessed the
+patient: it restarts the safe-wait clock, returns them to `waiting`,
+collapses the drifted acuity belief back onto the two paths, and writes a
+`reassessment_check` event with the clinician ID and how long the patient had
+gone unassessed. Acknowledge (`POST /patients/{id}/acknowledge`) says only
+that a named clinician saw the alert: it writes an `alert_ack` event, and it
+deliberately changes nothing clinical, so the patient keeps their level and
+stays overdue on the board. An acknowledgment that quietly cleared the
+overdue state would be a way to make a queue look safe without making it
+safe.
+
+## Why does the status bar not show bed availability?
+
+Because we do not model beds. Every number in that bar is one the service
+actually tracks: patients on the board, patients in care, patients waiting,
+and the load state, which is the same surge threshold the triage path reads
+from the hospital profile. A bed count would have been three characters of
+UI and a fabricated number, and the first question a real ED director asks
+about a capacity figure is where it came from. Bed and staff rostering hang
+off the FHIR seam when a site connects one.
+
 ## Why a simulation clock instead of a background scheduler?
 
 Determinism. The demo replays 130 minutes of ED time in seconds, every test is

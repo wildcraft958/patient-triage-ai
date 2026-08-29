@@ -8,7 +8,9 @@ Team **NamoFans** (IIT Kharagpur): Monika Kumari (Team Leader) and Animesh Raj. 
 
 **Live demo: https://patient-triage-ai-s5hk.onrender.com** (may take up to a minute to wake from idle)
 
-![Nurse console: SIM-007 after his deterioration alert, both reasoning chains visible, priority queue re-ranked](docs/dashboard.png)
+![Nurse console: the shift board, with a deterioration alert above the queue and both reasoning chains open on the selected patient](docs/dashboard.png)
+
+The console is a shift board, not a dashboard. **Patient queue** ranks by acuity and shows every patient's current level, belief, wait against the safe limit for that level, and vitals trend. **Waiting room** ranks the same people by reassessment priority, which is a different question and gets its own screen. **Audit and evidence** carries the held-out benchmark, the live bias counters, and every clinician decision with the name attached. Alerts sit above all of it, and answering one is two clicks: reassess, or acknowledge. Both are written to the audit trail.
 
 ---
 
@@ -143,7 +145,7 @@ flowchart LR
 | GRPO optimizer | `backend/app/learning/grpo.py` | Group-relative advantages over the experience repository; `scripts/train_policy.py` |
 | ICD-10 coding + FHIR export | `backend/app/engine/icd10.py`, `backend/app/fhir.py` | Provisional encounter codes; FHIR R4 Bundle per episode |
 | Evaluation harness | `eval/run_eval.py` | Published-benchmark metrics, reproducible |
-| Product site + nurse console | `frontend/` | React + Vite; landing pages at `/`, console at `/console` with OLDCARTS intake form and voice dictation |
+| Product site + nurse console | `frontend/` | React + Vite; landing pages at `/`, console at `/console`: acuity-ranked queue, reassessment board, audit and evidence tab, one-click override, OLDCARTS intake form with voice dictation |
 
 ### The intake classifier: distillation end to end
 
@@ -173,7 +175,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 167 tests
+uv run pytest                     # 179 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
@@ -183,7 +185,8 @@ npm install
 npm run dev                       # http://localhost:5173
 
 # 5. localhost:5173 opens the product site; "Launch console" (or /console)
-#    opens the nurse console: Load scenario -> Next event, step the timeline
+#    opens the nurse console: Open a shift -> Go live to run the clock in
+#    real time, or press N to step the shift one event at a time
 ```
 
 **LLM access.** Set `LLM_API_KEY` (AWS Bedrock API key) and `LLM_REGION` in `.env`; default model is `anthropic.claude-haiku-4-5`. Without a key the system still runs end to end in rules-only mode (every recommendation notes it), and all previously seen prompts are served from the replay cache in `data/cache/`.
