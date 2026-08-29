@@ -35,3 +35,14 @@ export const acceptPatient = (id, clinician_id) =>
   })
 export const overridePatient = (id, body) =>
   request(`/patients/${id}/override`, { method: 'POST', body: JSON.stringify(body) })
+export const reassessPatient = (id, clinician_id) =>
+  request(`/patients/${id}/reassess`, {
+    method: 'POST',
+    body: JSON.stringify({ clinician_id }),
+  })
+export const acknowledgeAlert = (id, clinician_id) =>
+  request(`/patients/${id}/acknowledge`, {
+    method: 'POST',
+    body: JSON.stringify({ clinician_id }),
+  })
+export const getBenchmark = () => request('/benchmark')
