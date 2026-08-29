@@ -1,4 +1,4 @@
-import { fmt } from './ui'
+import { fmt } from './format'
 
 export default function Feed({ items }) {
   return (

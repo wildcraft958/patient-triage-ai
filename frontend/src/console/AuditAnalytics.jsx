@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as api from '../api'
-import { fmt } from './ui'
+import { fmt } from './format'
 
 const pct = (v) => (v == null ? '·' : `${Number(v).toFixed(1)}%`)
 
@@ -95,10 +95,14 @@ export default function AuditAnalytics({ metrics }) {
       {benchmarks.map((b) => <BenchmarkCard key={b.label} bench={b} />)}
 
       <div className="metric-card">
-        <h3>This shift</h3>
-        <span className="src">Live numbers from the running department.</span>
+        <h3>Audit trail</h3>
+        <span className="src">
+          Every decision written to the audit database. It is append-only and
+          survives restarts, so these totals span shifts rather than resetting
+          with the board.
+        </span>
         <div className="stat-row">
-          <span>Triage decisions</span><b>{audit?.events_by_type?.triage ?? 0}</b>
+          <span>Triage decisions recorded</span><b>{audit?.events_by_type?.triage ?? 0}</b>
         </div>
         <div className="stat-row">
           <span>Clinician override rate</span><b>{pct(audit?.override_rate_pct)}</b>
@@ -107,12 +111,30 @@ export default function AuditAnalytics({ metrics }) {
           <span>Overrides toward more acute</span><b>{audit?.overrides_toward_more_acute ?? 0}</b>
         </div>
         <div className="stat-row">
-          <span>Alerts fired</span>
-          <b>{Object.values(audit?.alerts_by_kind ?? {}).reduce((a, b) => a + b, 0)}</b>
+          <span>Deterioration alerts</span>
+          <b>{audit?.alerts_by_kind?.DETERIORATION ?? 0}</b>
         </div>
         <div className="stat-row">
-          <span>Triage latency p50 / p95</span>
-          <b>{fmt(metrics?.latency?.p50_ms)} / {fmt(metrics?.latency?.p95_ms)} ms</b>
+          <span>Wait-limit alerts</span>
+          <b>{audit?.alerts_by_kind?.WAIT_BREACH ?? 0}</b>
+        </div>
+      </div>
+
+      <div className="metric-card">
+        <h3>Pipeline latency</h3>
+        <span className="src">
+          Intake to recommendation for the {metrics?.latency?.n ?? 0} patients
+          scored since this process started: redaction, both paths, calibration
+          and the safety check.
+        </span>
+        <div className="big-stat">
+          {fmt(metrics?.latency?.p50_ms)}<small>ms median</small>
+        </div>
+        <div className="stat-row">
+          <span>95th percentile</span><b>{fmt(metrics?.latency?.p95_ms)} ms</b>
+        </div>
+        <div className="stat-row">
+          <span>Patients scored</span><b>{metrics?.latency?.n ?? 0}</b>
         </div>
       </div>
 

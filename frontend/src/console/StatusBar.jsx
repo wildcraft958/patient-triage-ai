@@ -1,4 +1,4 @@
-import { shiftClock } from './ui'
+import { shiftClock } from './format'
 
 export default function StatusBar({
   state, inCare, remaining, busy, auto, live,

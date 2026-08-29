@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import * as api from '../api'
-import { ConfMeter, EsiBadge, Sparkline, VITAL_DEFS, fmt, fmtAge } from './ui'
+import { ConfMeter, EsiBadge, Sparkline } from './ui'
+import { VITAL_DEFS, fmt, fmtAge } from './format'
 
 function AuditDrawer({ patientId }) {
   const [open, setOpen] = useState(false)

@@ -1,4 +1,5 @@
-import { BeliefPeak, EsiBadge, TrendArrows, fmtAge } from './ui'
+import { BeliefPeak, EsiBadge, TrendArrows } from './ui'
+import { fmtAge } from './format'
 
 // The board a nurse reads: most acute first, and within a level the person
 // who has been unattended longest. The reassessment priority order lives on

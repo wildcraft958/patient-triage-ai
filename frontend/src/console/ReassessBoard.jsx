@@ -1,4 +1,5 @@
-import { EsiBadge, TrendArrows, fmtAge } from './ui'
+import { EsiBadge, TrendArrows } from './ui'
+import { fmtAge } from './format'
 
 // Rows arrive from the API already in reassessment-priority order: the
 // policy over the acuity belief decides who is checked next, which is a
