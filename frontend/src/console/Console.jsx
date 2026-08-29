@@ -143,10 +143,10 @@ export default function Console() {
       const items = reportAlerts(r.alerts)
       const e = r.event
       if (e?.kind === 'arrive') {
-        const name = e.fused?.display_name
-        toast('New arrival', `${e.patient_id} (${e.age_years}y) · ${e.chief_complaint}`)
+        const who = e.display_name ?? e.patient_id
+        toast('New arrival', `${who}, ${e.age_years}y · ${e.chief_complaint}`)
         items.unshift({ at: r.sim_min, esi: e.fused.esi,
-                        text: `Arrival ${name ?? e.patient_id}: ${e.chief_complaint}` })
+                        text: `Arrival ${who}: ${e.chief_complaint}` })
         await refresh(e.patient_id)
       } else if (e?.kind === 'vitals') {
         items.unshift({

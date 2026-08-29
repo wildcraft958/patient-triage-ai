@@ -34,12 +34,18 @@ def test_scenario_steps_through_all_events():
     assert total >= 27  # 24 arrivals + at least 3 rechecks
 
     kinds = []
+    first_arrival = None
     for _ in range(total):
         step = client.post("/scenario/step").json()
         kinds.append(step["event"]["kind"])
+        if first_arrival is None and step["event"]["kind"] == "arrive":
+            first_arrival = step["event"]
     assert step["done"] is True
     assert kinds.count("arrive") == 24
     assert kinds.count("vitals") >= 2
+    # arrivals announce the patient by name: the board and the activity feed
+    # both lead with it, and the record ID follows alongside
+    assert first_arrival["display_name"] == "M. Chen"
 
     # SIM-007's worsening rechecks must have fired deterioration alerts
     events = client.get("/patients/SIM-007/audit").json()["events"]

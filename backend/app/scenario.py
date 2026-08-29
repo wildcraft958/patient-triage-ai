@@ -40,6 +40,7 @@ class ScenarioPlayer:
             fused = self.service.arrive(payload, use_llm=self.use_llm)
             event = {
                 "kind": "arrive", "patient_id": payload.patient_id,
+                "display_name": payload.display_name,
                 "chief_complaint": payload.chief_complaint,
                 "age_years": payload.age_years, "fused": fused,
             }
