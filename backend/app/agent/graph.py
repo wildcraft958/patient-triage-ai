@@ -16,7 +16,7 @@ from app.agent.fuse import FusedResult, LLMResult, fuse
 from app.agent.llm_path import assess
 from app.engine.esi_rules import score
 from app.models import PatientIntake, RulesResult
-from app.privacy.redact import aggregate_age, redact
+from app.privacy.redact import aggregate_age, redact, redact_clinical_value
 
 
 class TriageState(TypedDict, total=False):
@@ -37,9 +37,14 @@ def redact_node(state: TriageState) -> dict:
     entities = set(r.entities_removed)
 
     def redact_items(items: list[str]) -> list[str]:
+        """Medications and conditions are coded fields, so they skip the
+        name-class recognizers: a drug name read as a person both loses the
+        clinical context and changes the prompt under a different spaCy
+        model, which is how the deployed build and the benchmarked one
+        drifted apart."""
         out = []
         for item in items:
-            rr = redact(item)
+            rr = redact_clinical_value(item)
             entities.update(rr.entities_removed)
             out.append(rr.text)
         return out

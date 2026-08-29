@@ -38,6 +38,14 @@ PHI_ENTITIES = [
 ]
 
 
+# Medications and conditions arrive as coded values, not prose. A name-class
+# recognizer that claims the WHOLE of one is wrong by construction - the
+# field says the value is a drug or a condition, and en_core_web_sm reads
+# "lisinopril" as a person - while a name sitting inside a longer entry
+# ("insulin, prescribed by Dr. R Kumar") is exactly what we do want removed.
+NAME_LIKE_ENTITIES = {"PERSON", "LOCATION", "NRP"}
+
+
 class RedactionResult(BaseModel):
     text: str
     entities_removed: list[str]
@@ -75,9 +83,12 @@ SAFE_HARBOR_AGE_CEILING = 90
 _AGE_IN_TEXT = re.compile(r"\b(\d{2,3})[\s-]*(?:year|yr)s?[\s-]*old\b", re.I)
 
 
-def _keep(finding, text: str) -> bool:
+def _keep(finding, text: str, coded_value: bool = False) -> bool:
     if finding.score < MIN_SCORE:
         return False
+    if (coded_value and finding.entity_type in NAME_LIKE_ENTITIES
+            and text[finding.start:finding.end].strip() == text.strip()):
+        return False  # the whole coded value read as a name: a drug, not a person
     if finding.entity_type != "URL" or "//" in text[finding.start:finding.end]:
         return True
     # A missing space after a full stop reads as a bare domain
@@ -100,19 +111,26 @@ def aggregate_age(age_years: int) -> int:
     return min(age_years, SAFE_HARBOR_AGE_CEILING)
 
 
-def redact(text: str) -> RedactionResult:
+def redact_clinical_value(text: str) -> RedactionResult:
+    """Redaction for one coded clinical field (a medication, a condition).
+    Identical to prose redaction except that a name claiming the entire
+    value is treated as the false positive it is."""
+    return redact(text, coded_value=True)
+
+
+def redact(text: str, coded_value: bool = False) -> RedactionResult:
     if not text.strip():
         return RedactionResult(text=text, entities_removed=[])
     analyzer, anonymizer = _engines()
     findings = [f for f in analyzer.analyze(text=text, language="en",
                                             entities=PHI_ENTITIES)
-                if _keep(f, text)]
+                if _keep(f, text, coded_value)]
     anonymized = anonymizer.anonymize(text=text, analyzer_results=findings)
     # the anonymizer resolves overlapping findings, so the audit trail
     # reports what it actually applied - never a redaction that a wider,
     # lower-scoring match had claimed
-    entities = {item.entity_type for item in anonymized.items}
+    removed = {item.entity_type for item in anonymized.items}
     aggregated = _AGE_IN_TEXT.sub(_aggregate_age, anonymized.text)
     if aggregated != anonymized.text:
-        entities.add("AGE_OVER_89")
-    return RedactionResult(text=aggregated, entities_removed=sorted(entities))
+        removed.add("AGE_OVER_89")
+    return RedactionResult(text=aggregated, entities_removed=sorted(removed))

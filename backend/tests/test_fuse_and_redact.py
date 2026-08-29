@@ -1,6 +1,6 @@
 from app.agent.fuse import FusedResult, LLMResult, fuse
 from app.models import RulesResult
-from app.privacy.redact import redact
+from app.privacy.redact import redact, redact_clinical_value
 
 
 def rules(esi: int) -> RulesResult:
@@ -104,3 +104,52 @@ def test_redacts_name_and_phone_keeps_clinical_content():
 def test_clinical_text_without_phi_passes_through():
     r = redact("chest tightness and tingling in hands during exam week")
     assert r.text == "chest tightness and tingling in hands during exam week"
+
+
+# --- structured clinical fields are not prose ---
+
+def test_a_drug_name_survives_redaction_of_a_medication_list():
+    """Medications and conditions arrive as coded values, not sentences, so a
+    name recognizer firing on one is a false positive by construction. It is
+    also a real harm: en_core_web_sm reads "lisinopril" as a person, which
+    both deletes the cardiac context Path B reasons over and makes the
+    deployed model see a different prompt from the benchmarked one."""
+    for value in ("lisinopril", "nitrofurantoin", "smoker 40 pack-years",
+                  "amlodipine", "type 2 diabetes"):
+        assert redact_clinical_value(value).text == value
+
+
+def test_an_identifier_pasted_into_a_clinical_list_is_still_removed():
+    r = redact_clinical_value("insulin, refills on 555-123-4567")
+    assert "555-123-4567" not in r.text
+    assert "PHONE_NUMBER" in r.entities_removed
+
+
+def test_free_text_still_gets_the_full_entity_list():
+    # the narrowing applies to coded fields only; prose keeps name detection
+    assert "Ramesh Kumar" not in redact("Ramesh Kumar has chest pain").text
+
+
+class _Finding:
+    """Stands in for a Presidio finding so the rule is tested directly,
+    rather than through whichever spaCy model happens to be installed."""
+
+    def __init__(self, entity_type, start, end, score=0.85):
+        self.entity_type, self.start, self.end, self.score = (
+            entity_type, start, end, score)
+
+
+def test_a_name_claiming_a_whole_coded_value_is_dropped():
+    from app.privacy.redact import _keep
+
+    assert _keep(_Finding("PERSON", 0, 10), "lisinopril", coded_value=True) is False
+    # the same finding in prose is a name and stays
+    assert _keep(_Finding("PERSON", 0, 10), "lisinopril", coded_value=False) is True
+
+
+def test_a_name_inside_a_longer_coded_value_is_kept():
+    from app.privacy.redact import _keep
+
+    text = "insulin, prescribed by Ramesh Kumar"
+    assert text[23:35] == "Ramesh Kumar"
+    assert _keep(_Finding("PERSON", 23, 35), text, coded_value=True) is True
