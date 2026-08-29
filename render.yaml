@@ -18,3 +18,7 @@ services:
         value: en_core_web_sm
       - key: HOSPITAL_PROFILE
         value: urban_500
+      # the replay cache is keyed by model id, so the hosted demo replays the
+      # same model the published benchmarks were measured on
+      - key: LLM_MODEL
+        value: anthropic.claude-sonnet-5

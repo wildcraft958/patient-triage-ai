@@ -32,5 +32,7 @@ RUN cd backend && uv run python -c "from model2vec import StaticModel; \
     StaticModel.from_pretrained('minishlab/potion-base-8M')"
 
 ENV HOSPITAL_PROFILE=urban_500
+# pinned, not defaulted: the replay cache is keyed by model id
+ENV LLM_MODEL=anthropic.claude-sonnet-5
 EXPOSE 7860
 CMD ["sh", "-c", "cd backend && uv run uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-7860}"]

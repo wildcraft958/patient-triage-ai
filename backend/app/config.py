@@ -12,7 +12,10 @@ class Settings(BaseSettings):
 
     llm_region: str = "eu-north-1"
     llm_api_key: str = ""
-    llm_model: str = "anthropic.claude-haiku-4-5"
+    # The committed replay cache and every published benchmark were produced
+    # with Sonnet 5, and the cache is keyed by model id, so a different
+    # default would silently drop demo patients onto the rules-only path.
+    llm_model: str = "anthropic.claude-sonnet-5"
     hf_token: str = ""
     hospital_profile: str = "urban_500"
     # en_core_web_lg for full PHI recall; en_core_web_sm for small-RAM hosts
