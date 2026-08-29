@@ -150,7 +150,13 @@ button.chip.live.on { background: #7CE0B0; color: #10381F; border-color: transpa
   padding: 12px; align-items: start;
 }
 .workspace.wide { grid-template-columns: 1fr; }
-.work-side { display: flex; flex-direction: column; gap: 12px; }
+.work-side {
+  display: flex; flex-direction: column; gap: 12px;
+  max-height: calc(100vh - 190px);
+}
+.work-side .panel { max-height: none; min-height: 0; }
+.work-side .panel.detail { flex: 1 1 auto; overflow-y: auto; }
+.work-side .panel.activity { flex: 0 0 auto; max-height: 220px; overflow-y: auto; }
 
 .panel {
   background: #fff; border: 1px solid var(--line); border-radius: 10px;
@@ -264,7 +270,7 @@ button.chip.live.on { background: #7CE0B0; color: #10381F; border-color: transpa
   border-left: 4px solid var(--disagree); color: #6A4A12;
 }
 
-.paths { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; }
+.paths { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 10px; align-items: start; }
 .path {
   border: 1px solid var(--line); border-radius: 7px; padding: 8px 10px;
   background: #fff; font-size: 11px; line-height: 1.5;
@@ -397,7 +403,7 @@ button.chip.live.on { background: #7CE0B0; color: #10381F; border-color: transpa
 
 /* ------------------------------------------------------------- analytics */
 
-.analytics { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 12px; padding: 12px; align-items: start; }
+.analytics { display: grid; grid-template-columns: repeat(auto-fit, minmax(420px, 1fr)); gap: 12px; padding: 12px; align-items: start; }
 .metric-card { background: #fff; border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; }
 .metric-card h3 {
   font-size: 10.5px; letter-spacing: 1.4px; text-transform: uppercase;
@@ -414,9 +420,9 @@ button.chip.live.on { background: #7CE0B0; color: #10381F; border-color: transpa
 .bar-track i.good { background: var(--agree); }
 .bar-track i.bad { background: var(--alert); }
 .cmp-table { width: 100%; border-collapse: collapse; font-size: 11.5px; }
-.cmp-table th { text-align: right; font-size: 9.5px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); padding-bottom: 6px; }
-.cmp-table th:first-child, .cmp-table td:first-child { text-align: left; }
-.cmp-table td { text-align: right; padding: 5px 0; border-top: 1px solid var(--tint-2); font-variant-numeric: tabular-nums; }
+.cmp-table th { text-align: right; font-size: 9.5px; letter-spacing: 0.8px; text-transform: uppercase; color: var(--muted); padding: 0 0 6px 14px; }
+.cmp-table th:first-child, .cmp-table td:first-child { text-align: left; padding-left: 0; }
+.cmp-table td { text-align: right; padding: 5px 0 5px 14px; border-top: 1px solid var(--tint-2); font-variant-numeric: tabular-nums; }
 .cmp-table tr.best td { font-weight: 800; color: var(--purple-deep); }
 
 /* ---------------------------------------------------------------- toasts */
