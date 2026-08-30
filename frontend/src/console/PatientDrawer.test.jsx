@@ -79,3 +79,48 @@ describe('the audit trail', () => {
     expect(panel.textContent).not.toMatch(/WAIT_BREACH|DETERIORATION|llm_unavailable|clinician_decision_stands/)
   })
 })
+
+describe('the vitals panel', () => {
+  // The old sparkline needed two readings and returned nothing below that, so
+  // for the patient who has only been triaged once - which is most of them -
+  // the panel rendered a number and an empty space where a chart belonged.
+  const ONE_READING = {
+    ...DETAIL.A,
+    vital_limits: { hr: { high: 100 }, rr: { high: 20 }, spo2: { low: 92 },
+                    temp_c: { high: 38 }, pain: { high: 8 },
+                    sbp: { low: 90, high: 220 } },
+    vitals_history: [{ at_min: 0, vitals: { hr: 96, rr: 18, spo2: 96, temp_c: 37.4, sbp: 122, pain: 5 } }],
+  }
+
+  const show = (detail) => renderSignedIn(
+    <PatientDrawer detail={detail} feedback="" busy={false}
+                   width={460} minWidth={360} maxWidth={760}
+                   onResize={vi.fn()} onClose={vi.fn()} onAccept={vi.fn()}
+                   onOverride={vi.fn()} onReassess={vi.fn()} onVitals={vi.fn()} />)
+
+  it('draws a gauge for a patient with one reading', () => {
+    show(ONE_READING)
+    expect(screen.getAllByRole('img', { name: /against a safe range/i })).toHaveLength(6)
+  })
+
+  it('marks a reading past its age-band limit', () => {
+    show({
+      ...ONE_READING,
+      vitals_history: [{ at_min: 0, vitals: { ...ONE_READING.vitals_history[0].vitals, hr: 130 } }],
+    })
+    // 130 is over the published adult ceiling of 100.
+    const hr = screen.getByRole('img', { name: /^130 against a safe range/i })
+    expect(hr.querySelector('.bg-esi-2')).toBeTruthy()
+  })
+
+  it('shows direction of travel only once there is something to compare', () => {
+    show(ONE_READING)
+    expect(screen.queryByLabelText(/since triage/i)).not.toBeInTheDocument()
+
+    const v = ONE_READING.vitals_history[0].vitals
+    show({ ...ONE_READING,
+           vitals_history: [{ at_min: 0, vitals: v },
+                            { at_min: 9, vitals: { ...v, hr: 118 } }] })
+    expect(screen.getByLabelText(/rising since triage/i)).toBeInTheDocument()
+  })
+})

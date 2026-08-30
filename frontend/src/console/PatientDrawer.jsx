@@ -5,8 +5,8 @@ import * as api from '../api'
 import { useSession } from '../auth/sessionContext'
 import { RESTRICTED } from '../auth/roles'
 import Splitter from './Splitter'
-import { BeliefPeak, Btn, EsiBadge, Initials, Pill, Sparkline } from './ui'
-import { VITAL_DEFS, alertLabel, fmt, fmtAge, outcomeLabel } from './format'
+import { BeliefPeak, Btn, EsiBadge, Initials, Pill, VitalGauge, VitalTrend } from './ui'
+import { VITAL_DEFS, VITAL_RANGE, alertLabel, fmt, fmtAge, outcomeLabel } from './format'
 
 const AUDIT_SUMMARY = {
   triage: (p) => `ESI-${p.esi} · ${p.confidence} confidence · ${p.paths_agree ? 'paths agree' : 'paths disagree'}`,
@@ -126,7 +126,7 @@ function Paths({ fused, surge }) {
   )
 }
 
-function Vitals({ history }) {
+function Vitals({ history, limits }) {
   if (!history?.length) return null
   const baseline = history[0].vitals
   const latest = history[history.length - 1].vitals
@@ -142,14 +142,15 @@ function Vitals({ history }) {
           return (
             <div key={key} className={`rounded-sm border px-2 py-1.5
                             ${worse ? 'border-alert-line bg-alert-bg' : 'border-line bg-card'}`}>
-              <p className="text-[9px] font-bold uppercase tracking-wide text-ink-3">{label}</p>
               <div className="flex items-center justify-between gap-1">
-                <span className={`text-sm font-bold tabular-nums
-                                  ${worse ? 'text-alert-ink' : 'text-ink'}`}>
-                  {Number(now).toFixed(key === 'temp_c' ? 1 : 0)}{unit}
-                </span>
-                <Sparkline values={history.map((h) => h.vitals[key])} worseIfUp={worseIfUp} />
+                <p className="text-[9px] font-bold uppercase tracking-wide text-ink-3">{label}</p>
+                <VitalTrend from={base} to={now} worseIfUp={worseIfUp} />
               </div>
+              <span className={`block text-sm font-bold tabular-nums
+                                ${worse ? 'text-alert-ink' : 'text-ink'}`}>
+                {Number(now).toFixed(key === 'temp_c' ? 1 : 0)}{unit}
+              </span>
+              <VitalGauge value={now} range={VITAL_RANGE[key]} limit={limits?.[key]} />
             </div>
           )
         })}
@@ -157,6 +158,7 @@ function Vitals({ history }) {
       <p className="mt-2 text-[11px] text-ink-3">
         {history.length > 1 ? `${history.length} readings since triage`
                             : 'Single reading at triage'}
+        {limits && '. The tick on each bar is the limit for this patient\u2019s age band.'}
       </p>
     </>
   )
@@ -350,10 +352,10 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
                    <Btn size="sm" disabled={busy}
                         onClick={() => onVitals(intake.patient_id)}>Record vitals</Btn>
                  )}>
-          <Vitals history={vitals_history} />
+          <Vitals history={vitals_history} limits={detail.vital_limits} />
         </Section>
 
-        <Section title="Acuity belief P(ESI)">
+        <Section title="How likely each level is">
           <BeliefStrip belief={detail.belief} />
         </Section>
 

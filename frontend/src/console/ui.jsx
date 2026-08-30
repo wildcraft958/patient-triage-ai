@@ -1,3 +1,4 @@
+import { TrendingDown, TrendingUp } from 'lucide-react'
 import { ESI_BG, ESI_INK, ESI_LABEL } from './format'
 
 // Design-system primitives for the console. Every screen composes these, so
@@ -164,27 +165,49 @@ export function BeliefPeak({ peak, assigned, pathsAgree, confidence }) {
   )
 }
 
-export function Sparkline({ values, worseIfUp, width = 62, height = 18 }) {
-  const points = values.filter((v) => v != null)
-  if (points.length < 2) return null
-  const min = Math.min(...points)
-  const max = Math.max(...points)
-  const span = max - min || 1
-  const step = width / (points.length - 1)
-  const y = (v) => height - ((v - min) / span) * (height - 3) - 1.5
-  const path = points.map((v, i) => `${(i * step).toFixed(1)},${y(v).toFixed(1)}`).join(' ')
-  const last = points[points.length - 1]
-  const worse = worseIfUp ? last > points[0] : last < points[0]
-  const stroke = worse ? 'var(--color-esi-2)' : 'var(--color-brand)'
+// A reading against the limit it was actually scored against, rather than a
+// line joining two numbers. It draws with a single reading, which is what most
+// patients have at triage, and the old sparkline could not: it returned
+// nothing below two points and left the panel looking broken.
+export function VitalGauge({ value, range, limit }) {
+  const [lo, hi] = range
+  const pct = (v) => Math.max(0, Math.min(100, ((v - lo) / (hi - lo)) * 100))
+  // A low limit means the danger is below it (SpO2, SBP); a high limit means
+  // above. SBP has both, and the reading only has to breach one.
+  const breached = (limit?.low != null && value < limit.low)
+                || (limit?.high != null && value > limit.high)
+  const marks = [limit?.low, limit?.high].filter((m) => m != null && m > lo && m < hi)
+
   return (
-    <svg width={width + 4} height={height} viewBox={`0 0 ${width + 4} ${height}`}
-         aria-hidden="true" className="overflow-visible">
-      <polyline points={path} fill="none" stroke={stroke} strokeWidth="1.5"
-                strokeLinejoin="round" strokeLinecap="round" />
-      <circle cx={width} cy={y(last)} r="2" fill={stroke} />
-    </svg>
+    <div className="relative h-1.5 rounded-full bg-app mt-2"
+         role="img"
+         aria-label={`${value} against a safe range of ${limit?.low ?? lo} to ${limit?.high ?? hi}`}>
+      <span className={`absolute inset-y-0 left-0 rounded-full
+                        ${breached ? 'bg-esi-2' : 'bg-brand'}`}
+            style={{ width: `${pct(value)}%` }} />
+      {marks.map((m) => (
+        // The tick has to read on the filled bar and on the empty track
+        // either side of it, so it takes the body ink rather than a hairline.
+        <span key={m} className="absolute -inset-y-0.5 w-0.5 rounded-full bg-ink"
+              style={{ left: `${pct(m)}%` }} aria-hidden="true" />
+      ))}
+    </div>
   )
 }
+
+// Direction of travel since triage, as a glyph rather than a two-point line.
+// Only shown once there is a second reading to compare against.
+export function VitalTrend({ from, to, worseIfUp }) {
+  if (from == null || to == null || Math.abs(to - from) < 0.1) return null
+  const up = to > from
+  const worse = worseIfUp ? up : !up
+  const Icon = up ? TrendingUp : TrendingDown
+  return (
+    <Icon size={13} aria-label={up ? 'rising since triage' : 'falling since triage'}
+          className={worse ? 'text-esi-2' : 'text-ok-ink'} />
+  )
+}
+
 
 // A bar that fills toward a limit. Used for wait pressure against the safe
 // wait for a level, and for reassessment priority.

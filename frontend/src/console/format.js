@@ -41,6 +41,14 @@ export const shiftClock = (simMin) => {
   return `${h12}:${String(m).padStart(2, '0')} ${suffix}`
 }
 
+// The window each vital is drawn in. Presentation only: the clinical limit
+// that decides whether a reading is dangerous rides on the patient record,
+// published per age band by the same code the danger-zone gate reads.
+export const VITAL_RANGE = {
+  hr: [0, 200], rr: [0, 60], spo2: [85, 100],
+  temp_c: [35, 41], sbp: [60, 240], pain: [0, 10],
+}
+
 export const VITAL_DEFS = [
   { key: 'hr', label: 'HR', unit: '', worseIfUp: true },
   { key: 'rr', label: 'RR', unit: '', worseIfUp: true },
