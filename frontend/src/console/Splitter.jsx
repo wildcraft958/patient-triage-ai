@@ -44,8 +44,13 @@ export default function Splitter({ value, min, max, onChange, label,
 
   const onKeyDown = (e) => {
     const step = e.shiftKey ? 64 : 16
+    // The arrow moves the separator, not the number: on a right-pinned pane
+    // that grows against the pointer, moving the handle left makes the pane
+    // wider. Without the sign the keyboard walks it the opposite way to the
+    // drag, which is the same handle disagreeing with itself.
     const moves = {
-      ArrowLeft: -step, ArrowRight: step, Home: min - value, End: max - value,
+      ArrowLeft: -step * sign, ArrowRight: step * sign,
+      Home: min - value, End: max - value,
     }
     if (!(e.key in moves)) return
     e.preventDefault()
