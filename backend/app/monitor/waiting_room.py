@@ -49,6 +49,20 @@ def worsening_reasons(baseline: Vitals, vitals: Vitals,
     return reasons
 
 
+def _headline(trend: list[str], danger: list[str]) -> str:
+    """One line for the board. The full reason list rides on the alert and is
+    what the record shows; this is the version a nurse reads while walking.
+
+    A patient going off in four vitals produced four trend lines plus a danger
+    line per breached limit, which on the board was two wrapped rows of mostly
+    the same vitals said twice."""
+    if danger:
+        # "HR 124 exceeds age-band limit 100" -> "HR 124". The limit itself is
+        # in the record; on the board the reading is the news.
+        return ", ".join(" ".join(r.split()[:2]) for r in danger) + " past safe limits"
+    return ", ".join(r.split()[0] for r in trend) + " worsening"
+
+
 def _who(entry) -> str:
     """Nurse-facing subject of an alert. The message is rendered for a human
     reading the board; the audit payload keys on the record ID."""
@@ -57,9 +71,20 @@ def _who(entry) -> str:
 
 
 def _complaint(entry) -> str:
-    """The complaint as a nurse says it. The category is a routing key, and
-    interpolating it verbatim put `chest_pain` in front of clinicians."""
-    return entry.intake.complaint_category.replace("_", " ")
+    """The complaint as a nurse says it, or nothing. The category is a routing
+    key: interpolating it verbatim put `chest_pain` in front of clinicians, and
+    "other" is the classifier declining to name one, which is not a complaint
+    and reads on the board as though it were."""
+    category = entry.intake.complaint_category
+    return "" if category == "other" else category.replace("_", " ")
+
+
+def _subject(entry) -> str:
+    """Who the alert is about, with what is known about them."""
+    facts = [f"ESI-{entry.fused.esi}"]
+    if _complaint(entry):
+        facts.append(_complaint(entry))
+    return f"{_who(entry)} ({', '.join(facts)})"
 
 
 class SimClock:
@@ -148,9 +173,7 @@ class WaitingRoom:
                     # Reassess button either side of this, so spelling out
                     # "safe wait limit exceeded, consider reassessment" said
                     # the same thing a third time and crowded the row.
-                    message=(f"{_who(entry)} "
-                             f"(ESI-{entry.fused.esi}, {_complaint(entry)}, "
-                             f"{waited:.0f} min wait)"),
+                    message=f"{_subject(entry)} waiting {waited:.0f} min",
                 )
                 entry.status = "reassess_due"
                 entry.alerts.append(alert)
@@ -172,6 +195,7 @@ class WaitingRoom:
             entry.intake.model_copy(update={"vitals": vitals})
         )
         trend_worsening = bool(reasons)
+        headline = _headline(reasons, danger_reasons if danger else [])
         if danger:
             reasons.extend(f"danger zone: {r}" for r in danger_reasons)
 
@@ -192,13 +216,10 @@ class WaitingRoom:
             )
             if recent and not danger:
                 return None
-            waited = now - entry.last_assessed_min
             alert = Alert(
                 patient_id=patient_id, at_min=now, kind="DETERIORATION",
                 reasons=reasons, needs_retriage=True,
-                message=(f"{_who(entry)} (ESI-{entry.fused.esi}, "
-                         f"{_complaint(entry)}, {waited:.0f} min wait): "
-                         f"{'; '.join(reasons)}"),
+                message=f"{_subject(entry)}: {headline}",
             )
             entry.status = "deteriorating"
             entry.alerts.append(alert)

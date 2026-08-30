@@ -118,7 +118,13 @@ export const categoryLabel = (c) => CATEGORY_LABEL[c] ?? humanise(c)
 export const EVENT_COMPONENT = {
   triage: ['FUS', (p) => `Triage complete, ESI-${p.esi} at ${p.confidence} confidence`
                         + (p.paths_agree ? ', paths agreed' : ', paths disagreed')],
-  alert: ['MON', (p) => `${alertLabel(p.kind)}: ${(p.reasons || []).join('; ')}`],
+  // The log is scanned, so it takes the first two reasons and counts the
+  // rest. The patient's own record shows every one of them.
+  alert: ['MON', (p) => {
+    const r = p.reasons || []
+    const rest = r.length > 2 ? `, and ${r.length - 2} more` : ''
+    return `${alertLabel(p.kind)}: ${r.slice(0, 2).join('; ')}${rest}`
+  }],
   reassessment: ['MON', (p) => `Automatic re-triage, ESI-${p.previous_esi} to ESI-${p.new_esi}`
                         + ` (${alertLabel(p.trigger).toLowerCase()})`],
   surge_enrichment: ['LLM', (p) => (p.outcome
