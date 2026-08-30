@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { ChevronDown, Lock, Send } from 'lucide-react'
 import * as api from '../api'
 import { Card, CardHead, Empty, Pill } from './ui'
+import { fmtMs } from './format'
 
 const KIND_TONE = {
   deterministic: 'ok',
@@ -89,7 +90,7 @@ function Component({ c }) {
               // separated from the number it qualifies.
               <span title={c.latency_note ?? undefined}
                     className={c.latency_note ? 'border-b border-dotted border-ink-3' : ''}>
-                {c.latency_ms.toFixed(1)} ms
+                {fmtMs(c.latency_ms)}
               </span>
             )}
             <ChevronDown size={14} className={open ? '' : '-rotate-90'} aria-hidden="true" />
@@ -113,7 +114,7 @@ function Component({ c }) {
           {c.latency_note && (
             <p className="mx-4 mt-3 rounded-md bg-warn-bg border border-warn-line
                           px-3 py-2 text-[11px] leading-relaxed text-ink-2">
-              <b className="text-ink">On the {c.latency_ms?.toFixed(1)} ms figure:</b>
+              <b className="text-ink">On the {fmtMs(c.latency_ms)} figure:</b>
               {' '}{c.latency_note}.
             </p>
           )}

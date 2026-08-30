@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ESI_BG, ESI_INK, ESI_LABEL, EVENT_COMPONENT, HUMAN_CODES, alertLabel,
-  categoryLabel, fmtAge, outcomeLabel, shiftClock,
+  categoryLabel, fmtAge, fmtMs, outcomeLabel, shiftClock,
 } from './format'
 
 // Tailwind extracts class names statically, so the acuity scale is a literal
@@ -105,5 +105,20 @@ describe('every activity-log line, not just the helpers', () => {
       if (/[a-z]_[a-z]|[A-Z]{2,}_[A-Z]{2,}/.test(line)) offenders.push(`${type}: ${line}`)
     }
     expect(offenders).toEqual([])
+  })
+})
+
+describe('a stage timing', () => {
+  it('never rounds a real measurement down to nothing', () => {
+    // The rules engine and the fusion policy both measure about 0.01 ms, and
+    // "0.0 ms" on a pipeline trace reads as a stage that did not run.
+    expect(fmtMs(0.01)).toBe('<0.1 ms')
+    expect(fmtMs(0.0004)).toBe('<0.1 ms')
+  })
+
+  it('keeps a figure it can actually show', () => {
+    expect(fmtMs(0.81)).toBe('0.8 ms')
+    expect(fmtMs(36.26)).toBe('36 ms')
+    expect(fmtMs(null)).toBe('·')
   })
 })

@@ -3,7 +3,7 @@ import { Lock, Send } from 'lucide-react'
 import * as api from '../api'
 import ActivityLog from './ActivityLog'
 import { Card, CardHead, Empty, Pill } from './ui'
-import { fmt } from './format'
+import { fmt, fmtMs as ms } from './format'
 
 // The pipeline that produced the selected patient's recommendation, drawn as
 // the graph it actually is and with the time each stage really took. Every
@@ -14,8 +14,6 @@ import { fmt } from './format'
 // as concurrent branches and rejoin at fusion, and only one of them ever sees
 // a de-identified copy. Drawing them in a single line would misstate both, so
 // the fork and the join are real edges rather than a caption.
-
-const ms = (v) => (v == null ? '·' : `${Number(v).toFixed(v < 10 ? 1 : 0)} ms`)
 
 // Generous on purpose: scrolling the page down should land on a useful slab of
 // the log, with its own scroll reserved for going further back in the shift.

@@ -89,7 +89,7 @@ export default function MonitorBoard({ rows, selectedId, busy, onSelect, onReass
                       {Math.round(row.waited_min)} min ago
                     </td>
                     <td className="pr-3 py-2.5"><TrendArrows worsening={row.vitals_worsening} /></td>
-                    <td className="pr-3 py-2.5 w-[86px]">
+                    <td className="pr-8 py-2.5 w-[86px]">
                       <span className="text-xs font-bold text-ink tabular-nums">
                         {row.priority?.toFixed(2)}
                       </span>

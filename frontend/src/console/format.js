@@ -19,6 +19,17 @@ export const ESI_LABEL = {
 
 export const fmt = (n) => (n == null ? '·' : Number(n).toFixed(0))
 
+// A stage that finishes faster than the clock resolves reads as "0.0 ms",
+// which on a pipeline trace looks like it did not run at all. Two of the four
+// timed nodes really are that fast, so say what is known instead of rounding
+// them to nothing.
+export const fmtMs = (v) => {
+  if (v == null) return '·'
+  const n = Number(v)
+  if (n < 0.1) return '<0.1 ms'
+  return `${n.toFixed(n < 10 ? 1 : 0)} ms`
+}
+
 export const fmtAge = (years, months) => {
   if (months != null && years === 0) {
     if (months < 1) return `${Math.round(months * 30)}d`
