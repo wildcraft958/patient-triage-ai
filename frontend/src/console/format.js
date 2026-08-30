@@ -1,5 +1,18 @@
-// Formatting helpers shared across the console. Kept apart from the
-// components so a fast-refresh reload never has to re-evaluate them.
+// Formatting helpers and lookup tables shared across the console. Kept
+// apart from the components so a fast-refresh reload never re-evaluates
+// them, and so the acuity scale has one home.
+
+// Tailwind resolves class names at build time, so an acuity scale cannot
+// be interpolated. The map is the price of static extraction.
+export const ESI_BG = {
+  1: 'bg-esi-1', 2: 'bg-esi-2', 3: 'bg-esi-3', 4: 'bg-esi-4', 5: 'bg-esi-5',
+}
+export const ESI_TEXT = {
+  1: 'text-esi-1', 2: 'text-esi-2', 3: 'text-esi-3', 4: 'text-esi-4', 5: 'text-esi-5',
+}
+export const ESI_LABEL = {
+  1: 'Resuscitation', 2: 'Emergency', 3: 'Urgent', 4: 'Less urgent', 5: 'Non urgent',
+}
 
 export const fmt = (n) => (n == null ? '·' : Number(n).toFixed(0))
 
@@ -32,4 +45,32 @@ export const VITAL_DEFS = [
   { key: 'temp_c', label: 'Temp', unit: 'C', worseIfUp: true },
   { key: 'sbp', label: 'SBP', unit: '', worseIfUp: false },
   { key: 'pain', label: 'Pain', unit: '/10', worseIfUp: true },
+]
+
+// The profile name is configuration; this is how a department introduces
+// itself on the status bar.
+export const UNIT_LABEL = {
+  urban_500: 'Urban trauma center · 500 visits/day',
+  rural_100: 'Rural emergency department · 100 visits/day',
+}
+
+export const ROUND = (n) => Math.round(Number(n) || 0)
+
+// The two shifts a console operator can open. Data, not a component.
+export const SHIFTS = [
+  {
+    profile: 'urban_500', speedup: 1, tag: 'Urban trauma center · 500 visits a day',
+    title: 'Normal shift',
+    body: 'Full dual-path scoring on every arrival. Twenty-four patients across '
+        + 'roughly two hours: a classic cardiac presentation, a feverish neonate, '
+        + 'a sepsis trajectory that worsens in the waiting room, and a heart attack '
+        + 'that arrives calling itself indigestion.',
+  },
+  {
+    profile: 'rural_100', speedup: 3, tag: 'Rural emergency department · 100 visits a day',
+    title: 'Surge stress test',
+    body: 'Arrivals compressed threefold. Past the surge threshold the system drops '
+        + 'to the deterministic fast path, about four milliseconds a triage, and the '
+        + 'reasoning pass is queued rather than dropped. Monitoring never stops.',
+  },
 ]

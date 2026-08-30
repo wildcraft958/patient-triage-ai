@@ -1,29 +1,42 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
 import * as api from '../api'
+import SignIn from '../auth/SignIn'
+import { useSession } from '../auth/sessionContext'
 import AlertBand from './AlertBand'
-import AuditAnalytics from './AuditAnalytics'
-import Feed from './Feed'
+import EmptyBoard from './EmptyBoard'
 import IntakeForm from './IntakeForm'
+import MonitorBoard from './MonitorBoard'
 import OverrideModal from './OverrideModal'
+import PatientDrawer from './PatientDrawer'
 import PatientQueue from './PatientQueue'
-import ReassessBoard from './ReassessBoard'
-import StartScreen from './StartScreen'
+import PipelineView from './PipelineView'
+import Registry from './Registry'
+import Settings from './Settings'
+import Sidebar from './Sidebar'
 import StatusBar from './StatusBar'
 import ToastStack from './Toast'
-import TriageCard from './TriageCard'
+import VitalsModal from './VitalsModal'
 
-const CLINICIAN = 'RN-07'
+// Analytics is the only view that pulls in a charting library. Splitting
+// it keeps the board, which is what a nurse opens, off that weight.
+const Analytics = lazy(() => import('./Analytics'))
+
 const TOAST_MS = 5200
-// Live mode: one sim minute per real second. It moves the same clock every
-// number on the board is derived from, so wait times, priorities and alert
-// thresholds stay in agreement while it runs.
-const LIVE_TICK_MS = 1000
+// Live mode advances the department clock one minute every four seconds. It
+// moves the same clock every number on the board derives from, so waits,
+// priorities and alert thresholds stay in agreement while it runs. Four
+// seconds is realistic drift: fast enough that a shift visibly moves, slow
+// enough that reading the board for two minutes does not breach every limit.
+const LIVE_TICK_MS = 4000
+const PULSE_MS = 2000
+const RAIL_KEY = 'pt.rail.collapsed'
 
 export default function Console() {
+  const { user, can } = useSession()
+
   const [state, setState] = useState(null)
   const [queue, setQueue] = useState([])
   const [inCare, setInCare] = useState([])
-  const [feed, setFeed] = useState([])
   const [detail, setDetail] = useState(null)
   const [selectedId, setSelectedId] = useState(null)
   const [remaining, setRemaining] = useState(null)
@@ -31,11 +44,18 @@ export default function Console() {
   const [busy, setBusy] = useState(false)
   const [auto, setAuto] = useState(false)
   const [live, setLive] = useState(false)
-  const [tab, setTab] = useState('queue')
+  const [view, setView] = useState('queue')
   const [feedback, setFeedback] = useState('')
   const [showIntake, setShowIntake] = useState(false)
   const [showOverride, setShowOverride] = useState(false)
+  const [showVitals, setShowVitals] = useState(false)
+  const [drawerOpen, setDrawerOpen] = useState(false)
   const [toasts, setToasts] = useState([])
+  const [pulsingId, setPulsingId] = useState(null)
+  const [refreshKey, setRefreshKey] = useState(0)
+  const [collapsed, setCollapsed] = useState(() => {
+    try { return sessionStorage.getItem(RAIL_KEY) === '1' } catch { return false }
+  })
 
   const selectedRef = useRef(null)
   const toastSeq = useRef(0)
@@ -54,6 +74,7 @@ export default function Console() {
     setState(q.state)
     if (q.scenario_remaining != null) setRemaining(q.scenario_remaining)
     api.getMetrics().then(setMetrics).catch(() => {})
+    setRefreshKey((k) => k + 1)
     if (target) {
       selectedRef.current = target
       setSelectedId(target)
@@ -61,23 +82,19 @@ export default function Console() {
     }
   }, [])
 
-  const pushFeed = (items) => setFeed((f) => [...items, ...f].slice(0, 120))
-
   const reportAlerts = useCallback((alerts) => {
-    if (!alerts?.length) return []
-    alerts.forEach((a) => toast(
+    (alerts ?? []).forEach((a) => toast(
       a.kind === 'WAIT_BREACH' ? 'Wait limit exceeded' : 'Patient deteriorating',
       a.message || a.reasons.join('; '), 'alarm'))
-    return alerts.map((a) => ({
-      dot: 'alert', text: a.message || `${a.kind} ${a.patient_id}`,
-    }))
   }, [toast])
 
-  // reload continuity: rebuild the shift activity from the audit trail
+  // reload continuity: a refresh mid-shift lands back on a populated board
   useEffect(() => {
-    (async () => {
+    if (!user) return
+    let cancelled = false
+    ;(async () => {
       const q = await api.getQueue().catch(() => null)
-      if (!q) return
+      if (!q || cancelled) return
       setQueue(q.queue); setInCare(q.in_care ?? []); setState(q.state)
       if (q.scenario_remaining != null) setRemaining(q.scenario_remaining)
       if (!q.queue.length && !(q.in_care ?? []).length) return
@@ -87,56 +104,27 @@ export default function Console() {
       setSelectedId(first)
       setDetail(await api.getPatient(first).catch(() => null))
       api.getMetrics().then(setMetrics).catch(() => {})
-
-      const audit = await api.getRecentAudit().catch(() => null)
-      if (!audit) return
-      // the audit trail keys on the record ID; the board speaks in names, so
-      // the rebuilt activity is translated back through the current roster
-      const names = Object.fromEntries(
-        [...q.queue, ...(q.in_care ?? [])].map((r) => [r.patient_id, r.display_name]))
-      const rebuilt = audit.events.map((e) => {
-        const p = e.payload
-        const who = names[e.patient_id] ?? e.patient_id
-        if (e.event_type === 'triage')
-          return { at: e.sim_min, esi: p.esi,
-                   text: `Arrival ${who}, ${p.confidence} confidence` }
-        if (e.event_type === 'alert')
-          return { at: e.sim_min, dot: 'alert',
-                   text: `${p.kind} ${who}: ${(p.reasons || []).join('; ')}` }
-        if (e.event_type === 'reassessment')
-          return { at: e.sim_min,
-                   text: `Re-triage ${who} ESI-${p.previous_esi} to ESI-${p.new_esi}` }
-        if (e.event_type === 'reassessment_check')
-          return { at: e.sim_min, dot: 'accept',
-                   text: `${p.clinician_id} reassessed ${who} at the bedside` }
-        if (e.event_type === 'alert_ack')
-          return { at: e.sim_min, text: `${p.clinician_id} acknowledged ${who}` }
-        if (e.event_type === 'override')
-          return { at: e.sim_min, dot: 'override',
-                   text: `Override ${who} to ESI-${p.new_esi}` }
-        if (e.event_type === 'override_safety_flag')
-          return { at: e.sim_min, dot: 'alert',
-                   text: `Safety flag ${who}: ESI-${p.original_esi} downgraded to ESI-${p.new_esi}` }
-        if (e.event_type === 'surge_enrichment' && p.escalated)
-          return { at: e.sim_min, dot: 'override',
-                   text: `Deferred reasoning escalated ${who} to ESI-${p.new_esi}` }
-        if (e.event_type === 'acceptance')
-          return { at: e.sim_min, dot: 'accept', text: `Accepted ${who}` }
-        return null
-      }).filter(Boolean).reverse()
-      setFeed(rebuilt.slice(0, 120))
+      setLive(true)
     })()
-  }, [])
+    return () => { cancelled = true }
+  }, [user])
 
   const onLoad = async (profile, speedup) => {
     setBusy(true)
     try {
       const r = await api.loadScenario({ profile, speedup, use_llm: true })
-      setFeed([]); setDetail(null); setFeedback(''); setAuto(false); setLive(false)
+      setDetail(null); setFeedback(''); setAuto(false); setDrawerOpen(false)
       selectedRef.current = null; setSelectedId(null)
       setRemaining(r.events)
+      setView('queue')
       await refresh(null)
+      setLive(true)  // a shift that has opened is a shift that is running
     } finally { setBusy(false) }
+  }
+
+  const pulse = (id) => {
+    setPulsingId(id)
+    setTimeout(() => setPulsingId((cur) => (cur === id ? null : cur)), PULSE_MS)
   }
 
   const onStep = useCallback(async () => {
@@ -144,26 +132,24 @@ export default function Console() {
     try {
       const r = await api.stepScenario()
       setRemaining(r.remaining ?? 0)
-      if (r.done && (r.remaining ?? 0) === 0) { setAuto(false) }
-      const items = reportAlerts(r.alerts)
+      if (r.done && (r.remaining ?? 0) === 0) setAuto(false)
+      reportAlerts(r.alerts)
       const e = r.event
       if (e?.kind === 'arrive') {
         const who = e.display_name ?? e.patient_id
         toast('New arrival', `${who}, ${e.age_years}y · ${e.chief_complaint}`)
-        items.unshift({ at: r.sim_min, esi: e.fused.esi,
-                        text: `Arrival ${who}: ${e.chief_complaint}` })
+        pulse(e.patient_id)
         await refresh(e.patient_id)
       } else if (e?.kind === 'vitals') {
         const who = e.display_name ?? e.patient_id
-        items.unshift({
-          at: r.sim_min,
-          text: `Vitals recheck ${who}${e.retriaged ? `, re-triaged to ESI-${e.retriaged.esi}` : ', stable'}`,
-        })
+        toast('Vitals recorded',
+              `${who}${e.retriaged ? `, re-triaged to ESI-${e.retriaged.esi}` : ', stable'}`,
+              e.retriaged ? 'override' : undefined)
+        pulse(e.patient_id)
         await refresh(e.patient_id)
       } else {
         await refresh()
       }
-      pushFeed(items)
     } finally { setBusy(false) }
   }, [refresh, reportAlerts, toast])
 
@@ -180,7 +166,7 @@ export default function Console() {
       setBusy(true)
       try {
         const r = await api.advanceClock(1)
-        pushFeed(reportAlerts(r.alerts))
+        reportAlerts(r.alerts)
         await refresh()
       } finally { setBusy(false) }
     }, LIVE_TICK_MS)
@@ -188,19 +174,14 @@ export default function Console() {
   }, [live, busy, refresh, reportAlerts])
 
   useEffect(() => {
-    const handler = (e) => {
-      if (['INPUT', 'TEXTAREA', 'SELECT'].includes(e.target.tagName)) return
-      if (e.key.toLowerCase() === 'n' && !busy && remaining) onStep()
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [busy, remaining, onStep])
+    try { sessionStorage.setItem(RAIL_KEY, collapsed ? '1' : '0') } catch { /* ignore */ }
+  }, [collapsed])
 
   const onAdvance = async (minutes) => {
     setBusy(true)
     try {
       const r = await api.advanceClock(minutes)
-      pushFeed(reportAlerts(r.alerts))
+      reportAlerts(r.alerts)
       await refresh()
     } finally { setBusy(false) }
   }
@@ -215,12 +196,12 @@ export default function Console() {
     setSelectedId(id)
     setFeedback('')
     setDetail(await api.getPatient(id).catch(() => null))
+    if (view === 'queue' || view === 'monitor') setDrawerOpen(true)
   }
 
   const onAccept = async (id) => {
-    const r = await api.acceptPatient(id, CLINICIAN)
+    const r = await api.acceptPatient(id, user.badge_id)
     setFeedback(`Accepted. Reward +${r.reward} recorded to the learning loop.`)
-    pushFeed([{ at: state?.sim_min, dot: 'accept', text: `Accepted ${id}` }])
     await refresh(id)
   }
 
@@ -229,22 +210,16 @@ export default function Console() {
     setFeedback(r.under_triage
       ? `Override recorded, reward ${r.reward}. Under-triage signal: the system will learn to escalate this pattern.`
       : `Override recorded, reward ${r.reward}.`)
-    toast('Override recorded', `${id} moved to ESI-${body.new_esi} by ${body.clinician_id}`)
-    const rows = [{ at: state?.sim_min, dot: 'override',
-                    text: `Override ${id} to ESI-${body.new_esi}: ${body.reason}` }]
-    if (r.safety_warning)
-      rows.push({ at: state?.sim_min, dot: 'alert', text: `Safety flag: ${r.safety_warning}` })
-    pushFeed(rows)
+    toast('Override recorded', `Moved to ESI-${body.new_esi} by ${body.clinician_id}`, 'override')
+    if (r.safety_warning) toast('Safety flag', r.safety_warning, 'alarm')
     await refresh(id)
   }
 
   const onReassess = async (id) => {
     setBusy(true)
     try {
-      await api.reassessPatient(id, CLINICIAN)
-      toast('Reassessed', `${id} checked at the bedside. Safe-wait clock restarted.`)
-      pushFeed([{ at: state?.sim_min, dot: 'accept',
-                  text: `${CLINICIAN} reassessed ${id} at the bedside` }])
+      await api.reassessPatient(id, user.badge_id)
+      toast('Reassessed', 'Checked at the bedside. Safe-wait clock restarted.', 'accept')
       await refresh(id)
     } finally { setBusy(false) }
   }
@@ -252,96 +227,105 @@ export default function Console() {
   const onAcknowledge = async (id) => {
     setBusy(true)
     try {
-      await api.acknowledgeAlert(id, CLINICIAN)
-      pushFeed([{ at: state?.sim_min, text: `${CLINICIAN} acknowledged the alert for ${id}` }])
+      await api.acknowledgeAlert(id, user.badge_id)
       await refresh()
     } finally { setBusy(false) }
+  }
+
+  const onRecordVitals = async (id, vitals) => {
+    const r = await api.recordVitals(id, vitals)
+    if (r.alert) reportAlerts([r.alert])
+    else toast('Vitals recorded', 'No deterioration threshold crossed.', 'accept')
+    pulse(id)
+    await refresh(id)
   }
 
   const onCreatePatient = async (body) => {
     const r = await api.addPatient(body)
     setShowIntake(false)
     toast('New arrival', `${body.display_name ?? body.patient_id} scored ESI-${r.fused.esi}`)
-    pushFeed([{ at: state?.sim_min, esi: r.fused.esi,
-                text: `Arrival ${body.display_name ?? body.patient_id}: ${body.chief_complaint}` }])
+    pulse(body.patient_id)
     await refresh(body.patient_id)
   }
 
+  // The drawer belongs to the board. Carrying it onto Analytics or the
+  // registry would leave a patient record open over a page that is not about
+  // that patient.
+  const onView = (next) => {
+    setView(next)
+    if (next !== 'queue' && next !== 'monitor') setDrawerOpen(false)
+  }
+
   const onRestart = () => {
-    // back to the opener with a clean bar: choosing a shift calls
-    // /scenario/load, which resets the service itself
-    setRemaining(null); setQueue([]); setInCare([]); setFeed([]); setDetail(null)
-    setState(null); setMetrics(null); setTab('queue')
+    setRemaining(null); setQueue([]); setInCare([]); setDetail(null)
+    setState(null); setMetrics(null); setView('queue'); setDrawerOpen(false)
     setAuto(false); setLive(false); selectedRef.current = null; setSelectedId(null)
   }
 
-  const notStarted = remaining === null && queue.length === 0 && inCare.length === 0
+  if (!user) return <SignIn />
+
+  const started = remaining !== null || queue.length > 0 || inCare.length > 0
   const openAlerts = queue.filter((r) => r.alert && !r.alert_acknowledged).length
+  const counts = {
+    queue: queue.length + inCare.length,
+    monitor: openAlerts || queue.length,
+    monitorTone: openAlerts ? 'alert' : undefined,
+  }
 
   return (
-    <>
-      <StatusBar state={state} inCare={inCare.length} remaining={remaining} busy={busy}
-                 auto={auto} live={live} onAuto={() => setAuto(!auto)}
-                 onLive={() => setLive(!live)} onStep={onStep} onAdvance={onAdvance}
-                 onSurge={onSurge} onRestart={onRestart} />
+    <div className="h-screen flex bg-app text-ink">
+      <Sidebar view={view} onView={onView} counts={counts} collapsed={collapsed}
+               onCollapse={() => setCollapsed((c) => !c)} />
 
-      {notStarted ? (
-        <StartScreen onLoad={onLoad} busy={busy} />
-      ) : (
-        <>
-          <div className="tabs">
-            <button className={`tab ${tab === 'queue' ? 'on' : ''}`}
-                    onClick={() => setTab('queue')}>
-              Patient queue<span className="count">{queue.length + inCare.length}</span>
-            </button>
-            <button className={`tab ${tab === 'waiting' ? 'on' : ''}`}
-                    onClick={() => setTab('waiting')}>
-              Waiting room
-              <span className={`count ${openAlerts ? 'alarm' : ''}`}>
-                {openAlerts || queue.length}
-              </span>
-            </button>
-            <button className={`tab ${tab === 'evidence' ? 'on' : ''}`}
-                    onClick={() => setTab('evidence')}>
-              Audit and evidence
-            </button>
-          </div>
+      <div className="flex-1 flex flex-col min-w-0">
+        <StatusBar state={state} alerts={openAlerts} live={live} busy={busy}
+                   remaining={remaining ?? 0} onLive={() => setLive((l) => !l)}
+                   onStep={onStep} onBell={() => onView('monitor')} />
 
-          {tab !== 'evidence' && (
+        <main className="flex-1 overflow-y-auto p-3 space-y-3">
+          {!started && view !== 'settings' && (
+            <EmptyBoard busy={busy} onLoad={onLoad} />
+          )}
+
+          {started && (view === 'queue' || view === 'monitor') && (
             <AlertBand rows={queue} busy={busy} onSelect={onSelect}
                        onReassess={onReassess} onAcknowledge={onAcknowledge}
-                       onSeeAll={() => setTab('waiting')} />
+                       onSeeAll={() => onView('monitor')} />
           )}
 
-          {tab === 'queue' && (
-            <div className="workspace">
-              <PatientQueue rows={queue} inCare={inCare} selectedId={selectedId}
-                            onSelect={onSelect} onNewPatient={() => setShowIntake(true)} />
-              <div className="work-side">
-                <TriageCard detail={detail} feedback={feedback} busy={busy}
-                            onAccept={onAccept} onReassess={onReassess}
-                            onOverride={() => setShowOverride(true)} />
-                <Feed items={feed} />
-              </div>
-            </div>
+          {started && view === 'queue' && (
+            <PatientQueue rows={queue} inCare={inCare} selectedId={selectedId}
+                          pulsingId={pulsingId} canIntake={can.intake}
+                          onSelect={onSelect} onNewPatient={() => setShowIntake(true)} />
           )}
 
-          {tab === 'waiting' && (
-            <div className="workspace">
-              <ReassessBoard rows={queue} selectedId={selectedId} busy={busy}
-                             onSelect={onSelect} onReassess={onReassess} />
-              <div className="work-side">
-                <TriageCard detail={detail} feedback={feedback} busy={busy}
-                            onAccept={onAccept} onReassess={onReassess}
-                            onOverride={() => setShowOverride(true)} />
-              </div>
-            </div>
+          {started && view === 'monitor' && (
+            <MonitorBoard rows={queue} selectedId={selectedId} busy={busy}
+                          onSelect={onSelect} onReassess={onReassess} />
           )}
 
-          {tab === 'evidence' && <AuditAnalytics metrics={metrics} />}
-        </>
+          {view === 'pipeline' && <PipelineView detail={detail} metrics={metrics} />}
+          {view === 'registry' && <Registry refreshKey={refreshKey} />}
+          {view === 'analytics' && (
+            <Suspense fallback={<p className="text-xs text-ink-3 p-4">Loading analytics.</p>}>
+              <Analytics metrics={metrics} rows={[...queue, ...inCare]} refreshKey={refreshKey} />
+            </Suspense>
+          )}
+          {view === 'settings' && (
+            <Settings state={state} remaining={remaining} busy={busy} auto={auto}
+                      live={live} refreshKey={refreshKey} onLoad={onLoad}
+                      onAuto={() => setAuto((a) => !a)} onLive={() => setLive((l) => !l)}
+                      onAdvance={onAdvance} onSurge={onSurge} onRestart={onRestart} />
+          )}
+        </main>
+      </div>
+
+      {drawerOpen && detail && (
+        <PatientDrawer detail={detail} feedback={feedback} busy={busy}
+                       onClose={() => setDrawerOpen(false)} onAccept={onAccept}
+                       onOverride={() => setShowOverride(true)} onReassess={onReassess}
+                       onVitals={() => setShowVitals(true)} />
       )}
-
       {showIntake && (
         <IntakeForm onSubmit={onCreatePatient} onClose={() => setShowIntake(false)}
                     nextId={`WALKIN-${(queue.length + inCare.length + 1).toString().padStart(2, '0')}`} />
@@ -350,14 +334,11 @@ export default function Console() {
         <OverrideModal detail={detail} onSubmit={onOverride}
                        onClose={() => setShowOverride(false)} />
       )}
+      {showVitals && detail && (
+        <VitalsModal detail={detail} onSubmit={onRecordVitals}
+                     onClose={() => setShowVitals(false)} />
+      )}
       <ToastStack toasts={toasts} />
-
-      <div className="footer">
-        <span className="stat">The system recommends. <b>The clinician decides.</b></span>
-        {!notStarted && (
-          <span className="stat">press <b>N</b> for the next event</span>
-        )}
-      </div>
-    </>
+    </div>
   )
 }

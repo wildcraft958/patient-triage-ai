@@ -1,58 +1,92 @@
-import { shiftClock } from './format'
+import { BedDouble, Bell, Clock, Radio, Users } from 'lucide-react'
+import { Btn } from './ui'
+import { UNIT_LABEL, shiftClock } from './format'
 
-export default function StatusBar({
-  state, inCare, remaining, busy, auto, live,
-  onAuto, onLive, onStep, onAdvance, onSurge, onRestart,
-}) {
-  const surge = state?.surge_mode
-  const total = state?.total_patients ?? 0
-  const waiting = state?.waiting ?? 0
-  const running = remaining != null
+const LOAD = {
+  normal: ['Normal', 'bg-esi-5'],
+  busy: ['Busy', 'bg-esi-4'],
+  surge: ['Surge', 'bg-esi-2 animate-pulse'],
+}
+
+function Group({ icon: Icon, children, title }) {
+  return (
+    <span className="hidden md:inline-flex items-center gap-1.5 text-[11.5px] text-ink-2"
+          title={title}>
+      <Icon size={14} className="text-ink-3 shrink-0" aria-hidden="true" />
+      {children}
+    </span>
+  )
+}
+
+export default function StatusBar({ state, alerts, live, busy, remaining,
+                                    onLive, onStep, onBell }) {
+  const load = state?.load ?? 'normal'
+  const [label, dot] = LOAD[load] ?? LOAD.normal
+  const surge = load === 'surge'
 
   return (
-    <div className="statusbar">
-      <div className="sb-left">
-        <span className="sb-brand">
-          <a href="/" title="Back to PatientTriage.ai">PatientTriage.ai</a>
-        </span>
-        <span className="sb-unit">EMERGENCY DEPARTMENT · {state?.profile ?? '…'}</span>
-        <span className="sb-clock">{shiftClock(state?.sim_min)}<small>SHIFT</small></span>
-        <span className="sb-counts">
-          <span><b>{total}</b> patients</span>
-          <span><b>{inCare}</b> in care</span>
-          <span><b>{waiting}</b> waiting</span>
-        </span>
-        <span className="sb-load">
-          <i className={`load-dot ${surge ? 'surge' : ''}`} />
-          {surge ? 'SURGE LOAD' : 'Normal load'}
-        </span>
-        {(state?.pending_enrichment ?? 0) > 0 && (
-          <span className="sb-unit">deferred reasoning queue: {state.pending_enrichment}</span>
-        )}
-      </div>
+    <header className={`h-12 shrink-0 flex items-center gap-4 px-4 border-b
+                        ${surge ? 'bg-alert-bg border-esi-2' : 'bg-card border-line'}`}>
+      <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-2
+                       hidden sm:block whitespace-nowrap">
+        {UNIT_LABEL[state?.profile] ?? 'Emergency department'}
+      </span>
 
-      <div className="sb-right">
-        <button className={`chip ${surge ? 'on' : ''}`} onClick={onSurge}>
-          Surge {surge ? 'on' : 'off'}
+      <span className="flex items-center gap-1.5 text-sm font-bold text-ink tabular-nums">
+        <Clock size={14} className="text-ink-3" aria-hidden="true" />
+        {shiftClock(state?.sim_min)}
+      </span>
+
+      <Group icon={Users} title="On the board now">
+        <b className="text-ink tabular-nums">{state?.total_patients ?? 0}</b> patients
+        <span className="text-ink-3">·</span>
+        <b className="text-ink tabular-nums">{state?.in_care ?? 0}</b> in care
+        <span className="text-ink-3">·</span>
+        <b className="text-ink tabular-nums">{state?.waiting ?? 0}</b> waiting
+      </Group>
+
+      <Group icon={BedDouble} title="Treatment bays declared in the hospital profile">
+        <b className="text-ink tabular-nums">{state?.beds_available ?? 0}</b>
+        of {state?.treatment_bays ?? 0} bays free
+      </Group>
+
+      <Group icon={Clock} title="Mean time since last assessment, waiting patients only">
+        avg wait <b className="text-ink tabular-nums">
+          {Math.round(state?.avg_wait_min ?? 0)} min
+        </b>
+      </Group>
+
+      <span className="ml-auto flex items-center gap-2">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold
+                         uppercase tracking-wide text-ink-2">
+          <i className={`w-2 h-2 rounded-full ${dot}`} aria-hidden="true" />
+          {label}
+        </span>
+
+        <button onClick={onBell} title={`${alerts} alerts needing an answer`}
+                className="relative p-1.5 rounded-sm hover:bg-app cursor-pointer text-ink-2">
+          <Bell size={16} aria-hidden="true" />
+          {alerts > 0 && (
+            <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1
+                             rounded-full bg-esi-2 text-white text-[9px] font-bold
+                             grid place-items-center tabular-nums">
+              {alerts}
+            </span>
+          )}
         </button>
-        {running && (
-          <>
-            <button className={`chip live ${live ? 'on' : ''}`} onClick={onLive}
-                    title="Advance the clock in real time: one minute per second">
-              {live ? '● Live' : 'Go live'}
-            </button>
-            <button className={`chip play ${auto ? 'on' : ''}`} disabled={remaining === 0}
-                    onClick={onAuto}>
-              {auto ? 'Pause arrivals' : 'Play arrivals'}
-            </button>
-            <button className="chip on" disabled={busy || remaining === 0} onClick={onStep}>
-              Next event ({remaining})
-            </button>
-            <button className="chip" disabled={busy} onClick={() => onAdvance(15)}>+15 min</button>
-            <button className="chip" disabled={busy} onClick={onRestart}>Restart</button>
-          </>
+
+        <Btn size="sm" variant={live ? 'danger' : 'outline'} onClick={onLive}
+             title="Advance the department clock in real time">
+          <Radio size={12} aria-hidden="true" />
+          {live ? 'Live' : 'Go live'}
+        </Btn>
+
+        {remaining > 0 && (
+          <Btn size="sm" variant="primary" disabled={busy} onClick={onStep}>
+            Next event ({remaining})
+          </Btn>
         )}
-      </div>
-    </div>
+      </span>
+    </header>
   )
 }

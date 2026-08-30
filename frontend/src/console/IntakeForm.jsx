@@ -1,4 +1,6 @@
 import { useState } from 'react'
+import { Mic } from 'lucide-react'
+import { Btn } from './ui'
 
 const CATEGORIES = ['other', 'chest_pain', 'breathing_difficulty', 'stroke_signs',
   'trauma_major', 'sepsis_concern', 'allergic_reaction', 'pregnancy_complication',
@@ -55,82 +57,90 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
     try { await onSubmit(body) } catch (e) { setError(String(e.message || e)) }
   }
 
+  const FIELD = 'flex flex-col gap-1 text-[10px] font-bold uppercase tracking-wide text-ink-3'
+  const INPUT = 'rounded-sm border border-line px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-ink focus:border-brand focus:outline-none w-full'
+
   const vitField = (key, label) => (
-    <label key={key} className="if-field">
+    <label key={key} className={FIELD}>
       <span>{label}</span>
-      <input type="number" value={vit[key] ?? ''}
+      <input type="number" className={INPUT} value={vit[key] ?? ''}
              onChange={(e) => setVit({ ...vit, [key]: e.target.value })} />
     </label>
   )
 
   return (
-    <div className="overlay" onClick={onClose}>
-      <div className="modal wide" onClick={(e) => e.stopPropagation()}>
-        <h2>New arrival</h2>
-        <div className="modal-sub">
+    <div className="fixed inset-0 z-50 bg-ink/45 grid place-items-center p-5" onClick={onClose}>
+      <div role="dialog" aria-label="New arrival" onClick={(e) => e.stopPropagation()}
+           className="bg-card rounded-lg w-[680px] max-w-full max-h-[90vh] overflow-y-auto
+                      border-t-4 border-brand shadow-lg px-5 py-5">
+        <h2 className="text-lg font-bold tracking-tight text-ink">New arrival</h2>
+        <p className="mt-1 mb-4 text-xs leading-relaxed text-ink-2">
           The name stays on this screen. Only age, complaint, vitals and history
           reach the reasoning path, and the complaint is redacted on the way.
-        </div>
-        <div className="if-grid">
-          <label className="if-field"><span>Patient name</span>
-            <input value={f.display_name} placeholder="M. Chen"
+        </p>
+        <div className="grid grid-cols-3 gap-2.5">
+          <label className={FIELD}><span>Patient name</span>
+            <input className={INPUT} value={f.display_name} placeholder="M. Chen"
                    onChange={(e) => setF({ ...f, display_name: e.target.value })} /></label>
-          <label className="if-field"><span>Record ID</span>
-            <input value={f.patient_id}
+          <label className={FIELD}><span>Record ID</span>
+            <input className={INPUT} value={f.patient_id}
                    onChange={(e) => setF({ ...f, patient_id: e.target.value })} /></label>
-          <label className="if-field"><span>Age (years)</span>
-            <input type="number" value={f.age_years}
+          <label className={FIELD}><span>Age (years)</span>
+            <input className={INPUT} type="number" value={f.age_years}
                    onChange={(e) => setF({ ...f, age_years: e.target.value })} /></label>
-          <label className="if-field"><span>Category</span>
-            <select value={f.complaint_category}
+          <label className={FIELD}><span>Category</span>
+            <select className={INPUT} value={f.complaint_category}
                     onChange={(e) => setF({ ...f, complaint_category: e.target.value })}>
               {CATEGORIES.map((c) => <option key={c} value={c}>
                 {c === 'other' ? 'auto (from complaint text)' : c}</option>)}
             </select></label>
-          <label className="if-field"><span>Responsiveness (AVPU)</span>
-            <select value={f.responsiveness}
+          <label className={FIELD}><span>Responsiveness (AVPU)</span>
+            <select className={INPUT} value={f.responsiveness}
                     onChange={(e) => setF({ ...f, responsiveness: e.target.value })}>
               {['alert', 'verbal', 'pain', 'unresponsive'].map((r) =>
                 <option key={r} value={r}>{r}</option>)}
             </select></label>
         </div>
-        <label className="if-field"><span>Chief complaint, in the patient's words</span>
-          <div className="if-voice">
-            <textarea rows={2} value={f.chief_complaint}
+        <label className={FIELD}><span>Chief complaint, in the patient's words</span>
+          <div className="flex gap-2 items-stretch">
+            <textarea rows={2} className={`${INPUT} resize-y`} value={f.chief_complaint}
                       onChange={(e) => setF({ ...f, chief_complaint: e.target.value })}
                       placeholder="What brought you in today?" />
-            <button className={`btn btn-outline mic ${listening ? 'on' : ''}`}
-                    onClick={dictate} title="Dictate with your voice">
-              {listening ? 'Listening…' : 'Voice'}
-            </button>
+            <Btn variant={listening ? 'primary' : 'outline'} onClick={dictate}
+                 title="Dictate with your voice">
+              <Mic size={13} aria-hidden="true" />{listening ? 'Listening…' : 'Voice'}
+            </Btn>
           </div>
         </label>
-        <div className="if-section">Vitals (leave blank if not yet recorded)</div>
-        <div className="if-grid">
+        <div className="mt-5 mb-2 pb-1.5 border-b border-line text-[11px] font-bold uppercase tracking-[0.1em] text-brand-ink">Vitals (leave blank if not yet recorded)</div>
+        <div className="grid grid-cols-3 gap-2.5">
           {vitField('hr', 'HR')}{vitField('rr', 'RR')}{vitField('spo2', 'SpO2 %')}
           {vitField('temp_c', 'Temp C')}{vitField('sbp', 'SBP')}{vitField('pain', 'Pain 0-10')}
         </div>
-        <div className="if-section">OLDCARTS structured interview (optional)</div>
-        <div className="if-grid oc">
+        <div className="mt-5 mb-2 pb-1.5 border-b border-line text-[11px] font-bold uppercase tracking-[0.1em] text-brand-ink">OLDCARTS structured interview (optional)</div>
+        <div className="grid grid-cols-2 gap-2.5">
           {OLDCARTS_FIELDS.map(([key, letter, name, q]) => (
-            <label key={key} className="if-field">
+            <label key={key} className={FIELD}>
               <span><b>{letter}</b> {name} · "{q}"</span>
-              <input value={oc[key] ?? ''}
+              <input className={INPUT} value={oc[key] ?? ''}
                      onChange={(e) => setOc({ ...oc, [key]: e.target.value })} />
             </label>
           ))}
-          <label className="if-field">
+          <label className={FIELD}>
             <span><b>S</b> Severity · 0-10 scale</span>
-            <input type="number" min={0} max={10} value={severity}
+            <input className={INPUT} type="number" min={0} max={10} value={severity}
                    onChange={(e) => setSeverity(e.target.value)} />
           </label>
         </div>
-        {error && <div className="risk-warning"><b>{error}</b></div>}
-        <div className="modal-actions">
-          <button className="btn btn-outline" onClick={onClose}>Cancel</button>
-          <button className="btn btn-accept"
-                  disabled={!f.patient_id || f.age_years === '' || f.chief_complaint.length < 3}
-                  onClick={submit}>Triage this patient</button>
+        {error && (
+          <p className="mt-4 rounded-md border border-esi-2 border-l-4 bg-alert-bg px-3 py-2
+                        text-[11.5px] font-semibold text-alert-ink">{error}</p>
+        )}
+        <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-line">
+          <Btn onClick={onClose}>Cancel</Btn>
+          <Btn variant="primary"
+               disabled={!f.patient_id || f.age_years === '' || f.chief_complaint.length < 3}
+               onClick={submit}>Triage this patient</Btn>
         </div>
       </div>
     </div>

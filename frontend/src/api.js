@@ -46,3 +46,12 @@ export const acknowledgeAlert = (id, clinician_id) =>
     body: JSON.stringify({ clinician_id }),
   })
 export const getBenchmark = () => request('/benchmark')
+export const getRegistry = () => request('/system/registry')
+export const getProfile = () => request('/profile')
+// the endpoint takes the vitals object as the body and the observation
+// channel as a query parameter
+export const recordVitals = (id, vitals) =>
+  request(`/patients/${id}/vitals?source=nurse`, {
+    method: 'POST',
+    body: JSON.stringify(vitals),
+  })

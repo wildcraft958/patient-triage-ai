@@ -9,6 +9,7 @@ import Evidence from './marketing/Evidence'
 import Security from './marketing/Security'
 import About from './marketing/About'
 import Console from './console/Console'
+import SessionProvider from './auth/Session'
 
 const router = createBrowserRouter([
   {
@@ -22,7 +23,10 @@ const router = createBrowserRouter([
       { path: 'about', element: <About /> },
     ],
   },
-  { path: '/console', element: <Console /> },
+  {
+    path: '/console',
+    element: <SessionProvider><Console /></SessionProvider>,
+  },
 ])
 
 createRoot(document.getElementById('root')).render(
