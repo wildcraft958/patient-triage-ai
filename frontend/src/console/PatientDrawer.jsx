@@ -286,7 +286,7 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
     <Shell {...shell}>
         <header className="sticky top-0 bg-card border-b border-line px-4 py-3 z-10">
           <div className="flex items-start gap-3">
-            <Initials name={intake.display_name} id={intake.patient_id} esi={fused.esi} />
+            <Initials name={intake.display_name} id={intake.patient_id} />
             <div className="min-w-0 flex-1">
               <p className="text-[15px] font-bold text-ink truncate">
                 {intake.display_name ?? intake.patient_id}

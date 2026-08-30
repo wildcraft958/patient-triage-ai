@@ -50,15 +50,17 @@ export function EsiBadge({ esi, size = 'md' }) {
   )
 }
 
-// Initials in an acuity-coloured square, never an avatar circle: at a glance
-// the square says how sick, and the letters say who.
-export function Initials({ name, id, esi, size = 'md' }) {
+// Initials in a square, never an avatar circle. The square identifies a
+// person, not a severity: acuity has the badge beside it, and colouring the
+// initials too spent the loudest scale in the product on saying the same thing
+// twice. The mark takes the product's own colour instead.
+export function Initials({ name, id, size = 'md' }) {
   const source = name || id || '?'
   const letters = source.replace(/[^A-Za-z ]/g, ' ').trim().split(/\s+/)
     .map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?'
   const dims = { sm: 'w-7 h-7 text-[10px]', md: 'w-9 h-9 text-xs' }[size]
   return (
-    <span className={`${esi ? `${ESI_BG[esi]} ${ESI_INK[esi]}` : 'bg-ink-2 text-card'}
+    <span className={`bg-brand-tint text-brand-ink border border-brand-line
                       ${dims} shrink-0 rounded-sm inline-flex items-center
                       justify-center font-bold tracking-tight`}>
       {letters}

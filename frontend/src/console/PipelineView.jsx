@@ -205,7 +205,10 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
               <Branch dart={dart} />
 
               {/* The two concurrent paths */}
-              <div className="grid grid-cols-2 gap-3 items-start">
+              {/* Stretched, not natural height: the two run concurrently and
+                  the join below meets both, so a short Path A and a long Path B
+                  ending at different heights would leave one edge hanging. */}
+              <div className="grid grid-cols-2 gap-3 items-stretch">
                 <Node kind="Path A" name="ESI rules engine" tone="ok"
                       ms={pl.stage_ms?.rules} boundary="phi"
                       body={

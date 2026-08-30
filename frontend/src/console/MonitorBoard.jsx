@@ -67,7 +67,7 @@ export default function MonitorBoard({ rows, selectedId, busy, onSelect, onReass
                               className="flex items-center gap-2.5 text-left w-full cursor-pointer
                                          rounded-sm focus-visible:outline-2
                                          focus-visible:outline-brand focus-visible:outline-offset-2">
-                        <Initials name={row.display_name} id={row.patient_id} esi={row.esi} />
+                        <Initials name={row.display_name} id={row.patient_id} />
                         <span className="min-w-0">
                           <span className="block text-[13px] font-semibold text-ink truncate">
                             {row.display_name ?? row.patient_id}
