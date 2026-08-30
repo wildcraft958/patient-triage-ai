@@ -1,8 +1,11 @@
 import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
+import * as api from '../api'
 import { DETAIL, renderSignedIn } from '../test/helpers'
 import PatientDrawer from './PatientDrawer'
+
+vi.mock('../api')
 
 // Path A argues in four short clauses. Path B argues in paragraphs, and
 // rendering every one of them pushed the vitals off the bottom of the panel.
@@ -46,5 +49,33 @@ describe('the reasoning chain', () => {
     render(POINTS.slice(0, 3))
     expect(within(pathB()).getAllByRole('listitem')).toHaveLength(3)
     expect(screen.queryByRole('button', { name: /points/i })).not.toBeInTheDocument()
+  })
+})
+
+describe('the audit trail', () => {
+  // Every row here is a backend enum rendered for a clinician. The service
+  // keys its own state in SCREAMING_CASE and snake_case, and none of that is
+  // language a nurse should be reading off a patient record.
+  const EVENTS = [
+    { event_type: 'alert', at: 1, payload: { kind: 'WAIT_BREACH', reasons: ['waited too long'] } },
+    { event_type: 'alert_ack', at: 2, payload: { kind: 'DETERIORATION', clinician_id: 'RN-07' } },
+    { event_type: 'reassessment', at: 3, payload: { previous_esi: 3, new_esi: 2, trigger: 'DETERIORATION' } },
+    { event_type: 'surge_enrichment', at: 4, payload: { outcome: 'llm_unavailable' } },
+    { event_type: 'surge_enrichment', at: 5, payload: { outcome: 'clinician_decision_stands' } },
+  ]
+
+  it('renders every backend enum as English', async () => {
+    api.getAudit.mockResolvedValue({ events: EVENTS })
+    const user = userEvent.setup()
+    render(POINTS)
+
+    await user.click(screen.getByRole('button', { name: /audit trail/i }))
+    const trail = await screen.findByText(/safe wait exceeded/i)
+    const panel = trail.closest('section')
+
+    expect(panel).toHaveTextContent(/deterioration detected/i)
+    expect(panel).toHaveTextContent(/the reasoning path did not answer/i)
+    expect(panel).toHaveTextContent(/a clinician had already decided/i)
+    expect(panel.textContent).not.toMatch(/WAIT_BREACH|DETERIORATION|llm_unavailable|clinician_decision_stands/)
   })
 })

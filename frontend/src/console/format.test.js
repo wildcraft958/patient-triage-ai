@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
-  ESI_BG, ESI_INK, ESI_LABEL, EVENT_COMPONENT, HUMAN_CODES, fmtAge, shiftClock,
+  ESI_BG, ESI_INK, ESI_LABEL, EVENT_COMPONENT, HUMAN_CODES, alertLabel,
+  categoryLabel, fmtAge, outcomeLabel, shiftClock,
 } from './format'
 
 // Tailwind extracts class names statically, so the acuity scale is a literal
@@ -53,5 +54,35 @@ describe('activity log labelling', () => {
     expect(HUMAN_CODES.has('RN')).toBe(true)
     expect(EVENT_COMPONENT.override[0]).toBe('RN')
     expect(EVENT_COMPONENT.triage[0]).toBe('FUS')
+  })
+})
+
+describe('backend identifiers on their way to a clinician', () => {
+  it('names every alert kind the monitor can raise', () => {
+    expect(alertLabel('WAIT_BREACH')).toBe('Safe wait exceeded')
+    expect(alertLabel('DETERIORATION')).toBe('Deterioration detected')
+  })
+
+  it('names every deferred-reasoning outcome the service records', () => {
+    expect(outcomeLabel('llm_unavailable')).toBe('the reasoning path did not answer')
+    expect(outcomeLabel('clinician_decision_stands'))
+      .toBe('a clinician had already decided')
+  })
+
+  it('reads a complaint category the way it is spoken', () => {
+    expect(categoryLabel('chest_pain')).toBe('Chest pain')
+    expect(categoryLabel('trauma_major')).toBe('Major trauma')
+    expect(categoryLabel('pregnancy_complication')).toBe('Pregnancy complication')
+  })
+
+  it('never leaks an underscore for a value it has no label for', () => {
+    // The maps cover today's values. A backend that adds one must not put a
+    // raw identifier on the board, so the fallback humanises rather than
+    // passing the token through.
+    for (const label of [alertLabel('NEW_KIND'), outcomeLabel('some_new_outcome'),
+                         categoryLabel('novel_category')]) {
+      expect(label).not.toMatch(/_/)
+    }
+    expect(alertLabel('NEW_KIND')).toBe('New kind')
   })
 })

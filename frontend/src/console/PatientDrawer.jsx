@@ -6,19 +6,21 @@ import { useSession } from '../auth/sessionContext'
 import { RESTRICTED } from '../auth/roles'
 import Splitter from './Splitter'
 import { BeliefPeak, Btn, EsiBadge, Initials, Pill, Sparkline } from './ui'
-import { VITAL_DEFS, fmt, fmtAge } from './format'
+import { VITAL_DEFS, alertLabel, fmt, fmtAge, outcomeLabel } from './format'
 
 const AUDIT_SUMMARY = {
   triage: (p) => `ESI-${p.esi} · ${p.confidence} confidence · ${p.paths_agree ? 'paths agree' : 'paths disagree'}`,
-  alert: (p) => `${p.kind}: ${(p.reasons || []).join('; ')}`,
-  alert_ack: (p) => `${p.kind} alert acknowledged by ${p.clinician_id}`,
-  reassessment: (p) => `ESI-${p.previous_esi} re-triaged to ESI-${p.new_esi} (${p.trigger})`,
+  alert: (p) => `${alertLabel(p.kind)}: ${(p.reasons || []).join('; ')}`,
+  alert_ack: (p) => `${alertLabel(p.kind)}, acknowledged by ${p.clinician_id}`,
+  reassessment: (p) => `ESI-${p.previous_esi} re-triaged to ESI-${p.new_esi}`
+                       + ` (${alertLabel(p.trigger).toLowerCase()})`,
   reassessment_check: (p) => `bedside check by ${p.clinician_id} after ${p.waited_min} min unassessed`,
   override: (p) => `ESI-${p.original_esi} to ESI-${p.new_esi} by ${p.clinician_id}: "${p.reason}"`,
   override_safety_flag: (p) => `high-risk downgrade acknowledged by ${p.clinician_id}`,
   reward: (p) => `reward ${p.reward} (${p.under_triage ? 'under-triage signal' : 'over-triage'})`,
   acceptance: (p) => `accepted ESI-${p.esi} by ${p.clinician_id} · reward +${p.reward}`,
-  surge_enrichment: (p) => `deferred reasoning: ${p.outcome ?? `ESI-${p.previous_esi} to ESI-${p.new_esi}`}`,
+  surge_enrichment: (p) => `deferred reasoning: ${p.outcome
+    ? outcomeLabel(p.outcome) : `ESI-${p.previous_esi} to ESI-${p.new_esi}`}`,
 }
 
 function Section({ title, children, right }) {

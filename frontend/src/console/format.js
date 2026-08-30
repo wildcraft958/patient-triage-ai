@@ -73,17 +73,47 @@ export const SHIFTS = [
   },
 ]
 
+// Backend enums on their way to a clinician. The service keys its own state
+// in snake_case and SCREAMING_CASE, and none of that is language a nurse
+// should be reading off a board. Every lookup falls back to a humanised form
+// rather than the raw token, so a value the backend adds later degrades to
+// readable English instead of leaking an identifier.
+const humanise = (s) => {
+  const words = String(s).toLowerCase().replace(/_/g, ' ').trim()
+  return words.charAt(0).toUpperCase() + words.slice(1)
+}
+
+const ALERT_LABEL = {
+  WAIT_BREACH: 'Safe wait exceeded',
+  DETERIORATION: 'Deterioration detected',
+}
+export const alertLabel = (kind) => ALERT_LABEL[kind] ?? humanise(kind)
+
+const OUTCOME_LABEL = {
+  llm_unavailable: 'the reasoning path did not answer',
+  clinician_decision_stands: 'a clinician had already decided',
+}
+export const outcomeLabel = (outcome) =>
+  OUTCOME_LABEL[outcome] ?? humanise(outcome).toLowerCase()
+
+// Only the categories whose words need reordering are listed; the rest read
+// correctly once the underscore is gone.
+const CATEGORY_LABEL = {
+  trauma_major: 'Major trauma',
+  other: 'Auto (from complaint text)',
+}
+export const categoryLabel = (c) => CATEGORY_LABEL[c] ?? humanise(c)
+
 // Which component produced each kind of audit event. The codes themselves are
 // published by GET /system/registry; this only says which one owns which
 // event, so the activity log and the registry cannot drift apart.
 export const EVENT_COMPONENT = {
   triage: ['FUS', (p) => `Triage complete, ESI-${p.esi} at ${p.confidence} confidence`
                         + (p.paths_agree ? ', paths agreed' : ', paths disagreed')],
-  alert: ['MON', (p) => `${p.kind === 'WAIT_BREACH' ? 'Safe wait exceeded' : 'Deterioration detected'}`
-                        + `: ${(p.reasons || []).join('; ')}`],
+  alert: ['MON', (p) => `${alertLabel(p.kind)}: ${(p.reasons || []).join('; ')}`],
   reassessment: ['MON', (p) => `Automatic re-triage, ESI-${p.previous_esi} to ESI-${p.new_esi} (${p.trigger})`],
   surge_enrichment: ['LLM', (p) => (p.outcome
-    ? `Deferred reasoning: ${p.outcome.replace(/_/g, ' ')}`
+    ? `Deferred reasoning: ${outcomeLabel(p.outcome)}`
     : `Deferred reasoning attached, ESI-${p.previous_esi} to ESI-${p.new_esi}`)],
   override: ['RN', (p) => `${p.clinician_id} set ESI-${p.new_esi} over ESI-${p.original_esi}: "${p.reason}"`],
   override_safety_flag: ['SAF', (p) => `High-risk downgrade flagged and acknowledged by ${p.clinician_id}`],
