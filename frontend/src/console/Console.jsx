@@ -1,4 +1,5 @@
 import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react'
+import { Navigate, useNavigate, useParams } from 'react-router-dom'
 import * as api from '../api'
 import SignIn from '../auth/SignIn'
 import { useSession } from '../auth/sessionContext'
@@ -19,6 +20,7 @@ import Splitter from './Splitter'
 import StatusBar from './StatusBar'
 import ToastStack from './Toast'
 import { usePaneWidth } from './usePaneWidth'
+import { VIEWS } from './views'
 import VitalsModal from './VitalsModal'
 
 // Analytics is the only view that pulls in a charting library. Splitting it
@@ -43,6 +45,10 @@ const DRAWER_MAX = 760
 
 export default function Console() {
   const { user, can } = useSession()
+  // The section is an address, not component state. Tests mount this component
+  // directly, outside a matched route, so an absent param means the board.
+  const view = useParams().view ?? 'queue'
+  const navigate = useNavigate()
 
   const [state, setState] = useState(null)
   const [queue, setQueue] = useState([])
@@ -54,7 +60,6 @@ export default function Console() {
   const [busy, setBusy] = useState(false)
   const [auto, setAuto] = useState(false)
   const [live, setLive] = useState(false)
-  const [view, setView] = useState('queue')
   const [feedback, setFeedback] = useState('')
   const [showIntake, setShowIntake] = useState(false)
   const [showOverride, setShowOverride] = useState(false)
@@ -165,7 +170,7 @@ export default function Console() {
       setDetail(null); setFeedback(''); setDrawerOpen(false)
       selectedRef.current = null; setSelectedId(null)
       setRemaining(r.events)
-      setView('queue')
+      navigate('/console/queue')
       // Loading a scenario only queues the arrivals; auto-play is what walks
       // them through the door, and the card promises exactly that. The clock
       // needs no separate ticker while it runs, because stepping an event
@@ -324,19 +329,23 @@ export default function Console() {
   // The drawer belongs to the board. Carrying it onto Analytics or the
   // registry would leave a patient record open over a page that is not about
   // that patient.
-  const onView = (next) => {
-    setView(next)
-    if (next !== 'queue' && next !== 'monitor') setDrawerOpen(false)
-  }
+  const onView = (next) => navigate(`/console/${next}`)
 
   const onRestart = () => {
     setRemaining(null); setQueue([]); setInCare([]); setDetail(null)
-    setState(null); setMetrics(null); setView('queue'); setDrawerOpen(false)
+    setState(null); setMetrics(null); navigate('/console/queue'); setDrawerOpen(false)
     setAuto(false); setLive(false); selectedRef.current = null; setSelectedId(null)
     setOpened(false)
   }
 
   if (!user) return <SignIn />
+
+  // A section nobody has, and a section this role is not allowed, both resolve
+  // to the board rather than to an empty page. The rail already hides settings
+  // from the roles that cannot use it; this is what makes a typed or pasted
+  // address agree with the rail.
+  if (!VIEWS.some((v) => v.id === view)) return <Navigate to="/console/queue" replace />
+  if (view === 'settings' && !can.settings) return <Navigate to="/console/queue" replace />
 
   // The drawer and both dialogs act on a record, and both dialogs submit the
   // record's own patient_id. Rendering one while the board highlights someone
@@ -344,6 +353,13 @@ export default function Console() {
   // as shown while it is the record that is selected. Everything downstream
   // reads this, never `detail`.
   const shown = detail?.intake.patient_id === selectedId ? detail : null
+
+  // A patient record left standing over the registry or the pipeline is a
+  // record open on a page that is not about that patient. Derived rather than
+  // cleared in an effect, so it also holds when the section changes through
+  // the back button or a pasted address, and the drawer comes back as it was
+  // when the clinician returns to the board.
+  const showDrawer = drawerOpen && (view === 'queue' || view === 'monitor')
 
   // Two ways a shift is under way, and both are needed. `opened` is this
   // operator choosing one: loading a scenario only queues the arrivals, so the
@@ -366,7 +382,7 @@ export default function Console() {
     <div className="h-screen flex bg-app text-ink">
       <div className="shrink-0 transition-[width] duration-150"
            style={{ width: collapsed ? RAIL_COLLAPSED : railWidth }}>
-        <Sidebar view={view} onView={onView} counts={counts} collapsed={collapsed}
+        <Sidebar counts={counts} collapsed={collapsed}
                  onCollapse={() => setCollapsed((c) => !c)} />
       </div>
       {!collapsed && (
@@ -424,7 +440,7 @@ export default function Console() {
         </main>
       </div>
 
-      {drawerOpen && (
+      {showDrawer && (
         <PatientDrawer detail={shown} feedback={feedback} busy={busy}
                        width={drawerWidth} minWidth={DRAWER_MIN} maxWidth={DRAWER_MAX}
                        onResize={setDrawerWidth}

@@ -1,5 +1,5 @@
 import { House, LogOut, Moon, PanelLeft, Sun } from 'lucide-react'
-import { useNavigate } from 'react-router-dom'
+import { NavLink, useNavigate } from 'react-router-dom'
 import { VIEWS } from './views'
 import { useSession } from '../auth/sessionContext'
 import { useTheme } from '../theme/themeContext'
@@ -27,7 +27,7 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
-export default function Sidebar({ view, onView, counts, collapsed, onCollapse }) {
+export default function Sidebar({ counts, collapsed, onCollapse }) {
   const { user, role, signOut, can } = useSession()
   const { dark, toggle } = useTheme()
   const navigate = useNavigate()
@@ -60,24 +60,24 @@ export default function Sidebar({ view, onView, counts, collapsed, onCollapse })
       )}
 
       <ul className="flex-1 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
+        {/* Links rather than buttons, because each section is an address.
+            That is what makes the back button move between sections instead
+            of leaving the console, and what lets a section be linked to. */}
         {VIEWS.filter(({ id }) => id !== 'settings' || can.settings)
-              .map(({ id, label, icon: Icon }) => {
-          const on = view === id
-          return (
-            <li key={id}>
-              <button onClick={() => onView(id)} title={label}
-                      aria-current={on ? 'page' : undefined}
-                      className={`w-full flex items-center gap-3 px-3.5 py-2 text-[12.5px]
-                                  font-medium border-l-[3px] cursor-pointer transition-colors
-                                  ${on ? 'border-brand bg-rail-2 text-rail-fg'
-                                       : 'border-transparent hover:bg-rail-2 hover:text-rail-fg'}`}>
-                <Icon size={17} className="shrink-0" aria-hidden="true" />
-                {wide && <span className="truncate">{label}</span>}
-                {wide && <Badge count={counts[id]} tone={counts[`${id}Tone`]} />}
-              </button>
-            </li>
-          )
-        })}
+              .map(({ id, label, icon: Icon }) => (
+          <li key={id}>
+            <NavLink to={`/console/${id}`} title={label}
+                     className={({ isActive }) =>
+                       `w-full flex items-center gap-3 px-3.5 py-2 text-[12.5px]
+                        font-medium border-l-[3px] cursor-pointer transition-colors
+                        ${isActive ? 'border-brand bg-rail-2 text-rail-fg'
+                                   : 'border-transparent hover:bg-rail-2 hover:text-rail-fg'}`}>
+              <Icon size={17} className="shrink-0" aria-hidden="true" />
+              {wide && <span className="truncate">{label}</span>}
+              {wide && <Badge count={counts[id]} tone={counts[`${id}Tone`]} />}
+            </NavLink>
+          </li>
+        ))}
       </ul>
 
       <div className="border-t border-rail-2 p-2.5 shrink-0">

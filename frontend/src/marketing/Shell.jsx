@@ -92,12 +92,14 @@ function Footer() {
   )
 }
 
-export default function Shell() {
+// `children` is for the router's error element, which renders outside the
+// outlet but should still arrive with the site's navigation around it.
+export default function Shell({ children }) {
   return (
     <div className="mkt">
       <ScrollToTop />
       <Nav />
-      <Outlet />
+      {children ?? <Outlet />}
       <Footer />
     </div>
   )
