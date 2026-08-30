@@ -176,6 +176,21 @@
   padding: 4px 10px; border-radius: 3px;
 }
 
+/* the flow chart on the site: the console's engine, given room */
+.mkt .flow-figure {
+  margin-top: 44px; padding: 26px 24px;
+  border: 1px solid var(--mk-line); border-radius: 12px;
+  background: var(--mk-card); box-shadow: 0 24px 60px var(--mk-shadow);
+  display: flex; flex-direction: column;
+}
+.mkt .flow-figure + .ev-note { margin-top: 18px; }
+
+/* one line a role, rather than a card each saying the same shape of thing */
+.mkt .role-strip { display: grid; grid-template-columns: repeat(3, 1fr); gap: 28px; margin-top: 36px; }
+.mkt .role-strip > div { border-top: 3px solid var(--purple); padding-top: 16px; }
+.mkt .role-strip h4 { font-size: 16px; margin-bottom: 6px; }
+.mkt .role-strip p { font-size: 13.5px; color: var(--ink-soft); }
+
 /* split rows */
 .mkt .split { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; margin-top: 48px; }
 .mkt .split h3 { font-size: 24px; letter-spacing: -0.3px; margin-bottom: 12px; }
@@ -245,7 +260,8 @@
 
 @media (max-width: 900px) {
   .mkt h1 { font-size: 38px; }
-  .mkt .stat-grid, .mkt .phases, .mkt .pillars, .mkt .deploy, .mkt .split { grid-template-columns: 1fr; }
+  .mkt .stat-grid, .mkt .phases, .mkt .pillars, .mkt .deploy, .mkt .split,
+  .mkt .role-strip { grid-template-columns: 1fr; }
   .mkt .split { gap: 28px; }
   .mkt .nav-links { gap: 14px; }
   .mkt .nav-links a:not(.btn) { display: none; }

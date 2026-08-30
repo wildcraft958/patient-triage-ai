@@ -33,18 +33,20 @@ export function Edge({ dart, delay = 0 }) {
 }
 
 /**
- * The fork after redaction and the join before fusion, drawn as one stretched
- * SVG so the branch geometry survives any column width.
+ * The vertical runs between stacked stages, drawn as one stretched SVG so the
+ * geometry survives any column width: the fork after redaction, the join
+ * before fusion, and a straight drop where one stage simply feeds the next.
  */
-export function Branch({ join = false, dart, delay = 0 }) {
+export function Branch({ join = false, straight = false, dart, delay = 0 }) {
   // The paths sit in a two-column grid, so the branch drops have to land on
   // 25% and 75% to meet the middle of each node rather than near it.
-  const d = join
+  const d = straight ? 'M50 2 V26'
+    : join
     ? 'M25 2 V14 H75 V2 M50 14 V26'
     : 'M50 2 V14 M25 26 V14 H75 V26'
   return (
     <svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"
-         data-branch={join ? 'join' : 'fork'}
+         data-branch={straight ? 'straight' : join ? 'join' : 'fork'}
          className="w-full h-7 overflow-visible text-line-2">
       <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5"
             vectorEffect="non-scaling-stroke" strokeDasharray="5 4"

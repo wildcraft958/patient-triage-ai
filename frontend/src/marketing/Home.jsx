@@ -1,6 +1,20 @@
 import { Link } from 'react-router-dom'
+import HeroPipeline from './HeroPipeline'
 import HeroQueue from './HeroQueue'
 import { CtaBand } from './Shell'
+
+const ROLES = [
+  ['Triage nurse', 'Owns the acuity level. Their badge signs every one.'],
+  ['Medical assistant', 'Records vitals and answers alerts. Cannot set a level.'],
+  ['Clinical administrator', 'Reads the board, owns the evidence. Touches no patient.'],
+]
+
+const GOVERNANCE = [
+  ['PHI never leaves un-redacted', 'Presidio strips identifiers before any model call or log write.'],
+  ['Audit-ready by design', 'Append-only: both chains, every override, with clinician and reason.'],
+  ['The clinician decides', 'The system never finalises a level and never blocks a patient.'],
+  ['Bias, monitored', 'Per-age-band decision statistics, with age-calibrated thresholds.'],
+]
 
 export default function Home() {
   return (
@@ -10,9 +24,7 @@ export default function Home() {
           <div className="eyebrow">Emergency Department Intelligence</div>
           <h1>Triage that doesn't stop<br />at the front desk.</h1>
           <p className="lede">
-            Every arriving patient is scored by two independent engines. Every waiting
-            patient is watched continuously. Your clinicians stay in command of every
-            decision, with the evidence in front of them.
+            Two engines score every arrival. Then the waiting room stays watched.
           </p>
           <div className="hero-ctas">
             <Link className="btn btn-primary" to="/console">Launch the console<span className="arr">&rsaquo;</span></Link>
@@ -25,19 +37,19 @@ export default function Home() {
       <section className="band-dark">
         <div className="wrap">
           <div className="eyebrow">The problem your ED lives with</div>
-          <h2 className="section-title">Triage today is a snapshot. Patients keep changing after it's taken.</h2>
+          <h2 className="section-title">Triage is a snapshot. Patients keep changing after it's taken.</h2>
           <div className="stat-grid">
             <div className="stat-big">
               <div className="num">~8<small>%</small></div>
-              <div className="lbl">added mortality for every hour of delayed treatment in sepsis</div>
+              <div className="lbl">added mortality per hour of delayed treatment in sepsis</div>
             </div>
             <div className="stat-big">
               <div className="num">12.8<small>%</small></div>
-              <div className="lbl">of patients are under-triaged by human experts on a published benchmark</div>
+              <div className="lbl">of patients under-triaged by human experts on a published benchmark</div>
             </div>
             <div className="stat-big">
               <div className="num">0</div>
-              <div className="lbl">published triage systems that systematically re-examine the waiting room. Until this one.</div>
+              <div className="lbl">published triage systems that re-examine the waiting room. Until this one.</div>
             </div>
           </div>
           <div className="src">
@@ -49,41 +61,14 @@ export default function Home() {
 
       <section>
         <div className="wrap">
-          <div className="eyebrow">How it works</div>
-          <h2 className="section-title">Three phases. One promise: nobody deteriorates unseen.</h2>
-          <div className="phases">
-            <div className="phase-card">
-              <div className="phase-num">PHASE 01</div>
-              <h3>Intake, first minutes only</h3>
-              <p>
-                Chief complaint, vitals, age, and whatever history exists. Designed for the
-                reality that half of arriving patients have no record on file. Identifying
-                details are redacted before any AI model sees them.
-              </p>
-              <span className="phase-tag">WORKS WITH ZERO HISTORY</span>
-            </div>
-            <div className="phase-card">
-              <div className="phase-num">PHASE 02</div>
-              <h3>Two engines, one recommendation</h3>
-              <p>
-                A deterministic ESI rules engine with age-banded thresholds runs in parallel
-                with clinical AI reasoning grounded in the ESI Handbook. Agreement means high
-                confidence. Disagreement takes the more acute level and flags your clinician,
-                with both reasoning chains visible.
-              </p>
-              <span className="phase-tag">UNCERTAINTY NEVER DOWNGRADES</span>
-            </div>
-            <div className="phase-card featured">
-              <div className="phase-num">PHASE 03</div>
-              <h3>The waiting room, watched</h3>
-              <p>
-                Every waiting patient is ranked continuously by deterioration risk, wait
-                pressure, uncertainty, and severity. Wait-limit breaches and worsening vitals
-                trigger automatic re-assessment. This is the phase nobody else has.
-              </p>
-              <span className="phase-tag">CONTINUOUS REASSESSMENT</span>
-            </div>
-          </div>
+          <div className="eyebrow">How one triage is produced</div>
+          <h2 className="section-title">Two paths. Only one of them ever leaves the building.</h2>
+          <HeroPipeline />
+          <p className="ev-note">
+            Uncertainty never downgrades a patient: when the paths disagree the system
+            takes the more acute level, and re-triage while someone waits can only hold
+            or escalate.
+          </p>
         </div>
       </section>
 
@@ -94,25 +79,23 @@ export default function Home() {
               <div className="eyebrow">Built for your nurses, not around them</div>
               <h3>A console that earns trust instead of demanding it</h3>
               <ul>
-                <li><b>Passive by default.</b> The queue re-ranks quietly; hard alerts are reserved for wait breaches and deterioration.</li>
-                <li><b>Both reasoning chains, always visible.</b> Your team sees exactly where the system is unsure, and why.</li>
-                <li><b>One-click accept, one-form override.</b> The override reason doubles as the legal record. No extra paperwork.</li>
-                <li><b>Overrides teach the system.</b> Clinician corrections become learning signals, and the learning can only make the system more cautious, never less.</li>
+                <li><b>Passive by default.</b> The queue re-ranks quietly. Hard alerts are reserved for breaches and deterioration.</li>
+                <li><b>Both chains, always visible.</b> Your team sees where the system is unsure, and why.</li>
+                <li><b>One-click accept, one-form override.</b> The reason doubles as the legal record.</li>
+                <li><b>Overrides teach it.</b> And the learning can only make it more cautious, never less.</li>
               </ul>
             </div>
             <div>
               <div className="eyebrow">During a surge</div>
               <h3>3x the arrivals, 4 milliseconds a triage</h3>
               <p>
-                When volume crosses your threshold, scoring flips automatically to the
-                deterministic fast path. Monitoring keeps running. The AI reasoning becomes
-                asynchronous enrichment instead of a bottleneck. Verified in replay at three
-                times normal arrival rate.
+                Past your threshold, scoring flips to the deterministic fast path and the
+                reasoning pass becomes asynchronous enrichment instead of a bottleneck.
+                Monitoring keeps running. Verified in replay at three times normal rate.
               </p>
               <p style={{ marginTop: 12 }}>
-                Wait limits, cadence, and surge thresholds live in one configuration file per
-                site, so the same platform fits a 100-visit rural ED and a 500-visit urban
-                trauma center.
+                Wait limits, cadence and surge thresholds live in one file per site, so the
+                same platform fits a 100-visit rural ED and a 500-visit trauma center.
               </p>
             </div>
           </div>
@@ -122,37 +105,14 @@ export default function Home() {
       <section className="tight">
         <div className="wrap">
           <div className="eyebrow">Who signs in</div>
-          <h2 className="section-title">Built for the people at the front desk, not for the people who buy it.</h2>
-          <div className="phases">
-            <div className="phase-card">
-              <div className="phase-num">TRIAGE NURSE</div>
-              <h3>Owns the acuity level</h3>
-              <p>
-                Works the board: accepts or overrides every recommendation, answers alerts,
-                and reassesses at the bedside. Their badge signs every level on the record.
-              </p>
-              <span className="phase-tag">FULL DECISION AUTHORITY</span>
-            </div>
-            <div className="phase-card">
-              <div className="phase-num">MEDICAL ASSISTANT</div>
-              <h3>Keeps the vitals current</h3>
-              <p>
-                Records rechecks and acknowledges alerts, which is what feeds the
-                deterioration trigger. Cannot set or change an acuity level: the console
-                asks for RN sign-off instead of accepting it quietly.
-              </p>
-              <span className="phase-tag">SCOPE ENFORCED IN SOFTWARE</span>
-            </div>
-            <div className="phase-card">
-              <div className="phase-num">CLINICAL ADMINISTRATOR</div>
-              <h3>Answers for the system</h3>
-              <p>
-                Reads the board without touching it, and owns the evidence: the override log,
-                the bias monitor, the component registry, and the configuration that drives
-                every threshold in the department.
-              </p>
-              <span className="phase-tag">READ-ONLY ON PATIENTS</span>
-            </div>
+          <h2 className="section-title">Scope enforced in software, not in a policy document.</h2>
+          <div className="role-strip">
+            {ROLES.map(([title, body]) => (
+              <div key={title}>
+                <h4>{title}</h4>
+                <p>{body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -186,22 +146,12 @@ export default function Home() {
         <div className="wrap">
           <div className="eyebrow">Governance your compliance office will sign</div>
           <div className="pillars">
-            <div className="pillar">
-              <h4>PHI never leaves un-redacted</h4>
-              <p>Microsoft Presidio strips names, numbers, and identifiers before any model call and every log entry.</p>
-            </div>
-            <div className="pillar">
-              <h4>Audit-ready by design</h4>
-              <p>Append-only trail of every recommendation, both reasoning chains, and every override with clinician, timestamp, and reason.</p>
-            </div>
-            <div className="pillar">
-              <h4>The clinician decides. Always.</h4>
-              <p>The system never finalizes a triage level, never blocks a patient, never overrides your staff. Structurally.</p>
-            </div>
-            <div className="pillar">
-              <h4>Bias, monitored</h4>
-              <p>Per-age-band decision statistics surface skew before it becomes a pattern, with age-calibrated thresholds from day one.</p>
-            </div>
+            {GOVERNANCE.map(([title, body]) => (
+              <div className="pillar" key={title}>
+                <h4>{title}</h4>
+                <p>{body}</p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
@@ -214,12 +164,12 @@ export default function Home() {
             <div className="deploy-card">
               <div className="sub">Managed cloud</div>
               <h3>Claude on AWS Bedrock</h3>
-              <p>Frontier reasoning quality with enterprise cloud controls, regional data residency, and response caching that keeps per-patient cost in fractions of a cent.</p>
+              <p>Frontier reasoning with enterprise controls, regional residency, and caching that keeps cost per patient in fractions of a cent.</p>
             </div>
             <div className="deploy-card dark">
               <div className="sub">Hospital-local</div>
               <h3>Open model, your hardware</h3>
-              <p>The same pipeline runs against an open, RL-trained clinical model served inside your network. Patient data never crosses your boundary. Quality trade-offs measured and published, and the safety floor holds either way.</p>
+              <p>The same pipeline against an RL-trained clinical model inside your network. Nothing crosses your boundary. The safety floor holds either way.</p>
             </div>
           </div>
           <div className="hero-ctas" style={{ marginTop: 30 }}>
@@ -232,7 +182,7 @@ export default function Home() {
 
       <CtaBand
         title="See your own waiting room the way the system sees it."
-        sub="Launch the live console and step through a replayed shift: arrivals, an atypical cardiac presentation, a deterioration catch, an override, and a 3x surge."
+        sub="Step through a replayed shift: arrivals, an atypical cardiac presentation, a deterioration catch, an override, and a 3x surge."
       />
     </>
   )
