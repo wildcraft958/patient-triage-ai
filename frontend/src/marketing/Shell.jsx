@@ -27,13 +27,16 @@ function Nav() {
   return (
     <div className="mnav">
       <div className="wrap nav-inner">
-        <Link className="wordmark" to="/"><Mark size={28} /><span className="wm-text">PatientTriage<span>.ai</span></span></Link>
+        {/* Identity, not navigation. Home is a link in the row like every
+            other destination, so nobody has to guess that the mark is one. */}
+        <span className="wordmark"><Mark size={28} /><span className="wm-text">PatientTriage<span>.ai</span></span></span>
         {/* Four destinations, not five. "Deploy" was the one nobody could
             read off the word: it reached a page about where the model runs,
             and it sat next to four nouns describing the product. It is linked
             from the deployment section and from the footer, where a reader
             looking for it is already looking. */}
         <div className="nav-links">
+          <NavLink to="/" end>Home</NavLink>
           <NavLink to="/product">Product</NavLink>
           <NavLink to="/evidence">Evidence</NavLink>
           <NavLink to="/security">Security</NavLink>
@@ -68,7 +71,7 @@ export function CtaBand({ title, sub, showConsole = true }) {
 }
 
 const FOOTER = [
-  ['The product', [['/product', 'What it does'], ['/console', 'The live console']]],
+  ['The product', [['/', 'Home'], ['/product', 'What it does'], ['/console', 'The live console']]],
   ['The evidence', [['/evidence', 'Benchmarks and method'], ['/security', 'Security and governance']]],
   ['Running it', [['/deploy', 'Deployment models'], ['/about', 'About the team']]],
 ]
@@ -79,7 +82,7 @@ function Footer() {
       <div className="wrap">
         <div className="foot-grid">
           <div>
-            <Link className="wordmark" to="/"><Mark size={26} /><span className="wm-text">PatientTriage<span>.ai</span></span></Link>
+            <span className="wordmark"><Mark size={26} /><span className="wm-text">PatientTriage<span>.ai</span></span></span>
             <p style={{ marginTop: 8 }}>The system recommends. The clinician decides.</p>
           </div>
           {/* Grouped and labelled, so every destination says what it is
