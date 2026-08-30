@@ -561,6 +561,26 @@ def test_audit_events_carry_their_sequence_id():
     assert all(e["id"] for e in client.get("/patients/SEQ1/audit").json()["events"])
 
 
+def test_patient_detail_publishes_the_age_band_limits_it_was_scored_against():
+    """The console draws each vital against a limit. Restating an adult range
+    in the frontend would be wrong for a neonate and would drift from the gate
+    the moment a band changed, so the limits ride on the record."""
+    adult = client.post("/patients", json=patient("VL-ADULT", age_years=40)).json()
+    baby = client.post("/patients", json=patient(
+        "VL-BABY", age_years=0, age_months=1,
+        vitals={"hr": 150, "rr": 40, "spo2": 98, "temp_c": 37.0, "sbp": 80, "pain": 2})).json()
+
+    a = client.get("/patients/VL-ADULT").json()["vital_limits"]
+    b = client.get("/patients/VL-BABY").json()["vital_limits"]
+
+    assert a["hr"]["high"] == 100 and a["rr"]["high"] == 20
+    assert b["hr"]["high"] == 180 and b["rr"]["high"] == 50   # the band really differs
+    assert a["spo2"]["low"] == 92
+    # SBP has no paediatric floor, so it is published only where the gate uses it
+    assert "sbp" in a and "sbp" not in b
+    assert adult["fused"] and baby["fused"]
+
+
 def test_registry_reports_the_models_the_container_is_actually_running():
     from app.config import settings
     by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}

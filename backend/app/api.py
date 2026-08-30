@@ -244,6 +244,7 @@ def patient_detail(patient_id: str):
     svc = get_service()
     e = svc.room.entries[patient_id]
     from app.engine.icd10 import code_for
+    from app.engine.thresholds import vital_limits
     return {
         "intake": e.intake,
         "fused": e.fused,
@@ -258,4 +259,5 @@ def patient_detail(patient_id: str):
         "vitals_history": [
             {"at_min": t, "vitals": v} for t, v in e.vitals_history
         ],
+        "vital_limits": vital_limits(e.intake),
     }

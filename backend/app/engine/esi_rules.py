@@ -107,7 +107,7 @@ def score(intake: PatientIntake) -> RulesResult:
     pain = v.pain
     if pain is None and intake.oldcarts is not None:
         pain = intake.oldcarts.severity
-    if pain is not None and pain >= 8:
+    if pain is not None and pain >= thresholds.SEVERE_PAIN:
         red_flags.append("severe pain")
         reasons.append(f"B: severe pain {pain}/10 - escalating rather than waiting")
         return RulesResult(esi=2, reasons=reasons, red_flags=red_flags,

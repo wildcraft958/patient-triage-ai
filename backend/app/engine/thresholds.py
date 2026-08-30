@@ -24,6 +24,8 @@ FEVER_C = 38.0
 SBP_ADULT_AGE = 16
 SBP_DANGER_LOW = 90
 SBP_CRISIS = 220
+# The severe-pain gate in the rules engine reads this
+SEVERE_PAIN = 8
 # ACOG severe-range blood pressure in pregnancy (severe preeclampsia)
 SEVERE_PREECLAMPSIA_SBP = 160
 
@@ -40,6 +42,26 @@ def band_limits(intake: PatientIntake) -> tuple[float, float]:
         if max_months is None or months < max_months:
             return hr_limit, rr_limit
     raise AssertionError("unreachable")
+
+
+def vital_limits(intake: PatientIntake) -> dict:
+    """The limits this patient's vitals were actually scored against, by age
+    band. Published so the console can draw a reading against its real ceiling
+    instead of restating an adult range that is wrong for a neonate, and so a
+    change to a band cannot leave the two disagreeing."""
+    hr_limit, rr_limit = band_limits(intake)
+    limits = {
+        "hr": {"high": hr_limit},
+        "rr": {"high": rr_limit},
+        "spo2": {"low": SPO2_DANGER},
+        "temp_c": {"high": FEVER_C},
+        "pain": {"high": SEVERE_PAIN},
+    }
+    # Paediatric SBP norms vary too much by age for a single floor, so the gate
+    # only applies one to adults and this only publishes one where it does.
+    if intake.age_years >= SBP_ADULT_AGE:
+        limits["sbp"] = {"low": SBP_DANGER_LOW, "high": SBP_CRISIS}
+    return limits
 
 
 def in_danger_zone(intake: PatientIntake) -> tuple[bool, list[str]]:
