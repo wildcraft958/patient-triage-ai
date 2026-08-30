@@ -58,7 +58,7 @@ export default function OverrideModal({ detail, onSubmit, onClose }) {
               return (
                 <button key={l} onClick={() => setNewEsi(l)} aria-pressed={on}
                         className={`rounded-md border-2 py-2.5 cursor-pointer transition-colors
-                                    ${on ? `${ESI_BG[l]} border-transparent text-white`
+                                    ${on ? `${ESI_BG[l]} border-transparent text-esi-ink`
                                          : 'bg-card border-line text-ink-2 hover:border-line-2'}`}>
                   <span className="block text-lg font-bold tabular-nums leading-none">{l}</span>
                   <span className="block text-[8.5px] font-bold uppercase tracking-wide mt-1

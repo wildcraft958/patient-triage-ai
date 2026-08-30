@@ -73,7 +73,7 @@ export default function StatusBar({ state, alerts, live, busy, remaining,
           <Bell size={16} aria-hidden="true" />
           {alerts > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1
-                             rounded-full bg-esi-2 text-white text-[9px] font-bold
+                             rounded-full bg-esi-2 text-esi-ink text-[9px] font-bold
                              grid place-items-center tabular-nums">
               {alerts}
             </span>

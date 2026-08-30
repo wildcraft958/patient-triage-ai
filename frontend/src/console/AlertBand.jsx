@@ -44,9 +44,12 @@ export default function AlertBand({ rows, busy, onSelect, onReassess,
         const who = r.display_name ?? r.patient_id
         const why = r.alert.startsWith(who) ? r.alert.slice(who.length).trim() : r.alert
         return (
+          // A wait breach is a clock running out; deterioration is a patient
+          // getting worse. Only the second one earns a tinted row, or the
+          // common case drowns the rare one that matters.
           <article key={r.patient_id}
                    className={`flex items-center gap-3 rounded-md border border-l-4 px-3 py-2.5
-                               ${wait ? 'bg-warn-bg border-warn-line border-l-esi-4'
+                               ${wait ? 'bg-card border-line border-l-esi-4'
                                       : 'bg-alert-bg border-alert-line border-l-esi-2'}`}>
             <Pill tone={wait ? 'warn' : 'solid'}>
               {wait ? 'Wait limit' : 'Deteriorating'}
@@ -56,7 +59,7 @@ export default function AlertBand({ rows, busy, onSelect, onReassess,
               {who}
             </span>
             <span className={`flex-1 text-[11.5px] leading-snug
-                              ${wait ? 'text-warn-ink' : 'text-alert-ink'}`}>
+                              ${wait ? 'text-ink-2' : 'text-alert-ink'}`}>
               {why}
             </span>
             <span className="flex gap-1.5 shrink-0">

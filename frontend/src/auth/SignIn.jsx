@@ -25,7 +25,7 @@ export default function SignIn() {
 
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-app">
-      <aside className="bg-rail text-white px-8 py-10 lg:px-14 lg:py-16 flex flex-col">
+      <aside className="bg-rail text-rail-fg px-8 py-10 lg:px-14 lg:py-16 flex flex-col">
         <Link to="/" className="inline-flex items-center gap-2.5 w-fit">
           <span className="w-8 h-8 rounded-sm bg-brand grid place-items-center
                            text-sm font-black tracking-tight">PT</span>
@@ -41,7 +41,7 @@ export default function SignIn() {
           <h1 className="mt-3 text-3xl lg:text-[2.6rem] font-bold leading-[1.12] tracking-tight">
             Triage that doesn't stop at the front desk.
           </h1>
-          <p className="mt-4 text-sm leading-relaxed text-slate-300">
+          <p className="mt-4 text-sm leading-relaxed text-rail-ink">
             Two independent engines score every arrival. Every waiting patient
             stays under watch. You stay in command of the decision.
           </p>
@@ -52,14 +52,14 @@ export default function SignIn() {
                 <Icon size={17} className="text-brand shrink-0 mt-0.5" aria-hidden="true" />
                 <div>
                   <p className="text-sm font-semibold">{title}</p>
-                  <p className="text-xs text-slate-400 leading-relaxed mt-1">{body}</p>
+                  <p className="text-xs text-rail-ink-2 leading-relaxed mt-1">{body}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
 
-        <p className="mt-auto pt-12 text-[11px] text-slate-500 leading-relaxed max-w-lg">
+        <p className="mt-auto pt-12 text-[11px] text-rail-ink-2 leading-relaxed max-w-lg">
           The system recommends. The clinician decides.
         </p>
       </aside>

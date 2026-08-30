@@ -19,51 +19,183 @@
 @theme {
   --font-sans: 'Inter var', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
 
-  --color-app: #F8FAFC;
+  /* Neutrals carry a purple bias rather than a blue one. A mid grey that
+     shares no hue with the brand reads as unconsidered next to it. */
+  --color-app: #FAF7FE;
   --color-card: #FFFFFF;
-  --color-rail: #0F172A;
-  --color-rail-2: #1E293B;
-  --color-rail-3: #334155;
+  --color-raised: #F5EFFC;
+  --color-rail: #1A1024;
+  --color-rail-2: #2A1B39;
+  --color-rail-3: #3D2B50;
+  --color-rail-ink: #CFC3DE;
+  --color-rail-ink-2: #9287A5;
+  --color-rail-fg: #FFFFFF;
 
-  --color-ink: #0F172A;
-  --color-ink-2: #475569;
-  --color-ink-3: #94A3B8;
+  --color-ink: #241435;
+  --color-ink-2: #5B4E6B;
+  --color-ink-3: #8C81A0;
 
-  --color-line: #E2E8F0;
-  --color-line-2: #CBD5E1;
+  --color-line: #E9E1F5;
+  --color-line-2: #D6C8EA;
 
   --color-brand: #A100FF;
   --color-brand-ink: #6215B8;
   --color-brand-tint: #F5EBFF;
   --color-brand-line: #E4D6F6;
+  --color-brand-fg: #FFFFFF;
 
-  /* ESI is a convention a nurse reads before reading the number. */
+  /* ESI is a convention a nurse reads before reading the number, and it is
+     the one scale that does not answer to the brand. */
   --color-esi-1: #7F1D1D;
   --color-esi-2: #DC2626;
   --color-esi-3: #EA580C;
   --color-esi-4: #CA8A04;
   --color-esi-5: #16A34A;
+  /* Badge text. Light mode fills are deep enough for white; dark mode lifts
+     the fills and flips this, because inverting the scale itself would break
+     the convention a nurse reads before the number. */
+  --color-esi-ink: #FFFFFF;
 
-  --color-alert-bg: #FEF2F2;
-  --color-alert-line: #FECACA;
+  --color-alert-bg: #FDF2F4;
+  --color-alert-line: #F6CFD5;
   --color-alert-ink: #991B1B;
-  --color-warn-bg: #FFFBEB;
-  --color-warn-line: #FDE68A;
+  --color-warn-bg: #FFFAEB;
+  --color-warn-line: #FBE2A8;
   --color-warn-ink: #92400E;
   --color-ok-bg: #F0FDF4;
   --color-ok-line: #BBF7D0;
   --color-ok-ink: #166534;
-  --color-info-bg: #EFF6FF;
-  --color-info-line: #BFDBFE;
-  --color-info-ink: #1E40AF;
+  --color-info-bg: #F3F0FE;
+  --color-info-line: #D5CBF7;
+  --color-info-ink: #4338CA;
 
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
 
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.07);
-  --shadow-lg: 0 18px 50px rgba(15, 23, 42, 0.18);
+  --shadow-sm: 0 1px 2px rgba(36, 20, 53, 0.05);
+  --shadow-md: 0 4px 6px rgba(36, 20, 53, 0.07);
+  --shadow-lg: 0 18px 50px rgba(36, 20, 53, 0.20);
+}
+
+/* ------------------------------------------------------------------ dark
+   Unlayered on purpose. Tailwind emits its theme variables inside a cascade
+   layer, and unlayered CSS outranks every layered rule, so redefining the
+   same names here flips the whole console without touching a component.
+
+   Nothing but tokens belongs in these blocks. A colour whose only definition
+   lives behind [data-theme] never applies in the un-stamped state, which is
+   how a page ends up rendering one theme's text on the other theme's ground.
+*/
+:root[data-theme="dark"] {
+  --color-app: #16111F;
+  --color-card: #1E1729;
+  --color-raised: #271E35;
+  --color-rail: #120D1A;
+  --color-rail-2: #221A2E;
+  --color-rail-3: #332844;
+  --color-rail-ink: #B9AECB;
+  --color-rail-ink-2: #8A7F9C;
+  --color-rail-fg: #FFFFFF;
+
+  --color-ink: #EDE7F6;
+  --color-ink-2: #B9AECB;
+  --color-ink-3: #7E7391;
+
+  --color-line: #322A42;
+  --color-line-2: #453A5A;
+
+  --color-brand: #B95CFF;
+  --color-brand-ink: #D9A6FF;
+  --color-brand-tint: #2A1B3D;
+  --color-brand-line: #40305A;
+  --color-brand-fg: #1A1024;
+
+  /* Lifted fills with dark text: the same five hues in the same order, read
+     at the same glance, against a ground the light values would vanish into. */
+  --color-esi-1: #F0908E;
+  --color-esi-2: #F87171;
+  --color-esi-3: #FB923C;
+  --color-esi-4: #FACC15;
+  --color-esi-5: #4ADE80;
+  --color-esi-ink: #1A1024;
+
+  --color-alert-bg: #2B181D;
+  --color-alert-line: #4E2630;
+  --color-alert-ink: #FCA5A5;
+  --color-warn-bg: #282010;
+  --color-warn-line: #4A3A18;
+  --color-warn-ink: #FCD34D;
+  --color-ok-bg: #16271D;
+  --color-ok-line: #24462F;
+  --color-ok-ink: #6EE7A8;
+  --color-info-bg: #1E1B31;
+  --color-info-line: #302A4C;
+  --color-info-ink: #A5B4FC;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.55);
+
+  color-scheme: dark;
+}
+
+/* A night-shift nurse who has never touched the toggle still gets the dark
+   board; an explicit light choice still beats a dark operating system. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --color-app: #16111F;
+    --color-card: #1E1729;
+    --color-raised: #271E35;
+    --color-rail: #120D1A;
+    --color-rail-2: #221A2E;
+    --color-rail-3: #332844;
+    --color-rail-ink: #B9AECB;
+    --color-rail-ink-2: #8A7F9C;
+    --color-rail-fg: #FFFFFF;
+  --color-rail-fg: #FFFFFF;
+  --color-rail-ink-2: #8A7F9C;
+  --color-rail-fg: #FFFFFF;
+
+    --color-ink: #EDE7F6;
+    --color-ink-2: #B9AECB;
+    --color-ink-3: #7E7391;
+
+    --color-line: #322A42;
+    --color-line-2: #453A5A;
+
+    --color-brand: #B95CFF;
+    --color-brand-ink: #D9A6FF;
+    --color-brand-tint: #2A1B3D;
+    --color-brand-line: #40305A;
+    --color-brand-fg: #1A1024;
+
+    --color-esi-1: #F0908E;
+    --color-esi-2: #F87171;
+    --color-esi-3: #FB923C;
+    --color-esi-4: #FACC15;
+    --color-esi-5: #4ADE80;
+    --color-esi-ink: #1A1024;
+
+    --color-alert-bg: #2B181D;
+    --color-alert-line: #4E2630;
+    --color-alert-ink: #FCA5A5;
+    --color-warn-bg: #282010;
+    --color-warn-line: #4A3A18;
+    --color-warn-ink: #FCD34D;
+    --color-ok-bg: #16271D;
+    --color-ok-line: #24462F;
+    --color-ok-ink: #6EE7A8;
+    --color-info-bg: #1E1B31;
+    --color-info-line: #302A4C;
+    --color-info-ink: #A5B4FC;
+
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+    --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 18px 50px rgba(0, 0, 0, 0.55);
+
+    color-scheme: dark;
+  }
 }
 
 /* The reset has to sit in a cascade layer. Unlayered CSS outranks every
@@ -85,67 +217,20 @@
   ul, ol { list-style: none; }
 }
 
-/* branded scrollbars, global */
-html { scrollbar-width: thin; scrollbar-color: #A88BD4 #F1E9FB; }
-* { scrollbar-width: thin; scrollbar-color: #A88BD4 #F1E9FB; }
+/* Scrollbars follow the theme like everything else. */
+html, * {
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-line-2) var(--color-app);
+}
 ::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #F1E9FB; }
+::-webkit-scrollbar-track { background: var(--color-app); }
 ::-webkit-scrollbar-thumb {
-  background: linear-gradient(180deg, #A100FF, #7B2FBE);
+  background: var(--color-line-2);
   border-radius: 6px;
-  border: 2px solid #F1E9FB;
+  border: 2px solid var(--color-app);
 }
-::-webkit-scrollbar-thumb:hover { background: #6215B8; }
-::-webkit-scrollbar-corner { background: #F1E9FB; }
-
-:root {
-  --purple: #A100FF;
-  --purple-mid: #7B2FBE;
-  --purple-deep: #6215B8;
-  --purple-darker: #4C0E9E;
-  --purple-darkest: #35135E;
-  --ink: #241435;
-  --muted: #6B6478;
-  --tint-1: #F7F2FD;
-  --tint-2: #F1E9FB;
-  --tint-3: #FBF8FE;
-  --line: #E4D6F6;
-  --line-soft: #EFE3FC;
-  --agree: #1F845A;
-  --disagree: #B65C02;
-
-  /* The clinical acuity scale is the one place the brand palette steps
-     aside. ESI colour is a convention a nurse reads before reading the
-     number, and five shades of one hue cannot carry it. */
-  --esi-1: #7A0C1F;
-  --esi-2: #C4291C;
-  --esi-3: #D9781F;
-  --esi-4: #C08A02;
-  --esi-5: #1F845A;
-  --alert: #C4291C;
-  --alert-tint: #FDF2F0;
-  --alert-line: #F3C9C2;
-  --worse: #C4291C;
-}
-
-/* The reset has to sit in a cascade layer. Unlayered CSS outranks every
-   layered rule, so a bare `* { padding: 0 }` would silently beat every
-   Tailwind spacing utility and flatten the whole console. */
-@layer base {
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-
-  /* Tailwind's Preflight is deliberately not imported: it would reset the
-     product site's typography for no benefit. These are the few
-     normalisations the console genuinely needs, and the site's own rules,
-     being unlayered, still outrank all of it. */
-  a { color: inherit; text-decoration: none; }
-  button, input, select, textarea { font: inherit; color: inherit; }
-  button { background: none; border: 0; }
-  fieldset { border: 0; }
-  table { border-collapse: collapse; }
-  svg { display: block; }
-  ul, ol { list-style: none; }
-}
+::-webkit-scrollbar-thumb:hover { background: var(--color-brand); }
+::-webkit-scrollbar-corner { background: var(--color-app); }
 
 body {
   font-family: 'Inter var', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
@@ -157,14 +242,6 @@ body {
 
 #root { min-height: 100vh; }
 
-/* Neutral by default so the console's chrome stays out of the way; the
-   product site keeps the brand scrollbar it was designed with. */
-html { scrollbar-width: thin; scrollbar-color: #CBD5E1 #F1F5F9; }
-::-webkit-scrollbar { width: 10px; height: 10px; }
-::-webkit-scrollbar-track { background: #F1F5F9; }
-::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 6px; border: 2px solid #F1F5F9; }
-::-webkit-scrollbar-thumb:hover { background: #94A3B8; }
-.mkt { scrollbar-color: #A88BD4 #F1E9FB; }
 
 @keyframes drawer {
   from { transform: translateX(14px); opacity: 0; }

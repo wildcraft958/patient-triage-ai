@@ -9,7 +9,7 @@ function Badge({ count, tone }) {
   if (!count) return null
   return (
     <span className={`ml-auto text-[10px] font-bold rounded-full px-1.5 py-px tabular-nums
-                      ${tone === 'alert' ? 'bg-esi-2 text-white' : 'bg-rail-3 text-slate-200'}`}>
+                      ${tone === 'alert' ? 'bg-esi-2 text-esi-ink' : 'bg-rail-3 text-rail-ink'}`}>
       {count}
     </span>
   )
@@ -21,7 +21,7 @@ export default function Sidebar({ view, onView, counts, collapsed, onCollapse })
 
   return (
     <nav aria-label="Console sections"
-         className={`bg-rail text-slate-300 flex flex-col shrink-0 transition-[width]
+         className={`bg-rail text-rail-ink flex flex-col shrink-0 transition-[width]
                      duration-150 ${wide ? 'w-[220px]' : 'w-[64px]'}`}>
       <Link to="/" title="PatientTriage.ai"
             className="flex items-center gap-2.5 h-12 px-4 border-b border-rail-2 shrink-0">
@@ -70,14 +70,14 @@ export default function Sidebar({ view, onView, counts, collapsed, onCollapse })
             {wide && (
               <div className="min-w-0 flex-1">
                 <p className="text-[12px] font-semibold text-white truncate">{user.name}</p>
-                <p className="text-[10px] text-slate-400 truncate">
+                <p className="text-[10px] text-rail-ink-2 truncate">
                   <span className="tabular-nums">{user.badge_id}</span> · {role.title}
                 </p>
               </div>
             )}
             {wide && (
               <button onClick={signOut} title="Sign out"
-                      className="text-slate-400 hover:text-white cursor-pointer shrink-0">
+                      className="text-rail-ink-2 hover:text-rail-fg cursor-pointer shrink-0">
                 <LogOut size={15} aria-hidden="true" />
               </button>
             )}
