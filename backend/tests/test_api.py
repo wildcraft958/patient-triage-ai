@@ -665,7 +665,7 @@ def test_the_reasoning_path_is_not_counted_when_surge_skips_it():
 
 
 def test_a_component_that_was_never_timed_says_so():
-    """Five of eight components have no measured stage. Publishing 0.0 for
+    """Four of eight components have no measured stage. Publishing 0.0 for
     them is indistinguishable from a real sub-millisecond measurement."""
     client.post("/patients", json=patient("LAT1"))
     by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}

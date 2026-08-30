@@ -27,7 +27,7 @@ EGRESS = "clinical_reasoning"
 def _stage_average(entries, stage: str, only_when: str | None = None) -> float | None:
     """Mean measured duration for one graph node, or None when the node was
     never timed. Returning 0.0 for an unmeasured component is
-    indistinguishable from a real sub-millisecond measurement, and five of
+    indistinguishable from a real sub-millisecond measurement, and four of
     the eight components here have no stage of their own.
 
     `only_when` drops traces where the node returned without doing the work:
