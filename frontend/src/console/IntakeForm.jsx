@@ -69,12 +69,7 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
            ref={dialog} tabIndex={-1}
            className="relative bg-card rounded-lg w-[680px] max-w-full max-h-[90vh] overflow-y-auto
                       border-t-4 border-brand shadow-lg px-5 py-5">
-        <h2 className="text-lg font-bold tracking-tight text-ink">New arrival</h2>
-        <p className="mt-1 mb-4 text-xs leading-relaxed text-ink-2">
-          The name identifies the patient on the board and never enters the
-          reasoning path. Only age, complaint, vitals and history reach it, and
-          the complaint is redacted on the way.
-        </p>
+        <h2 className="text-lg font-bold tracking-tight text-ink mb-4">New arrival</h2>
         <div className="grid grid-cols-3 gap-2.5">
           <label className={FIELD}><span>Patient name</span>
             <input className={INPUT} value={f.display_name} placeholder="M. Chen"

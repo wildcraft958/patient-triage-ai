@@ -38,7 +38,7 @@ function Row({ row, rank, selected, pulsing, onSelect }) {
                            rounded-sm focus-visible:outline-2 focus-visible:outline-brand
                            focus-visible:outline-offset-2">
           <Initials name={row.display_name} id={row.patient_id} />
-          <span className="min-w-0">
+          <span className="min-w-0" title={row.chief_complaint}>
             <span className="block text-[13px] font-semibold text-ink truncate">
               {row.display_name ?? row.patient_id}
               <span className="ml-1.5 text-[11px] font-normal text-ink-3 tabular-nums">
@@ -47,9 +47,6 @@ function Row({ row, rank, selected, pulsing, onSelect }) {
               <span className="ml-1.5 text-[10px] font-normal text-ink-3">
                 {row.patient_id}
               </span>
-            </span>
-            <span className="block text-[11px] text-ink-2 truncate max-w-[34ch]">
-              {row.chief_complaint}
             </span>
           </span>
         </button>

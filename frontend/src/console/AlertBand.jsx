@@ -1,4 +1,4 @@
-import { TriangleAlert } from 'lucide-react'
+import { Siren } from 'lucide-react'
 import { useSession } from '../auth/sessionContext'
 import { Btn, EsiBadge, Pill } from './ui'
 
@@ -24,7 +24,11 @@ export default function AlertBand({ rows, busy, onSelect, onReassess,
   return (
     <section aria-label="Reassessment alerts" className="space-y-2">
       <div className="flex items-center gap-2">
-        <TriangleAlert size={14} className="text-esi-2" aria-hidden="true" />
+        {/* A siren rather than the warning triangle every piece of software
+            uses: this band is the department's own "go now", and it is not the
+            same thing as the notification bell counting everything else.
+            Sized to the cap height of the label it sits beside. */}
+        <Siren size={13} className="text-esi-2 shrink-0" aria-hidden="true" />
         <h2 className="text-[10.5px] font-bold uppercase tracking-[0.14em] text-esi-2">
           Reassessment alerts ({alerts.length})
         </h2>
