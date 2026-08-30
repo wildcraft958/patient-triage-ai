@@ -193,7 +193,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 206 tests
+uv run pytest                     # 211 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
@@ -240,7 +240,7 @@ redaction; set `SPACY_MODEL=en_core_web_lg` on hosts with 1 GB+ RAM.
 
 ## Data and licenses
 
-- `data/curated_patients.json`: 22 simulated patients written by us, covering every mandated case (ambiguous presentation, pediatric, geriatric, zero-history, a sepsis-trajectory deteriorator with worsening rechecks; roughly half have prior records).
+- `data/curated_patients.json`: 24 simulated patients written by us, covering every mandated case (ambiguous presentation, pediatric, geriatric, zero-history, a sepsis-trajectory deteriorator with worsening rechecks; roughly half have prior records).
 - MIMIC-IV-ED **Demo** v2.2 (PhysioNet, open access, ODbL): fetched at setup, never committed. The full 440K-visit MIMIC-IV-ED set is the scale-up evaluation once PhysioNet credentialing completes.
 - ESI scenario benchmarks and ESI v4 Handbook: fetched from the MIT-licensed [ED-Triage-Agent](https://github.com/Karthick47v2/ED-Triage-Agent) repository (c) Karthick T. Sharma; the three test sets originate from [TriageAgent](https://aclanthology.org/2024.findings-emnlp.329/) (EMNLP 2024 Findings).
 - No real patient data is used anywhere. Presidio redaction runs regardless, because the pipeline is built as if data were real.
