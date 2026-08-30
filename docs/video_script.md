@@ -21,8 +21,9 @@ Every mandated Round 2 expectation is hit and labeled below:
 ## 0:18 - 0:32 | Sign in
 
 Action: on the sign-in screen, leave the role on **Triage nurse** and click
-**Start shift**. If you are recording at night, flip the theme from the rail
-first; the whole console and the product site follow it.
+**Start shift**. Pick a theme before you start rather than mid-take: the
+console and the product site share one palette and both follow the toggle in
+the rail, so switching on camera restyles everything at once.
 
 > "A nurse signs in with her badge, and the badge is not decoration. It signs
 > every level she sets for the rest of the shift. Sign in as a medical
@@ -32,8 +33,9 @@ first; the whole console and the product site follow it.
 
 ## 0:32 - 0:55 | Open the shift, watch the board fill
 
-Action: click **Normal shift**. Press **Play arrivals** and let five or six
-patients land, then pause.
+Action: click **Normal shift**. Arrivals start on their own and the department
+clock starts running; let five or six patients land, then hit **Pause** in the
+status bar if you want to talk over a still board.
 
 > "This is a shift board in an urban emergency department. Every arrival is
 > scored twice: a deterministic ESI rules engine with age-banded vital
@@ -106,12 +108,16 @@ pick ESI-1, tap the **Vitals trending** quick reason and add "septic shock
 picture, starting fluids", confirm. Open the audit trail at the foot of the
 record.
 
-> "Answering an alert is two clicks. Reassess records that a clinician
-> actually laid eyes on the patient, restarts the safe wait clock, and is
-> logged with their ID. Acknowledge records only that they saw it, and
-> deliberately leaves the patient overdue, because an acknowledgment that
-> quietly cleared the queue would make the board look safe without making it
-> safe."
+> "Answering an alert is one click. Reassess records that a clinician actually
+> laid eyes on the patient, restarts the safe wait clock, and is logged with
+> their ID. The close button beside it is not a dismiss: it calls the same
+> acknowledge endpoint, so the row leaves the board because the record says a
+> clinician saw it, and the patient deliberately stays overdue. An
+> acknowledgment that quietly cleared the queue would make the board look safe
+> without making it safe."
+
+Optional, if you have the seconds: hover the close button and read the tooltip
+on camera. It says exactly that.
 
 > "An override legally has to record who, what, when and why. The form does
 > not submit without a reason, and every one of these lands in an append-only
@@ -157,9 +163,10 @@ Action: open **Analytics** in the rail.
 - Browser zoom 100%, hide the bookmarks bar, 1600x1000 window
 - Widen the patient record by dragging its left edge before you start; it
   remembers the width, so the two reasoning chains sit side by side on camera
-- Live mode is on from the moment a shift opens and runs one minute of ED time
-  every four seconds, so the deterioration alert fires while you are talking.
-  If you need it sooner, Settings has Advance 15 min
+- The shift starts running the moment you open it: arrivals play through and
+  the department clock advances, so the deterioration alert fires while you are
+  talking. If you need it sooner, Settings has **Advance 15 min**. **Pause** in
+  the status bar stops arrivals without clearing the board
 - macOS: Cmd+Shift+5, record the selected window, mic on for narration or dub
   afterwards
 - Export mp4, named per the Unstop convention if one is required
