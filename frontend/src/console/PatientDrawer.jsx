@@ -202,7 +202,7 @@ function AuditTrail({ patientId }) {
       {open && events && (
         <div className="mt-2 space-y-1">
           {events.map((e, i) => (
-            <div key={i} className="flex gap-2 text-[10.5px] py-1 border-b border-line last:border-0">
+            <div key={e.id ?? i} className="flex gap-2 text-[10.5px] py-1 border-b border-line last:border-0">
               <span className="text-ink-3 tabular-nums w-11 shrink-0">t={fmt(e.sim_min)}</span>
               <span className="font-bold uppercase tracking-wide text-brand-ink w-[92px] shrink-0
                                text-[9.5px] pt-px">

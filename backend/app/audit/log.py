@@ -55,12 +55,13 @@ class AuditLog:
 
     def events_for(self, patient_id: str) -> list[dict]:
         rows = self.conn.execute(
-            "SELECT sim_min, event_type, payload FROM events "
+            "SELECT id, sim_min, event_type, payload FROM events "
             "WHERE patient_id = ? ORDER BY id",
             [patient_id],
         ).fetchall()
         return [
-            {"sim_min": r[0], "event_type": r[1], "payload": json.loads(r[2])}
+            {"id": r[0], "sim_min": r[1], "event_type": r[2],
+             "payload": json.loads(r[3])}
             for r in rows
         ]
 
@@ -111,11 +112,15 @@ class AuditLog:
         }
 
     def all_events(self) -> list[dict]:
+        # The sequence travels with the event: the console renders these as a
+        # live list and needs a stable identity per row, or it keys them by
+        # array position and one arrival rewrites the whole list.
         rows = self.conn.execute(
-            "SELECT sim_min, patient_id, event_type, payload FROM events ORDER BY id"
+            "SELECT id, sim_min, patient_id, event_type, payload FROM events "
+            "ORDER BY id"
         ).fetchall()
         return [
-            {"sim_min": r[0], "patient_id": r[1], "event_type": r[2],
-             "payload": json.loads(r[3])}
+            {"id": r[0], "sim_min": r[1], "patient_id": r[2], "event_type": r[3],
+             "payload": json.loads(r[4])}
             for r in rows
         ]

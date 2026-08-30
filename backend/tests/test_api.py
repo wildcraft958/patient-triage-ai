@@ -547,6 +547,20 @@ def test_a_path_b_failure_is_not_reported_as_a_surge_deferral():
     assert pl["surge_path"] is False
 
 
+def test_audit_events_carry_their_sequence_id():
+    """The console renders these as a live list. Without a stable identity per
+    event it keys them by array position, so one arrival rewrites every row
+    instead of inserting one. The table already assigns the sequence; this only
+    stops it being dropped on the way out."""
+    client.post("/patients", json=patient("SEQ1"))
+    events = client.get("/audit").json()["events"]
+    ids = [e["id"] for e in events]
+
+    assert ids == sorted(ids)
+    assert len(set(ids)) == len(ids)
+    assert all(e["id"] for e in client.get("/patients/SEQ1/audit").json()["events"])
+
+
 def test_registry_reports_the_models_the_container_is_actually_running():
     from app.config import settings
     by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
