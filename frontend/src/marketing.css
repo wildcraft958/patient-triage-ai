@@ -1,98 +1,48 @@
-/* Marketing pages, scoped under .mkt so console styles stay untouched */
+/* Marketing pages, scoped under .mkt so console styles stay untouched.
+
+   There is no palette in this file. Every colour is a console token, because
+   there used to be a second one here and the two drifted: the console was
+   lifted a shade and the product site kept the old values, so in dark mode
+   the two halves of the same product stopped matching. The legacy --mk-*
+   names stay as the mapping layer, which keeps this stylesheet readable
+   without giving it anywhere to hold a colour of its own. */
 
 .mkt {
-  --purple: #A100FF;
-  --purple-mid: #7B2FBE;
-  --purple-deep: #6215B8;
-  --purple-darker: #4C0E9E;
-  --mk-ink: #16091F;
-  --ink-soft: #4E4560;
-  --mk-muted: #6B6478;
-  --tint: #F7F2FD;
-  --mk-tint-2: #F1E9FB;
-  --mk-line: #E4D6F6;
+  --purple: var(--color-brand);
+  --purple-deep: var(--color-brand-ink);
+  --purple-darker: var(--color-brand-ink);
 
-  /* Surfaces, named so the dark theme can move them. The page ground and the
-     card are different things even when both are white. */
-  --mk-bg: #FFFFFF;
-  --mk-card: #FFFFFF;
-  --mk-nav: rgba(255, 255, 255, 0.96);
-  --mk-onpurple: #FFFFFF;
-  /* The bands that invert for contrast. In dark they cannot stay near-black
-     on a near-black ground, so they become a raised panel instead. */
-  --mk-band: #16091F;
-  --mk-band-ink: #FFFFFF;
-  --mk-band-soft: #CBC3D8;
-  --mk-band-accent: #C89BFF;
-  --mk-band-line: transparent;
-  --mk-band-2: #2C2138;
-  --mk-shadow: rgba(98, 21, 184, 0.14);
-  --mk-line-strong: #C9AEE9;
-  --mk-onpurple-soft: #F5EBFF;
+  --mk-ink: var(--color-ink);
+  --ink-soft: var(--color-ink-2);
+  --mk-muted: var(--color-ink-3);
+
+  --mk-bg: var(--color-app);
+  --mk-card: var(--color-card);
+  --mk-nav: var(--color-nav);
+  --tint: var(--color-raised);
+  --mk-tint-2: var(--color-brand-tint);
+  --mk-line: var(--color-line);
+  --mk-line-strong: var(--color-line-2);
+  --mk-shadow: var(--color-shadow);
+
+  --mk-onpurple: var(--color-brand-fg);
+  --mk-onpurple-soft: color-mix(in srgb, var(--color-brand-fg) 84%, var(--color-brand));
+
+  /* The inverted band is the navigation rail's surface in both themes. In
+     dark the page is already near-black so the band cannot invert against it;
+     the rule is what delimits it there, which is why it is never transparent. */
+  --mk-band: var(--color-rail);
+  --mk-band-ink: var(--color-rail-fg);
+  --mk-band-soft: var(--color-rail-ink);
+  --mk-band-accent: var(--color-brand-rail);
+  --mk-band-line: var(--color-line);
+  --mk-band-2: var(--color-rail-3);
 
   font-family: 'Inter var', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--mk-ink);
   background: var(--mk-bg);
   font-size: 15px;
   line-height: 1.65;
-}
-
-[data-theme="dark"] .mkt {
-  --purple: #B95CFF;
-  --purple-mid: #A063E0;
-  --purple-deep: #C88BFF;
-  --purple-darker: #AA73E0;
-  --mk-ink: #EDE7F6;
-  --ink-soft: #B9AECB;
-  --mk-muted: #8A7F9C;
-  --tint: #1E1729;
-  --mk-tint-2: #251D33;
-  --mk-line: #322A42;
-  --mk-line-strong: #453A5A;
-
-  --mk-bg: #16111F;
-  --mk-card: #1E1729;
-  --mk-nav: rgba(22, 17, 31, 0.94);
-  --mk-onpurple: #1A1024;
-  --mk-onpurple-soft: #291639;
-
-  --mk-band: #1E1729;
-  --mk-band-ink: #EDE7F6;
-  --mk-band-soft: #B9AECB;
-  --mk-band-accent: #C88BFF;
-  --mk-band-line: #322A42;
-  --mk-band-2: #322A42;
-  --mk-shadow: rgba(0, 0, 0, 0.5);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root:not([data-theme="light"]) .mkt {
-    --purple: #B95CFF;
-    --purple-mid: #A063E0;
-    --purple-deep: #C88BFF;
-    --purple-darker: #AA73E0;
-    --mk-ink: #EDE7F6;
-    --ink-soft: #B9AECB;
-    --mk-muted: #8A7F9C;
-    --tint: #1E1729;
-    --mk-tint-2: #251D33;
-    --mk-line: #322A42;
-    --mk-line-strong: #453A5A;
-
-    --mk-bg: #16111F;
-    --mk-card: #1E1729;
-    --mk-nav: rgba(22, 17, 31, 0.94);
-    --mk-onpurple: #1A1024;
-    --mk-onpurple-soft: #291639;
-
-    --mk-band: #1E1729;
-    --mk-band-ink: #EDE7F6;
-    --mk-band-soft: #B9AECB;
-    --mk-band-accent: #C88BFF;
-    --mk-band-line: #322A42;
-    --mk-band-2: #322A42;
-    --mk-shadow: rgba(0, 0, 0, 0.5);
-  }
 }
 
 .mkt .wrap { max-width: 1140px; margin: 0 auto; padding: 0 28px; }

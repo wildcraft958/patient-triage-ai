@@ -33,7 +33,7 @@
 
   --color-ink: #241435;
   --color-ink-2: #5B4E6B;
-  --color-ink-3: #786C8F;
+  --color-ink-3: #736788;
 
   --color-line: #E9E1F5;
   --color-line-2: #D6C8EA;
@@ -43,6 +43,23 @@
   --color-brand-tint: #F5EBFF;
   --color-brand-line: #E4D6F6;
   --color-brand-fg: #FFFFFF;
+
+  /* Form controls sit one step below the card they are on, in both themes.
+     Tailwind's Preflight is not imported, so an input with no background of
+     its own is painted by the browser, and the console had nineteen of them. */
+  --color-field: #F9F5FD;
+  --color-field-line: #D6C8EA;
+
+  /* A dialog dims the board with this, never with the body ink: in dark that
+     token is near white and the scrim came out as a haze over the console. */
+  --color-scrim: #241435;
+  --color-nav: rgba(255, 255, 255, 0.94);
+  --color-shadow: rgba(98, 21, 184, 0.14);
+
+  /* The brand is a fill colour and reads at 3.5:1 as text on the rail. The
+     wordmark's ".ai", the sign-in eyebrow and the statistics band all need it
+     as ink, so the rail gets its own lighter cut of the same hue. */
+  --color-brand-rail: #C89BFF;
 
   /* ESI is a convention a nurse reads before reading the number, and it is
      the one scale that does not answer to the brand. */
@@ -93,28 +110,37 @@
    how a page ends up rendering one theme's text on the other theme's ground.
 */
 :root[data-theme="dark"] {
-  --color-app: #0B0910;
-  --color-card: #1E1729;
-  --color-raised: #241C31;
-  --color-rail: #070509;
-  --color-rail-2: #1C1528;
-  --color-rail-3: #332844;
-  --color-rail-ink: #B9AECB;
-  --color-rail-ink-2: #8A7F9C;
+  --color-app: #0E0A18;
+  --color-card: #1A1327;
+  --color-raised: #251C38;
+  --color-rail: #050308;
+  --color-rail-2: #1A1229;
+  --color-rail-3: #35284C;
+  --color-rail-ink: #C3B6D8;
+  --color-rail-ink-2: #9186A6;
   --color-rail-fg: #FFFFFF;
 
-  --color-ink: #EDE7F6;
-  --color-ink-2: #B9AECB;
-  --color-ink-3: #8A809B;
+  --color-ink: #F2ECFB;
+  --color-ink-2: #C0B3D6;
+  --color-ink-3: #9084A8;
 
-  --color-line: #2E2640;
-  --color-line-2: #453A5A;
+  --color-line: #35294C;
+  --color-line-2: #4E3D70;
 
-  --color-brand: #C77DFF;
-  --color-brand-ink: #D9A6FF;
-  --color-brand-tint: #33195C;
-  --color-brand-line: #4A2E75;
-  --color-brand-fg: #1A1024;
+  /* Recessed rather than raised: a field a nurse types into should read as a
+     well in the card, and it has to stay clear of --color-raised as well. */
+  --color-field: #120D1D;
+  --color-field-line: #3B2E55;
+
+  --color-brand: #B96BFF;
+  --color-brand-ink: #DCA9FF;
+  --color-brand-tint: #2E1550;
+  --color-brand-line: #4B2A7D;
+  --color-brand-fg: #14091F;
+
+  --color-scrim: #05030A;
+  --color-nav: rgba(12, 8, 20, 0.92);
+  --color-shadow: rgba(0, 0, 0, 0.55);
 
   /* Lifted fills with dark text: the same five hues in the same order, read
      at the same glance, against a ground the light values would vanish into. */
@@ -129,18 +155,18 @@
   --color-esi-4-ink: #1A1024;
   --color-esi-5-ink: #1A1024;
 
-  --color-alert-bg: #33131A;
-  --color-alert-line: #6B2733;
-  --color-alert-ink: #FCA5A5;
-  --color-warn-bg: #282010;
-  --color-warn-line: #4A3A18;
+  --color-alert-bg: #38141C;
+  --color-alert-line: #772B39;
+  --color-alert-ink: #FFA8A8;
+  --color-warn-bg: #2C2211;
+  --color-warn-line: #53401A;
   --color-warn-ink: #FCD34D;
-  --color-ok-bg: #16271D;
-  --color-ok-line: #24462F;
+  --color-ok-bg: #12291E;
+  --color-ok-line: #265033;
   --color-ok-ink: #6EE7A8;
-  --color-info-bg: #1E1B31;
-  --color-info-line: #302A4C;
-  --color-info-ink: #A5B4FC;
+  --color-info-bg: #1C1B36;
+  --color-info-line: #332F58;
+  --color-info-ink: #AFB8FF;
 
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
   --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.45);
@@ -153,29 +179,40 @@
    board; an explicit light choice still beats a dark operating system. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-app: #0B0910;
-    --color-card: #1E1729;
-    --color-raised: #241C31;
-    --color-rail: #070509;
-    --color-rail-2: #1C1528;
-    --color-rail-3: #332844;
-    --color-rail-ink: #B9AECB;
-    --color-rail-ink-2: #8A7F9C;
+    --color-app: #0E0A18;
+    --color-card: #1A1327;
+    --color-raised: #251C38;
+    --color-rail: #050308;
+    --color-rail-2: #1A1229;
+    --color-rail-3: #35284C;
+    --color-rail-ink: #C3B6D8;
+    --color-rail-ink-2: #9186A6;
     --color-rail-fg: #FFFFFF;
 
-    --color-ink: #EDE7F6;
-    --color-ink-2: #B9AECB;
-    --color-ink-3: #8A809B;
+    --color-ink: #F2ECFB;
+    --color-ink-2: #C0B3D6;
+    --color-ink-3: #9084A8;
 
-    --color-line: #2E2640;
-    --color-line-2: #453A5A;
+    --color-line: #35294C;
+    --color-line-2: #4E3D70;
 
-    --color-brand: #C77DFF;
-    --color-brand-ink: #D9A6FF;
-    --color-brand-tint: #33195C;
-    --color-brand-line: #4A2E75;
-    --color-brand-fg: #1A1024;
+    /* Recessed rather than raised: a field a nurse types into should read as a
+       well in the card, and it has to stay clear of --color-raised as well. */
+    --color-field: #120D1D;
+    --color-field-line: #3B2E55;
 
+    --color-brand: #B96BFF;
+    --color-brand-ink: #DCA9FF;
+    --color-brand-tint: #2E1550;
+    --color-brand-line: #4B2A7D;
+    --color-brand-fg: #14091F;
+
+    --color-scrim: #05030A;
+    --color-nav: rgba(12, 8, 20, 0.92);
+    --color-shadow: rgba(0, 0, 0, 0.55);
+
+    /* Lifted fills with dark text: the same five hues in the same order, read
+       at the same glance, against a ground the light values would vanish into. */
     --color-esi-1: #F0908E;
     --color-esi-2: #FF6B6B;
     --color-esi-3: #FF9A47;
@@ -187,18 +224,18 @@
     --color-esi-4-ink: #1A1024;
     --color-esi-5-ink: #1A1024;
 
-    --color-alert-bg: #33131A;
-    --color-alert-line: #6B2733;
-    --color-alert-ink: #FCA5A5;
-    --color-warn-bg: #282010;
-    --color-warn-line: #4A3A18;
+    --color-alert-bg: #38141C;
+    --color-alert-line: #772B39;
+    --color-alert-ink: #FFA8A8;
+    --color-warn-bg: #2C2211;
+    --color-warn-line: #53401A;
     --color-warn-ink: #FCD34D;
-    --color-ok-bg: #16271D;
-    --color-ok-line: #24462F;
+    --color-ok-bg: #12291E;
+    --color-ok-line: #265033;
     --color-ok-ink: #6EE7A8;
-    --color-info-bg: #1E1B31;
-    --color-info-line: #302A4C;
-    --color-info-ink: #A5B4FC;
+    --color-info-bg: #1C1B36;
+    --color-info-line: #332F58;
+    --color-info-ink: #AFB8FF;
 
     --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
     --shadow-md: 0 4px 6px rgba(0, 0, 0, 0.45);
