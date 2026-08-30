@@ -93,11 +93,11 @@
    how a page ends up rendering one theme's text on the other theme's ground.
 */
 :root[data-theme="dark"] {
-  --color-app: #16111F;
+  --color-app: #0B0910;
   --color-card: #1E1729;
-  --color-raised: #271E35;
-  --color-rail: #120D1A;
-  --color-rail-2: #221A2E;
+  --color-raised: #241C31;
+  --color-rail: #070509;
+  --color-rail-2: #1C1528;
   --color-rail-3: #332844;
   --color-rail-ink: #B9AECB;
   --color-rail-ink-2: #8A7F9C;
@@ -107,20 +107,20 @@
   --color-ink-2: #B9AECB;
   --color-ink-3: #8A809B;
 
-  --color-line: #322A42;
+  --color-line: #2E2640;
   --color-line-2: #453A5A;
 
-  --color-brand: #B95CFF;
+  --color-brand: #C77DFF;
   --color-brand-ink: #D9A6FF;
-  --color-brand-tint: #2A1B3D;
-  --color-brand-line: #40305A;
+  --color-brand-tint: #33195C;
+  --color-brand-line: #4A2E75;
   --color-brand-fg: #1A1024;
 
   /* Lifted fills with dark text: the same five hues in the same order, read
      at the same glance, against a ground the light values would vanish into. */
   --color-esi-1: #F0908E;
-  --color-esi-2: #F87171;
-  --color-esi-3: #FB923C;
+  --color-esi-2: #FF6B6B;
+  --color-esi-3: #FF9A47;
   --color-esi-4: #FACC15;
   --color-esi-5: #4ADE80;
   --color-esi-1-ink: #1A1024;
@@ -129,8 +129,8 @@
   --color-esi-4-ink: #1A1024;
   --color-esi-5-ink: #1A1024;
 
-  --color-alert-bg: #2B181D;
-  --color-alert-line: #4E2630;
+  --color-alert-bg: #33131A;
+  --color-alert-line: #6B2733;
   --color-alert-ink: #FCA5A5;
   --color-warn-bg: #282010;
   --color-warn-line: #4A3A18;
@@ -153,35 +153,32 @@
    board; an explicit light choice still beats a dark operating system. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-app: #16111F;
+    --color-app: #0B0910;
     --color-card: #1E1729;
-    --color-raised: #271E35;
-    --color-rail: #120D1A;
-    --color-rail-2: #221A2E;
+    --color-raised: #241C31;
+    --color-rail: #070509;
+    --color-rail-2: #1C1528;
     --color-rail-3: #332844;
     --color-rail-ink: #B9AECB;
     --color-rail-ink-2: #8A7F9C;
     --color-rail-fg: #FFFFFF;
-  --color-rail-fg: #FFFFFF;
-  --color-rail-ink-2: #8A7F9C;
-  --color-rail-fg: #FFFFFF;
 
     --color-ink: #EDE7F6;
     --color-ink-2: #B9AECB;
     --color-ink-3: #8A809B;
 
-    --color-line: #322A42;
+    --color-line: #2E2640;
     --color-line-2: #453A5A;
 
-    --color-brand: #B95CFF;
+    --color-brand: #C77DFF;
     --color-brand-ink: #D9A6FF;
-    --color-brand-tint: #2A1B3D;
-    --color-brand-line: #40305A;
+    --color-brand-tint: #33195C;
+    --color-brand-line: #4A2E75;
     --color-brand-fg: #1A1024;
 
     --color-esi-1: #F0908E;
-    --color-esi-2: #F87171;
-    --color-esi-3: #FB923C;
+    --color-esi-2: #FF6B6B;
+    --color-esi-3: #FF9A47;
     --color-esi-4: #FACC15;
     --color-esi-5: #4ADE80;
     --color-esi-1-ink: #1A1024;
@@ -190,8 +187,8 @@
     --color-esi-4-ink: #1A1024;
     --color-esi-5-ink: #1A1024;
 
-    --color-alert-bg: #2B181D;
-    --color-alert-line: #4E2630;
+    --color-alert-bg: #33131A;
+    --color-alert-line: #6B2733;
     --color-alert-ink: #FCA5A5;
     --color-warn-bg: #282010;
     --color-warn-line: #4A3A18;
