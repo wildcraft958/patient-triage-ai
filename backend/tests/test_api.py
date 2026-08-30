@@ -561,3 +561,22 @@ def test_registry_reports_measured_latency_per_component():
     by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
     assert by_id["rules_engine"]["latency_ms"] >= 0
     assert by_id["phi_redactor"]["latency_ms"] > 0
+
+
+def test_a_retriaged_patient_keeps_a_complete_pipeline_trace():
+    """Deterioration replaces the recommendation, so it replaces the trace
+    behind it. A trace with no end-to-end figure would leave the pipeline
+    view showing a dash for the loop's own response time."""
+    client.post("/patients", json=patient("RT1", complaint_category="sepsis_concern",
+                                          vitals={"hr": 96, "rr": 18, "spo2": 97,
+                                                  "temp_c": 38.1, "sbp": 122, "pain": 6}))
+    client.post("/clock/advance", json={"minutes": 20})
+    r = client.post("/patients/RT1/vitals?source=nurse",
+                    json={"hr": 124, "rr": 24, "spo2": 93, "temp_c": 39.0,
+                          "sbp": 98, "pain": 8})
+    assert r.json()["retriaged"] is not None, "the trend should force a re-triage"
+
+    pl = client.get("/patients/RT1").json()["pipeline"]
+    assert pl["retriage"] is True
+    assert pl["total_ms"] > 0
+    assert set(pl["stage_ms"]) == {"redact", "rules", "llm", "fuse"}

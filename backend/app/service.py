@@ -133,6 +133,7 @@ class TriageService:
                 entry = self.room.entries[patient_id]
                 intake = entry.intake.model_copy(update={"vitals": vitals})
                 old_esi = entry.fused.esi
+                started = time.perf_counter()
                 fused, trace = self._run_triage(intake, use_llm=not self.surge_mode)
                 # deterioration re-triage may only hold or escalate, never downgrade
                 if fused.esi > old_esi:
@@ -143,9 +144,12 @@ class TriageService:
                             "original - deterioration never downgrades"],
                     })
                 fused = self._apply_calibration(intake, fused)
-                entry.pipeline = {**trace, "total_ms": None,
-                                  "surge_path": self.surge_mode,
-                                  "classifier_ran": False}
+                entry.pipeline = {
+                    **trace,
+                    "total_ms": round((time.perf_counter() - started) * 1000, 1),
+                    "surge_path": self.surge_mode, "classifier_ran": False,
+                    "retriage": True,
+                }
                 self.room.mark_assessed(patient_id, fused=fused)
                 self.audit.log("reassessment", patient_id, self.clock.now_min, {
                     "previous_esi": old_esi, "new_esi": fused.esi,
@@ -178,6 +182,7 @@ class TriageService:
             entry = self.room.entries.get(pid)
             if entry is None or entry.status == "in_treatment":
                 continue
+            started = time.perf_counter()
             fused, trace = self._run_triage(entry.intake, use_llm=True)
             if fused.llm is None:
                 self.audit.log("surge_enrichment", pid, self.clock.now_min,
@@ -216,8 +221,12 @@ class TriageService:
                         "standing level - enrichment never downgrades"],
                 })
             entry.fused = fused
-            entry.pipeline = {**trace, "total_ms": None, "surge_path": False,
-                              "classifier_ran": False, "deferred_enrichment": True}
+            entry.pipeline = {
+                **trace,
+                "total_ms": round((time.perf_counter() - started) * 1000, 1),
+                "surge_path": False, "classifier_ran": False,
+                "deferred_enrichment": True,
+            }
             self.audit.log("surge_enrichment", pid, self.clock.now_min, {
                 "previous_esi": old_esi, "new_esi": fused.esi,
                 "escalated": fused.esi < old_esi,

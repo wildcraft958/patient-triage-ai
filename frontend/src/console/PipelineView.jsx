@@ -201,6 +201,7 @@ export default function PipelineView({ detail, metrics }) {
               <Pill tone="brand">End to end {ms(pl.total_ms)}</Pill>
               {pl.surge_path && <Pill tone="warn">Scored under surge</Pill>}
               {pl.deferred_enrichment && <Pill tone="ok">Enriched after surge</Pill>}
+              {pl.retriage && <Pill tone="alert">Re-run on deterioration</Pill>}
               <span className="text-[11px] text-ink-3">
                 Stage timings are wall time measured around each graph node on this run.
               </span>

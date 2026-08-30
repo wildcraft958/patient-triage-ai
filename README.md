@@ -129,6 +129,18 @@ flowchart LR
     L --> CAL
 ```
 
+The console renders that same graph live for whichever patient is selected,
+with the wall time each stage actually took on that run, and marks the one
+component that sends anything off the machine.
+
+![The pipeline view: intake and redaction, the parallel fan-out to the rules engine and the reasoning path across the trust boundary, and the rejoin through fusion, calibration, safety and the audit write, each with its measured duration](docs/pipeline.png)
+
+Every component is also listed with the model identifier read from the running
+process rather than restated, so the page cannot drift from the container it
+describes.
+
+![The component registry: eight components grouped by whether they see the record as it arrived or only a de-identified copy, each with its implementation, run count and measured latency](docs/registry.png)
+
 | Component | Where | Notes |
 |---|---|---|
 | ESI v4 rules engine | `backend/app/engine/` | Deterministic, auditable, no LLM |
@@ -175,7 +187,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 204 tests
+uv run pytest                     # 205 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
