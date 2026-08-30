@@ -53,7 +53,7 @@ function Chain({ items }) {
 
 // The two chains, side by side, with the one the system followed marked.
 // A nurse asked to trust a recommendation is owed the disagreement.
-function Paths({ fused }) {
+function Paths({ fused, surge }) {
   const followed = (esi) => esi === fused.esi
 
   return (
@@ -92,10 +92,13 @@ function Paths({ fused }) {
           <h4 className="text-[10px] font-bold uppercase tracking-wide text-ink-3 mb-1.5">
             Path B · reasoning
           </h4>
-          <p className="text-xs font-bold text-ink-2 mb-1.5">Queued</p>
+          <p className="text-xs font-bold text-ink-2 mb-1.5">
+            {surge ? 'Queued' : 'Did not return'}
+          </p>
           <p className="text-[11px] leading-relaxed text-ink-2">
-            Surge fast path: the deterministic engine carries this triage on its
-            own and the reasoning pass is queued, not dropped.
+            {surge
+              ? 'Surge fast path: the deterministic engine carries this triage on its own and the reasoning pass is queued, not dropped.'
+              : 'The reasoning path did not return, so the deterministic engine carries this triage alone. That is the designed fail-safe, and it is why Path A never depends on the model.'}
           </p>
         </div>
       )}
@@ -310,7 +313,9 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
           </p>
         )}
 
-        <Section title="How this level was reached"><Paths fused={fused} /></Section>
+        <Section title="How this level was reached">
+            <Paths fused={fused} surge={detail.pipeline?.surge_path} />
+          </Section>
 
         {notes.length > 0 && (
           <Section title="Notes">

@@ -188,9 +188,12 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                              <b className="text-ink">ESI-{fused.llm.esi}</b>
                              <span className="block mt-0.5">{fused.llm.reasoning[0]}</span>
                            </>
-                         ) : (
+                         ) : pl.surge_path ? (
                            <>Surge fast path: skipped at the door and queued for deferred
                              enrichment, never dropped.</>
+                         ) : (
+                           <>Did not return. The recommendation is Path A alone, which is
+                             the designed fail-safe rather than a degraded result.</>
                          )
                        } />
               </Lane>

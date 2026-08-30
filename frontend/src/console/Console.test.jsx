@@ -102,3 +102,36 @@ describe('acting on the selected patient', () => {
       expect(screen.getByRole('button', { name: /override level/i })).toBeInTheDocument())
   })
 })
+
+describe('when Path B does not return', () => {
+  // A live panel typing a novel complaint misses the response cache. The board
+  // must not call that a surge deferral: nothing was queued, and saying so
+  // would be the one screen in the system telling a clinician something false.
+  const withoutPathB = (surge) => {
+    const base = DETAIL.A
+    return {
+      ...base,
+      fused: { ...base.fused, llm: null },
+      pipeline: { ...base.pipeline, reasoning_ran: false, surge_path: surge },
+    }
+  }
+
+  it('says the path did not return, not that it was queued', async () => {
+    api.getPatient.mockImplementation(() => Promise.resolve(withoutPathB(false)))
+    renderSignedIn(<Console />)
+    await userEvent.click(await screen.findByText('Alma Whitfield'))
+
+    const drawer = await screen.findByRole('dialog', { name: /triage recommendation/i })
+    await waitFor(() => expect(drawer).toHaveTextContent(/did not return/i))
+    expect(drawer).not.toHaveTextContent(/queued/i)
+  })
+
+  it('still calls a genuine surge deferral queued', async () => {
+    api.getPatient.mockImplementation(() => Promise.resolve(withoutPathB(true)))
+    renderSignedIn(<Console />)
+    await userEvent.click(await screen.findByText('Alma Whitfield'))
+
+    const drawer = await screen.findByRole('dialog', { name: /triage recommendation/i })
+    await waitFor(() => expect(drawer).toHaveTextContent(/queued/i))
+  })
+})
