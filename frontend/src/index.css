@@ -1,3 +1,71 @@
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+/* Self-hosted so a container with no outbound network still renders the
+   product face it was designed with. Latin subset, variable weight. */
+@font-face {
+  font-family: 'Inter var';
+  font-style: normal;
+  font-weight: 400 800;
+  font-display: swap;
+  src: url('/fonts/inter-var-latin.woff2') format('woff2');
+}
+
+/* The console design system. Clinical surfaces are neutral so that colour
+   means something when it appears: ESI level, an alert, a state change.
+   Accenture purple is the product's own voice - the mark, the active nav
+   item, primary actions - and it never lands on clinical data. */
+@theme {
+  --font-sans: 'Inter var', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --color-app: #F8FAFC;
+  --color-card: #FFFFFF;
+  --color-rail: #0F172A;
+  --color-rail-2: #1E293B;
+  --color-rail-3: #334155;
+
+  --color-ink: #0F172A;
+  --color-ink-2: #475569;
+  --color-ink-3: #94A3B8;
+
+  --color-line: #E2E8F0;
+  --color-line-2: #CBD5E1;
+
+  --color-brand: #A100FF;
+  --color-brand-ink: #6215B8;
+  --color-brand-tint: #F5EBFF;
+  --color-brand-line: #E4D6F6;
+
+  /* ESI is a convention a nurse reads before reading the number. */
+  --color-esi-1: #7F1D1D;
+  --color-esi-2: #DC2626;
+  --color-esi-3: #EA580C;
+  --color-esi-4: #CA8A04;
+  --color-esi-5: #16A34A;
+
+  --color-alert-bg: #FEF2F2;
+  --color-alert-line: #FECACA;
+  --color-alert-ink: #991B1B;
+  --color-warn-bg: #FFFBEB;
+  --color-warn-line: #FDE68A;
+  --color-warn-ink: #92400E;
+  --color-ok-bg: #F0FDF4;
+  --color-ok-line: #BBF7D0;
+  --color-ok-ink: #166534;
+  --color-info-bg: #EFF6FF;
+  --color-info-line: #BFDBFE;
+  --color-info-ink: #1E40AF;
+
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 4px 6px rgba(15, 23, 42, 0.07);
+  --shadow-lg: 0 18px 50px rgba(15, 23, 42, 0.18);
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 /* branded scrollbars, global */
@@ -44,7 +112,7 @@ html { scrollbar-width: thin; scrollbar-color: #A88BD4 #F1E9FB; }
 }
 
 body {
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter var', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   background: var(--tint-1);
   color: var(--ink);
   font-size: 13px;
