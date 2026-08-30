@@ -30,16 +30,16 @@ const TONE = {
 // extracts class names statically.
 const EDGE = 'h-0.5 w-12 self-center bg-repeat-x '
   + 'bg-[linear-gradient(90deg,var(--color-line-2)_58%,transparent_58%)] '
-  + 'bg-[length:12px_100%] motion-safe:animate-[edge-drift-x_.9s_linear_infinite]'
+  + 'bg-[length:12px_100%] motion-safe:animate-[edge-drift-x_2.4s_linear_infinite]'
 
 /** One edge between two nodes. `dart` replays whenever its key changes. */
 function Edge({ dart }) {
   return (
     <div aria-hidden="true" className={`relative shrink-0 ${EDGE}`}>
       <span key={dart}
-            className="absolute -top-0.5 size-1.5 rounded-full bg-brand opacity-0
-                       shadow-[0_0_6px_var(--color-brand)]
-                       motion-safe:animate-[edge-dart-x_.75s_ease-in_1]" />
+            className="absolute -top-1 size-2.5 rounded-full bg-brand opacity-0
+                       shadow-[0_0_10px_2px_var(--color-brand)] blur-[0.5px]
+                       motion-safe:animate-[edge-dart-x_1.6s_cubic-bezier(.4,0,.2,1)_1]" />
     </div>
   )
 }
@@ -60,19 +60,22 @@ function Branch({ join = false, dart }) {
          className="w-full h-7 overflow-visible text-line-2">
       <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5"
             vectorEffect="non-scaling-stroke" strokeDasharray="5 4"
-            className="motion-safe:animate-[branch-drift_.9s_linear_infinite]" />
+            className="motion-safe:animate-[branch-drift_2.4s_linear_infinite]" />
       <path key={dart} d={d} fill="none" stroke="var(--color-brand)" strokeWidth="2"
             vectorEffect="non-scaling-stroke" strokeDasharray="14 240"
-            className="opacity-0 motion-safe:animate-[branch-dart_.75s_ease-in_1]" />
+            className="opacity-0 motion-safe:animate-[branch-dart_1.6s_cubic-bezier(.4,0,.2,1)_1]" />
     </svg>
   )
 }
 
 function Node({ kind, name, body, ms: cost, tone = 'neutral', chip, boundary,
-                className = '' }) {
+                dart, delay = 0, className = '' }) {
   return (
-    <div className={`relative bg-card border ${TONE[tone]} rounded-md px-3 py-2.5
-                     min-w-0 ${className}`}>
+    <div key={dart}
+         style={{ animationDelay: `${delay}ms` }}
+         className={`relative bg-card border ${TONE[tone]} rounded-md px-3 py-2.5
+                     min-w-0 shadow-sm ${className}
+                     motion-safe:animate-[node-wake_1.4s_ease-out_both]`}>
       <div className="flex items-baseline justify-between gap-2">
         <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-3">{kind}</p>
         {cost !== undefined && (
@@ -167,7 +170,7 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
             <div className="p-4">
               {/* Intake and redaction, in line */}
               <div className="flex items-stretch gap-0">
-                <Node kind="Intake" name="Arrival record" className="flex-1 basis-0"
+                <Node kind="Intake" dart={dart} delay={0} name="Arrival record" className="flex-1 basis-0"
                       body={
                         <>
                           {detail.intake.chief_complaint}
@@ -179,7 +182,7 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                         </>
                       } />
                 <Edge dart={dart} />
-                <Node kind="Redaction" name="PHI removal" tone="brand"
+                <Node kind="Redaction" dart={dart} delay={260} name="PHI removal" tone="brand"
                       className="flex-1 basis-0" ms={pl.stage_ms?.redact}
                       boundary="phi"
                       body={
@@ -207,7 +210,7 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                   the join below meets both, so a short Path A and a long Path B
                   ending at different heights would leave one edge hanging. */}
               <div className="grid grid-cols-2 gap-3 items-stretch">
-                <Node kind="Path A" name="ESI rules engine" tone="ok"
+                <Node kind="Path A" dart={dart} delay={620} name="ESI rules engine" tone="ok"
                       ms={pl.stage_ms?.rules} boundary="phi"
                       body={
                         <>
@@ -215,7 +218,7 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                           <span className="block mt-0.5">{fused.rules.reasons[0]}</span>
                         </>
                       } />
-                <Node kind="Path B" name="Clinical reasoning" boundary="deidentified"
+                <Node kind="Path B" dart={dart} delay={620} name="Clinical reasoning" boundary="deidentified"
                       tone={pl.reasoning_ran ? 'ok' : 'warn'}
                       ms={pl.stage_ms?.llm}
                       chip={
@@ -252,28 +255,33 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
 
               {/* Fusion onward, in line */}
               <div className="flex items-stretch gap-0">
-                <Node kind="Fusion" name="More acute wins" ms={pl.stage_ms?.fuse}
+                <Node kind="Fusion" dart={dart} delay={980} name="More acute wins" ms={pl.stage_ms?.fuse}
                       className="flex-1 basis-0" tone={fused.paths_agree ? 'ok' : 'warn'}
                       body={
                         <>
                           <b className="text-ink">ESI-{fused.esi}</b>
                           <span className="block mt-0.5">
-                            {fused.paths_agree ? 'Both paths agreed'
-                                               : 'Paths disagreed; the more acute level was taken'}
+                            {/* fuse() reports no agreement when there was no
+                                second path at all. Calling that a disagreement
+                                says two engines reached different levels when
+                                only one of them ran. */}
+                            {!fused.llm ? 'No second level to weigh; the rules level stands'
+                              : fused.paths_agree ? 'Both paths agreed'
+                              : 'Paths disagreed; the more acute level was taken'}
                           </span>
                         </>
                       } />
                 <Edge dart={dart} />
-                <Node kind="Calibration" name="Learned escalation" className="flex-1 basis-0"
+                <Node kind="Calibration" dart={dart} delay={1120} name="Learned escalation" className="flex-1 basis-0"
                       body="Applies patterns clinicians have repeatedly escalated for this complaint and age band." />
                 <Edge dart={dart} />
-                <Node kind="Safety" name="Guards and bias" className="flex-1 basis-0"
+                <Node kind="Safety" dart={dart} delay={1240} name="Guards and bias" className="flex-1 basis-0"
                       tone={fused.clinician_flag ? 'warn' : 'neutral'}
                       body={fused.clinician_flag
                         ? 'Flagged for clinician review before the board shows it as settled.'
                         : 'Missing-vitals guard clear; age-band drift within range.'} />
                 <Edge dart={dart} />
-                <Node kind="Audit" name="Append-only write" className="flex-1 basis-0"
+                <Node kind="Audit" dart={dart} delay={1360} name="Append-only write" className="flex-1 basis-0"
                       body="Both reasoning chains, the level, the confidence and the timestamp, written as the run completed." />
               </div>
 

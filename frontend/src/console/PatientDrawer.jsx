@@ -279,8 +279,14 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
 
   const { intake, fused, status, waited_min, in_ed_min, vitals_history, decided_by } = detail
   const inTreatment = status === 'in_treatment'
-  const disagreement = fused.notes.find((n) => n.startsWith('Paths disagree'))
-  const notes = fused.notes.filter((n) => n !== disagreement && n !== 'Paths agree')
+  // A disagreement needs two paths. fuse() never writes this note without an
+  // llm result, and the banner should not be able to render one either.
+  const disagreement = fused.llm
+    && fused.notes.find((n) => n.startsWith('Paths disagree'))
+  // The fusion verdict has the banner and the pill; it is never also a note,
+  // whether or not the banner is the thing rendering it.
+  const notes = fused.notes.filter(
+    (n) => !n.startsWith('Paths disagree') && n !== 'Paths agree')
 
   return (
     <Shell {...shell}>
@@ -309,8 +315,11 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
               esi: detail.belief.indexOf(Math.max(...detail.belief)) + 1,
               p: Math.max(...detail.belief),
             }} assigned={fused.esi} pathsAgree={fused.paths_agree} confidence={fused.confidence} />
-            <Pill tone={fused.paths_agree ? 'ok' : 'warn'}>
-              {fused.paths_agree ? 'Paths agree' : 'Paths disagree'}
+            {/* Three states, not two: agreed, disagreed, and only one path
+                ran. The last is not a disagreement. */}
+            <Pill tone={!fused.llm ? 'neutral' : fused.paths_agree ? 'ok' : 'warn'}>
+              {!fused.llm ? 'Path A only'
+                : fused.paths_agree ? 'Paths agree' : 'Paths disagree'}
             </Pill>
             {fused.clinician_flag && <Pill tone="alert">Review</Pill>}
             {detail.icd10 && <Pill tone="neutral">ICD-10 {detail.icd10.code}</Pill>}

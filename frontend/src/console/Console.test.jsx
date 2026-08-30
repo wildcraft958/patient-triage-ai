@@ -272,6 +272,19 @@ describe('when Path B does not return', () => {
     expect(drawer).not.toHaveTextContent(/queued/i)
   })
 
+  it('does not call one path a disagreement', async () => {
+    // fuse() reports paths_agree false when there is no reasoning path at all,
+    // because nothing agreed. Rendering that as "Paths disagree" tells a
+    // clinician two engines reached different levels when only one ran.
+    api.getPatient.mockImplementation(() => Promise.resolve(withoutPathB(false)))
+    renderSignedIn(<Console />)
+    await userEvent.click(await screen.findByText('Alma Whitfield'))
+
+    const drawer = await screen.findByRole('dialog', { name: /triage recommendation/i })
+    await waitFor(() => expect(drawer).toHaveTextContent(/path a only/i))
+    expect(drawer).not.toHaveTextContent(/paths disagree/i)
+  })
+
   it('still calls a genuine surge deferral queued', async () => {
     api.getPatient.mockImplementation(() => Promise.resolve(withoutPathB(true)))
     renderSignedIn(<Console />)

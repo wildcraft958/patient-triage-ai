@@ -43,3 +43,20 @@ describe('the pipeline view', () => {
     expect(screen.getByText(/a de-identified copy only/i)).toBeInTheDocument()
   })
 })
+
+describe('the fusion node', () => {
+  it('does not report a disagreement when only one path ran', async () => {
+    const alone = {
+      ...DETAIL.A,
+      fused: { ...DETAIL.A.fused, llm: null, paths_agree: false },
+      pipeline: { ...DETAIL.A.pipeline, reasoning_ran: false, surge_path: false },
+    }
+    api.getRegistry.mockResolvedValue({ components: [] })
+    api.getRecentAudit.mockResolvedValue({ events: [] })
+    render(<PipelineView detail={alone} metrics={METRICS} refreshKey={0} />)
+
+    await screen.findByText(/more acute wins/i)
+    expect(screen.queryByText(/paths disagreed/i)).not.toBeInTheDocument()
+    expect(screen.getByText(/path a alone/i)).toBeInTheDocument()
+  })
+})
