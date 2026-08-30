@@ -3,6 +3,7 @@ import { ChevronDown, X } from 'lucide-react'
 import * as api from '../api'
 import { useSession } from '../auth/sessionContext'
 import { RESTRICTED } from '../auth/roles'
+import Splitter from './Splitter'
 import { BeliefPeak, Btn, EsiBadge, Initials, Pill, Sparkline } from './ui'
 import { VITAL_DEFS, fmt, fmtAge } from './format'
 
@@ -194,7 +195,8 @@ function AuditTrail({ patientId }) {
   )
 }
 
-export default function PatientDrawer({ detail, feedback, busy, onClose,
+export default function PatientDrawer({ detail, feedback, busy, onClose, width,
+                                        minWidth, maxWidth, onResize,
                                         onAccept, onOverride, onReassess, onVitals }) {
   const { can } = useSession()
 
@@ -215,9 +217,13 @@ export default function PatientDrawer({ detail, feedback, busy, onClose,
     <>
       <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} aria-hidden="true" />
       <aside role="dialog" aria-label="Triage recommendation"
-             className="fixed right-0 top-0 bottom-0 w-full max-w-[460px] bg-card z-50
-                        border-l border-line shadow-lg overflow-y-auto
+             style={{ width }}
+             className="fixed right-0 top-0 bottom-0 max-w-full bg-card z-50 flex
+                        border-l border-line shadow-lg
                         motion-safe:animate-[drawer_.16s_ease-out]">
+        <Splitter value={width} min={minWidth} max={maxWidth} side="right"
+                  label="Patient record width" onChange={onResize} />
+        <div className="flex-1 min-w-0 overflow-y-auto">
         <header className="sticky top-0 bg-card border-b border-line px-4 py-3 z-10">
           <div className="flex items-start gap-3">
             <Initials name={intake.display_name} id={intake.patient_id} esi={fused.esi} />
@@ -329,7 +335,10 @@ export default function PatientDrawer({ detail, feedback, busy, onClose,
           </Section>
         )}
 
-        <Section title="Record"><AuditTrail key={intake.patient_id} patientId={intake.patient_id} /></Section>
+          <Section title="Record">
+            <AuditTrail key={intake.patient_id} patientId={intake.patient_id} />
+          </Section>
+        </div>
       </aside>
     </>
   )

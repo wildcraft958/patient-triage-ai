@@ -3,6 +3,8 @@ import * as api from '../api'
 import SignIn from '../auth/SignIn'
 import { useSession } from '../auth/sessionContext'
 import AlertBand from './AlertBand'
+import ChunkBoundary from './ChunkBoundary'
+import { clearStaleChunkFlag, reloadOnStaleChunk } from './chunkRecovery'
 import EmptyBoard from './EmptyBoard'
 import IntakeForm from './IntakeForm'
 import MonitorBoard from './MonitorBoard'
@@ -13,13 +15,16 @@ import PipelineView from './PipelineView'
 import Registry from './Registry'
 import Settings from './Settings'
 import Sidebar from './Sidebar'
+import Splitter from './Splitter'
 import StatusBar from './StatusBar'
 import ToastStack from './Toast'
+import { usePaneWidth } from './usePaneWidth'
 import VitalsModal from './VitalsModal'
 
-// Analytics is the only view that pulls in a charting library. Splitting
-// it keeps the board, which is what a nurse opens, off that weight.
-const Analytics = lazy(() => import('./Analytics'))
+// Analytics is the only view that pulls in a charting library. Splitting it
+// keeps the board, which is what a nurse opens, off that weight, at the cost
+// of a chunk that can go missing under a deploy - hence the recovery.
+const Analytics = lazy(() => import('./Analytics').catch(reloadOnStaleChunk))
 
 const TOAST_MS = 5200
 // Live mode advances the department clock one minute every four seconds. It
@@ -30,6 +35,11 @@ const TOAST_MS = 5200
 const LIVE_TICK_MS = 4000
 const PULSE_MS = 2000
 const RAIL_KEY = 'pt.rail.collapsed'
+const RAIL_MIN = 168
+const RAIL_MAX = 300
+const RAIL_COLLAPSED = 60
+const DRAWER_MIN = 360
+const DRAWER_MAX = 760
 
 export default function Console() {
   const { user, can } = useSession()
@@ -56,6 +66,8 @@ export default function Console() {
   const [collapsed, setCollapsed] = useState(() => {
     try { return sessionStorage.getItem(RAIL_KEY) === '1' } catch { return false }
   })
+  const [railWidth, setRailWidth] = usePaneWidth('pt.rail.width', 220)
+  const [drawerWidth, setDrawerWidth] = usePaneWidth('pt.drawer.width', 460)
 
   const selectedRef = useRef(null)
   const toastSeq = useRef(0)
@@ -87,6 +99,9 @@ export default function Console() {
       a.kind === 'WAIT_BREACH' ? 'Wait limit exceeded' : 'Patient deteriorating',
       a.message || a.reasons.join('; '), 'alarm'))
   }, [toast])
+
+  // the app rendered, so whatever chunk failed last time is behind us
+  useEffect(() => { clearStaleChunkFlag() }, [])
 
   // reload continuity: a refresh mid-shift lands back on a populated board
   useEffect(() => {
@@ -274,8 +289,15 @@ export default function Console() {
 
   return (
     <div className="h-screen flex bg-app text-ink">
-      <Sidebar view={view} onView={onView} counts={counts} collapsed={collapsed}
-               onCollapse={() => setCollapsed((c) => !c)} />
+      <div className="shrink-0 transition-[width] duration-150"
+           style={{ width: collapsed ? RAIL_COLLAPSED : railWidth }}>
+        <Sidebar view={view} onView={onView} counts={counts} collapsed={collapsed}
+                 onCollapse={() => setCollapsed((c) => !c)} />
+      </div>
+      {!collapsed && (
+        <Splitter value={railWidth} min={RAIL_MIN} max={RAIL_MAX} side="left"
+                  label="Navigation width" onChange={setRailWidth} />
+      )}
 
       <div className="flex-1 flex flex-col min-w-0">
         <StatusBar state={state} alerts={openAlerts} live={live} busy={busy}
@@ -307,9 +329,11 @@ export default function Console() {
           {view === 'pipeline' && <PipelineView detail={detail} metrics={metrics} />}
           {view === 'registry' && <Registry refreshKey={refreshKey} />}
           {view === 'analytics' && (
-            <Suspense fallback={<p className="text-xs text-ink-3 p-4">Loading analytics.</p>}>
-              <Analytics metrics={metrics} rows={[...queue, ...inCare]} refreshKey={refreshKey} />
-            </Suspense>
+            <ChunkBoundary>
+              <Suspense fallback={<p className="text-xs text-ink-3 p-4">Loading analytics.</p>}>
+                <Analytics metrics={metrics} rows={[...queue, ...inCare]} refreshKey={refreshKey} />
+              </Suspense>
+            </ChunkBoundary>
           )}
           {view === 'settings' && (
             <Settings state={state} remaining={remaining} busy={busy} auto={auto}
@@ -322,6 +346,8 @@ export default function Console() {
 
       {drawerOpen && detail && (
         <PatientDrawer detail={detail} feedback={feedback} busy={busy}
+                       width={drawerWidth} minWidth={DRAWER_MIN} maxWidth={DRAWER_MAX}
+                       onResize={setDrawerWidth}
                        onClose={() => setDrawerOpen(false)} onAccept={onAccept}
                        onOverride={() => setShowOverride(true)} onReassess={onReassess}
                        onVitals={() => setShowVitals(true)} />
