@@ -10,7 +10,7 @@ function Badge({ count, tone }) {
   if (!count) return null
   return (
     <span className={`ml-auto text-[10px] font-bold rounded-full px-1.5 py-px tabular-nums
-                      ${tone === 'alert' ? 'bg-esi-2 text-esi-ink' : 'bg-rail-3 text-rail-ink'}`}>
+                      ${tone === 'alert' ? 'bg-esi-2 text-esi-2-ink' : 'bg-rail-3 text-rail-ink'}`}>
       {count}
     </span>
   )
@@ -28,7 +28,7 @@ function IconButton({ icon: Icon, label, onClick }) {
 }
 
 export default function Sidebar({ view, onView, counts, collapsed, onCollapse }) {
-  const { user, role, signOut } = useSession()
+  const { user, role, signOut, can } = useSession()
   const { dark, toggle } = useTheme()
   const navigate = useNavigate()
   const wide = !collapsed
@@ -45,10 +45,12 @@ export default function Sidebar({ view, onView, counts, collapsed, onCollapse })
             PatientTriage<span className="text-brand">.ai</span>
           </span>
         )}
-        <span className={wide ? 'ml-auto' : 'sr-only'}>
-          <IconButton icon={PanelLeft} label="Collapse the navigation"
-                      onClick={onCollapse} />
-        </span>
+        {wide && (
+          <span className="ml-auto">
+            <IconButton icon={PanelLeft} label="Collapse the navigation"
+                        onClick={onCollapse} />
+          </span>
+        )}
       </div>
 
       {!wide && (
@@ -58,7 +60,8 @@ export default function Sidebar({ view, onView, counts, collapsed, onCollapse })
       )}
 
       <ul className="flex-1 py-3 space-y-0.5 overflow-y-auto overflow-x-hidden">
-        {VIEWS.map(({ id, label, icon: Icon }) => {
+        {VIEWS.filter(({ id }) => id !== 'settings' || can.settings)
+              .map(({ id, label, icon: Icon }) => {
           const on = view === id
           return (
             <li key={id}>

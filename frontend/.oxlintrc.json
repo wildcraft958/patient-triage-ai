@@ -1,8 +1,12 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "oxc"],
+  "plugins": ["react", "oxc", "jsx-a11y"],
   "rules": {
     "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
+    "react/only-export-components": ["warn", { "allowConstantExport": true }],
+    // The rule wants <hr> for role="separator" and <output> for role="status".
+    // A resize handle has to take focus, which <hr> cannot, and role="status"
+    // on a div is the live region pattern <output> was never meant to replace.
+    "jsx-a11y/prefer-tag-over-role": "off"
   }
 }

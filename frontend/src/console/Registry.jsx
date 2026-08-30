@@ -37,6 +37,7 @@ function Component({ c }) {
   return (
     <article className="border border-line rounded-md bg-card">
       <button onClick={() => setOpen(!open)} aria-expanded={open}
+              aria-label={`${open ? 'Hide' : 'Show'} details for ${c.name}`}
               className="w-full text-left px-4 py-3.5 cursor-pointer">
         <div className="flex items-start gap-3">
           <span className="w-10 h-10 shrink-0 rounded-md bg-brand-tint border border-brand-line

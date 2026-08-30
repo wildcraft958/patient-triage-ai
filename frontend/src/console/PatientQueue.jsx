@@ -31,10 +31,15 @@ function Row({ row, rank, selected, pulsing, onSelect }) {
                     ${selected ? 'bg-brand-tint' : 'hover:bg-app'}`}>
       <td className="pl-4 pr-1 py-2.5 text-[11px] text-ink-3 tabular-nums w-8">{rank}</td>
       <td className="py-2.5 pr-3">
-        <div className="flex items-center gap-2.5">
+        {/* A real button, not just a row click: opening a record is the most
+            used action on this board and it has to have a keyboard stop. */}
+        <button onClick={(e) => { e.stopPropagation(); onSelect(row.patient_id) }}
+                className="flex items-center gap-2.5 text-left w-full cursor-pointer
+                           rounded-sm focus-visible:outline-2 focus-visible:outline-brand
+                           focus-visible:outline-offset-2">
           <Initials name={row.display_name} id={row.patient_id} esi={row.esi} />
-          <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-ink truncate">
+          <span className="min-w-0">
+            <span className="block text-[13px] font-semibold text-ink truncate">
               {row.display_name ?? row.patient_id}
               <span className="ml-1.5 text-[11px] font-normal text-ink-3 tabular-nums">
                 {fmtAge(row.age_years, row.age_months)}
@@ -42,12 +47,12 @@ function Row({ row, rank, selected, pulsing, onSelect }) {
               <span className="ml-1.5 text-[10px] font-normal text-ink-3">
                 {row.patient_id}
               </span>
-            </p>
-            <p className="text-[11px] text-ink-2 truncate max-w-[34ch]">
+            </span>
+            <span className="block text-[11px] text-ink-2 truncate max-w-[34ch]">
               {row.chief_complaint}
-            </p>
-          </div>
-        </div>
+            </span>
+          </span>
+        </button>
       </td>
       <td className="py-2.5 pr-3"><EsiBadge esi={row.esi} /></td>
       <td className="py-2.5 pr-3">

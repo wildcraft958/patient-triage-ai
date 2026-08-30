@@ -63,20 +63,23 @@ export default function MonitorBoard({ rows, selectedId, busy, onSelect, onReass
                                   ${urgent ? 'bg-alert-bg' : ''}
                                   ${row.patient_id === selectedId ? 'bg-brand-tint' : 'hover:bg-app'}`}>
                     <td className="pl-4 pr-3 py-2.5">
-                      <div className="flex items-center gap-2.5">
+                      <button onClick={(e) => { e.stopPropagation(); onSelect(row.patient_id) }}
+                              className="flex items-center gap-2.5 text-left w-full cursor-pointer
+                                         rounded-sm focus-visible:outline-2
+                                         focus-visible:outline-brand focus-visible:outline-offset-2">
                         <Initials name={row.display_name} id={row.patient_id} esi={row.esi} />
-                        <div className="min-w-0">
-                          <p className="text-[13px] font-semibold text-ink truncate">
+                        <span className="min-w-0">
+                          <span className="block text-[13px] font-semibold text-ink truncate">
                             {row.display_name ?? row.patient_id}
                             <span className="ml-1.5 text-[11px] font-normal text-ink-3 tabular-nums">
                               {fmtAge(row.age_years, row.age_months)}
                             </span>
-                          </p>
-                          <p className="text-[11px] text-ink-2">
+                          </span>
+                          <span className="block text-[11px] text-ink-2">
                             {row.category.replace(/_/g, ' ')}
-                          </p>
-                        </div>
-                      </div>
+                          </span>
+                        </span>
+                      </button>
                     </td>
                     <td className="pr-3 py-2.5"><EsiBadge esi={row.esi} /></td>
                     <td className="pr-3 py-2.5 text-xs text-ink tabular-nums">
