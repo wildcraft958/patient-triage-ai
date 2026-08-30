@@ -74,3 +74,27 @@ export const SHIFTS = [
         + 'reasoning pass is queued rather than dropped. Monitoring never stops.',
   },
 ]
+
+// Which component produced each kind of audit event. The codes themselves are
+// published by GET /system/registry; this only says which one owns which
+// event, so the activity log and the registry cannot drift apart.
+export const EVENT_COMPONENT = {
+  triage: ['FUS', (p) => `Triage complete, ESI-${p.esi} at ${p.confidence} confidence`
+                        + (p.paths_agree ? ', paths agreed' : ', paths disagreed')],
+  alert: ['MON', (p) => `${p.kind === 'WAIT_BREACH' ? 'Safe wait exceeded' : 'Deterioration detected'}`
+                        + `: ${(p.reasons || []).join('; ')}`],
+  reassessment: ['MON', (p) => `Automatic re-triage, ESI-${p.previous_esi} to ESI-${p.new_esi} (${p.trigger})`],
+  surge_enrichment: ['LLM', (p) => (p.outcome
+    ? `Deferred reasoning: ${p.outcome.replace(/_/g, ' ')}`
+    : `Deferred reasoning attached, ESI-${p.previous_esi} to ESI-${p.new_esi}`)],
+  override: ['RN', (p) => `${p.clinician_id} set ESI-${p.new_esi} over ESI-${p.original_esi}: "${p.reason}"`],
+  override_safety_flag: ['SAF', (p) => `High-risk downgrade flagged and acknowledged by ${p.clinician_id}`],
+  acceptance: ['RN', (p) => `${p.clinician_id} accepted ESI-${p.esi}`],
+  reassessment_check: ['RN', (p) => `${p.clinician_id} reassessed at the bedside after ${p.waited_min} min`],
+  alert_ack: ['RN', (p) => `${p.clinician_id} acknowledged a ${p.kind} alert`],
+  reward: ['CAL', (p) => `Reward ${p.reward} recorded${p.under_triage ? ', under-triage signal' : ''}`],
+}
+
+// Codes that are not components: a clinician is a person, not an agent, and
+// the log should never let the two look alike.
+export const HUMAN_CODES = new Set(['RN'])

@@ -580,3 +580,18 @@ def test_a_retriaged_patient_keeps_a_complete_pipeline_trace():
     assert pl["retriage"] is True
     assert pl["total_ms"] > 0
     assert set(pl["stage_ms"]) == {"redact", "rules", "llm", "fuse"}
+
+
+def test_every_component_publishes_a_stable_short_code():
+    """The pipeline activity log labels each event with the component that
+    produced it. Those codes come from the registry rather than being
+    invented in the console, so the two screens cannot name things
+    differently."""
+    components = client.get("/system/registry").json()["components"]
+    codes = [c["code"] for c in components]
+    assert len(set(codes)) == len(codes), f"codes must be unique: {codes}"
+    assert all(c.isupper() and 2 <= len(c) <= 4 for c in codes), codes
+    by_id = {c["id"]: c["code"] for c in components}
+    assert by_id["phi_redactor"] == "RDX"
+    assert by_id["rules_engine"] == "ESI"
+    assert by_id["clinical_reasoning"] == "LLM"

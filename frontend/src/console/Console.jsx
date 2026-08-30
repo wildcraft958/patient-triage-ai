@@ -304,7 +304,8 @@ export default function Console() {
                    remaining={remaining ?? 0} onLive={() => setLive((l) => !l)}
                    onStep={onStep} onBell={() => onView('monitor')} />
 
-        <main className="flex-1 overflow-y-auto p-3 space-y-3">
+        <main className={`flex-1 min-h-0 p-3 ${view === 'pipeline'
+                          ? 'flex flex-col' : 'overflow-y-auto space-y-3'}`}>
           {!started && view !== 'settings' && (
             <EmptyBoard busy={busy} onLoad={onLoad} />
           )}
@@ -326,7 +327,9 @@ export default function Console() {
                           onSelect={onSelect} onReassess={onReassess} />
           )}
 
-          {view === 'pipeline' && <PipelineView detail={detail} metrics={metrics} />}
+          {view === 'pipeline' && (
+            <PipelineView detail={detail} metrics={metrics} refreshKey={refreshKey} />
+          )}
           {view === 'registry' && <Registry refreshKey={refreshKey} />}
           {view === 'analytics' && (
             <ChunkBoundary>

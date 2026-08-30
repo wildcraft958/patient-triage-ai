@@ -1,4 +1,7 @@
 import { ArrowRight, CornerDownRight, Lock, Send } from 'lucide-react'
+import ActivityLog from './ActivityLog'
+import Splitter from './Splitter'
+import { usePaneWidth } from './usePaneWidth'
 import { Card, CardHead, Empty, Pill } from './ui'
 import { fmt } from './format'
 
@@ -73,14 +76,17 @@ function ShiftStrip({ metrics }) {
   )
 }
 
-export default function PipelineView({ detail, metrics }) {
+export default function PipelineView({ detail, metrics, refreshKey }) {
   const pl = detail?.pipeline
   const fused = detail?.fused
+  const [logWidth, setLogWidth] = usePaneWidth('pt.pipelog.width', 380)
 
   return (
-    <div className="space-y-3">
+    <div className="h-full flex flex-col gap-3 min-h-0">
       <ShiftStrip metrics={metrics} />
 
+      <div className="flex-1 flex min-h-0 gap-0">
+      <div className="flex-1 min-w-0 overflow-y-auto">
       <Card>
         <CardHead
           title="Intake pipeline"
@@ -209,6 +215,16 @@ export default function PipelineView({ detail, metrics }) {
           </div>
         )}
       </Card>
+      </div>
+
+      <Splitter value={logWidth} min={280} max={620} side="right"
+                label="Activity log width" onChange={setLogWidth}
+                className="mx-2" />
+
+      <div className="shrink-0 min-h-0" style={{ width: logWidth }}>
+        <ActivityLog refreshKey={refreshKey} />
+      </div>
+      </div>
     </div>
   )
 }

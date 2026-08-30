@@ -5,6 +5,10 @@ service already keeps. A registry that hand-wrote its own model names would
 drift from the container the first time a default changed, which is exactly
 the failure this file exists to make impossible.
 
+Each component carries a short code. The pipeline activity log labels every
+event with one, and it reads them from here rather than keeping its own copy,
+so the two screens can never name the same component differently.
+
 The organising idea is the trust boundary. Components upstream of redaction
 see the patient as they arrived; everything downstream sees a de-identified
 copy. The console draws the same split as a diagram; this is it as a list.
@@ -43,6 +47,7 @@ def snapshot(service) -> dict:
     components = [
         {
             "id": "intake_classifier",
+            "code": "CLS",
             "name": "Intake classifier",
             "kind": "learned",
             "stage": "Intake",
@@ -65,6 +70,7 @@ def snapshot(service) -> dict:
         },
         {
             "id": "phi_redactor",
+            "code": "RDX",
             "name": "PHI redaction",
             "kind": "deterministic",
             "stage": "Redaction",
@@ -83,6 +89,7 @@ def snapshot(service) -> dict:
         },
         {
             "id": "rules_engine",
+            "code": "ESI",
             "name": "ESI rules engine",
             "kind": "deterministic",
             "stage": "Path A",
@@ -101,6 +108,7 @@ def snapshot(service) -> dict:
         },
         {
             "id": "clinical_reasoning",
+            "code": "LLM",
             "name": "Clinical reasoning",
             "kind": "language model",
             "stage": "Path B",
@@ -119,6 +127,7 @@ def snapshot(service) -> dict:
         },
         {
             "id": "fusion_policy",
+            "code": "FUS",
             "name": "Fusion policy",
             "kind": "policy",
             "stage": "Fusion",
@@ -137,6 +146,7 @@ def snapshot(service) -> dict:
         },
         {
             "id": "calibration_loop",
+            "code": "CAL",
             "name": "Learned calibration",
             "kind": "learned",
             "stage": "Calibration",
@@ -157,6 +167,7 @@ def snapshot(service) -> dict:
         },
         {
             "id": "acuity_monitor",
+            "code": "MON",
             "name": "Waiting room monitor",
             "kind": "policy",
             "stage": "Monitoring",
@@ -175,6 +186,7 @@ def snapshot(service) -> dict:
         },
         {
             "id": "safety_monitor",
+            "code": "SAF",
             "name": "Safety and bias monitor",
             "kind": "policy",
             "stage": "Safety",
