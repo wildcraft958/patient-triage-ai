@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { useDialog } from './useDialog'
-import { PencilLine } from 'lucide-react'
+import { Mic, PencilLine } from 'lucide-react'
 import ComplaintComposer from './ComplaintComposer'
 import { Btn } from './ui'
+import { categoryLabel } from './format'
 
 const CATEGORIES = ['other', 'chest_pain', 'breathing_difficulty', 'stroke_signs',
   'trauma_major', 'sepsis_concern', 'allergic_reaction', 'pregnancy_complication',
@@ -28,6 +29,7 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
   const [severity, setSeverity] = useState('')
   const [error, setError] = useState('')
   const [composing, setComposing] = useState(false)
+  const [dictating, setDictating] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const submit = async () => {
@@ -86,8 +88,8 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
           <label className={FIELD}><span>Category</span>
             <select className={INPUT} value={f.complaint_category}
                     onChange={(e) => setF({ ...f, complaint_category: e.target.value })}>
-              {CATEGORIES.map((c) => <option key={c} value={c}>
-                {c === 'other' ? 'auto (from complaint text)' : c}</option>)}
+              {CATEGORIES.map((c) =>
+                <option key={c} value={c}>{categoryLabel(c)}</option>)}
             </select></label>
           <label className={FIELD}><span>Responsiveness (AVPU)</span>
             <select className={INPUT} value={f.responsiveness}
@@ -97,18 +99,40 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
             </select></label>
         </div>
         <div className="mt-5 mb-2 pb-1.5 border-b border-line text-[11px] font-bold uppercase tracking-[0.1em] text-brand-ink">Chief complaint, in the patient's words</div>
-        <button type="button" onClick={() => setComposing(true)}
-                className={`w-full text-left rounded-sm border px-3 py-2.5 cursor-pointer
-                            transition-colors flex items-start gap-2.5
-                            ${f.chief_complaint
-                              ? 'border-line bg-card hover:border-brand'
-                              : 'border-dashed border-line-2 bg-app hover:border-brand'}`}>
-          <PencilLine size={14} className="text-brand shrink-0 mt-0.5" aria-hidden="true" />
-          <span className={`text-[12.5px] leading-relaxed
-                            ${f.chief_complaint ? 'text-ink' : 'text-ink-3'}`}>
-            {f.chief_complaint || 'What brought you in today? Click to write it down.'}
-          </span>
-        </button>
+        <div className="flex items-start gap-2">
+          <button type="button" onClick={() => setComposing(true)}
+                  className={`flex-1 min-w-0 text-left rounded-sm border px-3 py-2.5
+                              cursor-pointer transition-colors flex items-start gap-2.5
+                              ${f.chief_complaint
+                                ? 'border-line bg-card hover:border-brand'
+                                : 'border-dashed border-line-2 bg-app hover:border-brand'}`}>
+            <PencilLine size={14} className="text-brand shrink-0 mt-0.5" aria-hidden="true" />
+            <span className={`text-[12.5px] leading-relaxed
+                              ${f.chief_complaint ? 'text-ink' : 'text-ink-3'}`}>
+              {f.chief_complaint || 'What brought you in today? Click to write it down.'}
+            </span>
+          </button>
+          {/* The control is here because triage is spoken before it is typed.
+              It does not pretend to work: nothing records, and saying so on
+              the click is better than a dead button or a promise on a slide. */}
+          <button type="button" onClick={() => setDictating((d) => !d)}
+                  aria-label="Dictate the complaint" aria-expanded={dictating}
+                  className="shrink-0 rounded-sm border border-line-2 bg-card p-2.5
+                             text-ink-2 cursor-pointer transition-colors
+                             hover:border-brand hover:text-brand-ink
+                             focus-visible:outline-2 focus-visible:outline-brand
+                             focus-visible:outline-offset-1">
+            <Mic size={15} aria-hidden="true" />
+          </button>
+        </div>
+        {dictating && (
+          <p role="status" className="mt-2 rounded-sm border border-brand-line
+                                      bg-brand-tint px-3 py-2 text-[11.5px]
+                                      leading-relaxed text-ink-2">
+            <b className="text-ink">Voice dictation is coming.</b> It is not
+            recording yet, so type the complaint for now.
+          </p>
+        )}
         <div className="mt-5 mb-2 pb-1.5 border-b border-line text-[11px] font-bold uppercase tracking-[0.1em] text-brand-ink">Vitals (leave blank if not yet recorded)</div>
         <div className="grid grid-cols-3 gap-2.5">
           {vitField('hr', 'HR')}{vitField('rr', 'RR')}{vitField('spo2', 'SpO2 %')}
