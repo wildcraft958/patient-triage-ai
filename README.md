@@ -200,7 +200,7 @@ uv run uvicorn app.main:app --port 8000
 # 4. Frontend (new terminal)
 cd frontend
 npm install
-npm test                          # 63 tests
+npm test                          # 65 tests
 npm run dev                       # http://localhost:5173
 
 # 5. localhost:5173 opens the product site; "Launch console" (or /console)
