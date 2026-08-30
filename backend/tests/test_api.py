@@ -479,3 +479,73 @@ def test_profile_endpoint_publishes_the_configuration_driving_the_monitor():
     assert body["surge_queue_threshold"] == 40
     assert body["treatment_bays"] == 18
     assert body["deterioration"]["hr_rise_pct"] == 15
+
+
+# --- pipeline trace and component registry ------------------------------
+
+
+def test_patient_detail_carries_the_pipeline_that_produced_the_recommendation():
+    client.post("/patients", json=patient("PIPE1"))
+    pl = client.get("/patients/PIPE1").json()["pipeline"]
+    assert set(pl["stage_ms"]) == {"redact", "rules", "llm", "fuse"}
+    assert pl["reasoning_ran"] is True
+    assert pl["total_ms"] > 0
+    assert pl["surge_path"] is False
+    assert pl["phi_entities_removed"] == []
+
+
+def test_the_pipeline_names_the_phi_classes_redaction_removed():
+    """The privacy claim stops being a promise and becomes a reading on the
+    screen: this patient, these entity classes, removed before Path B ran."""
+    client.post("/patients", json=patient(
+        "PIPE2",
+        chief_complaint="chest pain since her son Rajesh Kumar drove her in"))
+    pl = client.get("/patients/PIPE2").json()["pipeline"]
+    assert "PERSON" in pl["phi_entities_removed"]
+
+
+def test_the_surge_fast_path_is_visible_in_the_trace():
+    client.post("/surge", json={"forced": True})
+    client.post("/patients", json=patient("PIPE3"))
+    pl = client.get("/patients/PIPE3").json()["pipeline"]
+    assert pl["surge_path"] is True
+    assert pl["reasoning_ran"] is False
+
+
+def test_registry_reports_the_models_the_container_is_actually_running():
+    from app.config import settings
+    by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
+    assert settings.spacy_model in by_id["phi_redactor"]["implementation"]
+    assert settings.llm_model in by_id["clinical_reasoning"]["implementation"]
+    # the boundary split is the whole point of publishing the registry
+    assert by_id["phi_redactor"]["boundary"] == "phi"
+    assert by_id["clinical_reasoning"]["boundary"] == "deidentified"
+    assert by_id["rules_engine"]["boundary"] == "phi"
+
+
+def test_registry_invocation_counts_track_the_shift():
+    def counts():
+        return {c["id"]: c["invocations"]
+                for c in client.get("/system/registry").json()["components"]}
+
+    before = counts()
+    client.post("/patients", json=patient("REG1"))
+    after = counts()
+    for component in ("phi_redactor", "rules_engine", "clinical_reasoning",
+                      "fusion_policy", "safety_monitor"):
+        assert after[component] == before[component] + 1, component
+    assert after["intake_classifier"] == before["intake_classifier"], \
+        "a supplied category means the classifier never ran"
+
+
+def test_registry_counts_the_classifier_only_when_it_runs():
+    client.post("/patients", json=patient("REG2", complaint_category="other"))
+    by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
+    assert by_id["intake_classifier"]["invocations"] == 1
+
+
+def test_registry_reports_measured_latency_per_component():
+    client.post("/patients", json=patient("REG3"))
+    by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
+    assert by_id["rules_engine"]["latency_ms"] >= 0
+    assert by_id["phi_redactor"]["latency_ms"] > 0

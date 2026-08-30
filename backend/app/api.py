@@ -192,6 +192,14 @@ def benchmark():
     return {"benchmarks": out}
 
 
+@router.get("/system/registry")
+def system_registry():
+    """Every component in the pipeline, what it decides, what it is allowed
+    to see, and how often it has run this shift."""
+    from app.registry import snapshot
+    return snapshot(get_service())
+
+
 @router.get("/profile")
 def profile():
     """The department configuration the monitor is actually reading. One YAML
@@ -241,6 +249,7 @@ def patient_detail(patient_id: str):
         "in_ed_min": round(svc.clock.now_min - e.triaged_at_min, 1),
         "alerts": e.alerts,
         "belief": [round(p, 3) for p in e.belief],
+        "pipeline": e.pipeline,
         "icd10": code_for(e.intake.complaint_category),
         "vitals_history": [
             {"at_min": t, "vitals": v} for t, v in e.vitals_history

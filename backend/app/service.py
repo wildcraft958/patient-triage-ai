@@ -61,6 +61,8 @@ class TriageService:
         self.bias = BiasMonitor()
         self._enrichment_queue: list[str] = []
         self._latencies_ms: list[float] = []
+        self._classifier_runs = 0
+        self._calibration_escalations = 0
 
     # --- surge ---
 
@@ -81,14 +83,17 @@ class TriageService:
         # run the intake classifier when no usable category was supplied:
         # "other" is the console's auto-detect default, and an unrecognized
         # string (an integration typo) must never silently degrade a patient
-        if intake.complaint_category == "other" or intake.complaint_category not in KNOWN_CATEGORIES:
+        classifier_ran = (intake.complaint_category == "other"
+                          or intake.complaint_category not in KNOWN_CATEGORIES)
+        if classifier_ran:
+            self._classifier_runs += 1
             detected = classify_category(intake.chief_complaint)
             if detected != intake.complaint_category:
                 intake = intake.model_copy(update={"complaint_category": detected})
                 auto_note = (f"Complaint auto-categorized as {detected} "
                              f"from the chief complaint text")
         surge = self.surge_mode
-        fused = self._run_triage(intake, use_llm=use_llm and not surge)
+        fused, trace = self._run_triage(intake, use_llm=use_llm and not surge)
         if auto_note:
             fused = fused.model_copy(update={"notes": [auto_note] + fused.notes})
         if surge and use_llm:
@@ -100,7 +105,9 @@ class TriageService:
         latency_ms = round((time.perf_counter() - started) * 1000, 1)
         self._latencies_ms.append(latency_ms)
         self.bias.record(intake, fused.esi)
-        self.room.add(intake, fused)
+        trace |= {"total_ms": latency_ms, "surge_path": surge,
+                  "classifier_ran": classifier_ran}
+        self.room.add(intake, fused, pipeline=trace)
         self.audit.log("triage", intake.patient_id, self.clock.now_min, {
             "esi": fused.esi, "route": fused.route, "confidence": fused.confidence,
             "paths_agree": fused.paths_agree, "clinician_flag": fused.clinician_flag,
@@ -126,7 +133,7 @@ class TriageService:
                 entry = self.room.entries[patient_id]
                 intake = entry.intake.model_copy(update={"vitals": vitals})
                 old_esi = entry.fused.esi
-                fused = self._run_triage(intake, use_llm=not self.surge_mode)
+                fused, trace = self._run_triage(intake, use_llm=not self.surge_mode)
                 # deterioration re-triage may only hold or escalate, never downgrade
                 if fused.esi > old_esi:
                     fused = fused.model_copy(update={
@@ -136,6 +143,9 @@ class TriageService:
                             "original - deterioration never downgrades"],
                     })
                 fused = self._apply_calibration(intake, fused)
+                entry.pipeline = {**trace, "total_ms": None,
+                                  "surge_path": self.surge_mode,
+                                  "classifier_ran": False}
                 self.room.mark_assessed(patient_id, fused=fused)
                 self.audit.log("reassessment", patient_id, self.clock.now_min, {
                     "previous_esi": old_esi, "new_esi": fused.esi,
@@ -168,7 +178,7 @@ class TriageService:
             entry = self.room.entries.get(pid)
             if entry is None or entry.status == "in_treatment":
                 continue
-            fused = self._run_triage(entry.intake, use_llm=True)
+            fused, trace = self._run_triage(entry.intake, use_llm=True)
             if fused.llm is None:
                 self.audit.log("surge_enrichment", pid, self.clock.now_min,
                                {"outcome": "llm_unavailable"})
@@ -206,6 +216,8 @@ class TriageService:
                         "standing level - enrichment never downgrades"],
                 })
             entry.fused = fused
+            entry.pipeline = {**trace, "total_ms": None, "surge_path": False,
+                              "classifier_ran": False, "deferred_enrichment": True}
             self.audit.log("surge_enrichment", pid, self.clock.now_min, {
                 "previous_esi": old_esi, "new_esi": fused.esi,
                 "escalated": fused.esi < old_esi,
@@ -431,14 +443,24 @@ class TriageService:
 
     # --- internals ---
 
-    def _run_triage(self, intake: PatientIntake, use_llm: bool) -> FusedResult:
+    def _run_triage(self, intake: PatientIntake,
+                    use_llm: bool) -> tuple[FusedResult, dict]:
+        """The recommendation and the trace of what produced it. The trace is
+        what the pipeline view renders: measured time per stage and the PHI
+        classes redaction actually removed for this patient."""
         state = triage(intake, use_llm=use_llm, transport=self.transport)
-        return state["fused"]
+        trace = {
+            "stage_ms": state["stage_ms"],
+            "phi_entities_removed": state["phi_entities_removed"],
+            "reasoning_ran": state["fused"].llm is not None,
+        }
+        return state["fused"], trace
 
     def _apply_calibration(self, intake: PatientIntake, fused: FusedResult) -> FusedResult:
         band = age_band(intake)
         adjusted = self.calibration.apply(intake.complaint_category, band, fused.esi)
         if adjusted != fused.esi:
+            self._calibration_escalations += 1
             return fused.model_copy(update={
                 "esi": adjusted, "route": ROUTES[adjusted],
                 "notes": fused.notes + [

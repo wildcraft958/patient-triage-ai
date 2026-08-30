@@ -8,7 +8,9 @@ The two paths fan out in parallel after redaction; LangGraph's superstep
 barrier joins them at the fuse node.
 """
 
-from typing import Any, TypedDict
+import functools
+import time
+from typing import Annotated, Any, TypedDict
 
 from langgraph.graph import END, START, StateGraph
 
@@ -17,6 +19,12 @@ from app.agent.llm_path import assess
 from app.engine.esi_rules import score
 from app.models import PatientIntake, RulesResult
 from app.privacy.redact import aggregate_age, redact, redact_clinical_value
+
+
+def _merge_stage_ms(left: dict, right: dict) -> dict:
+    """Rules and reasoning run as concurrent branches after redaction, so the
+    timing channel needs a reducer or LangGraph rejects the second writer."""
+    return {**(left or {}), **(right or {})}
 
 
 class TriageState(TypedDict, total=False):
@@ -29,6 +37,7 @@ class TriageState(TypedDict, total=False):
     rules_result: RulesResult
     llm_result: LLMResult | None
     fused: FusedResult
+    stage_ms: Annotated[dict[str, float], _merge_stage_ms]
 
 
 def redact_node(state: TriageState) -> dict:
@@ -88,12 +97,25 @@ def fuse_node(state: TriageState) -> dict:
     return {"fused": fuse(state["rules_result"], state["llm_result"])}
 
 
+def _timed(name: str, fn):
+    """Measure one stage without touching what it produces. The console
+    reports these numbers per patient, so they are wall time around the real
+    node body and nothing else."""
+    @functools.wraps(fn)
+    def node(state: TriageState) -> dict:
+        started = time.perf_counter()
+        out = fn(state)
+        elapsed = round((time.perf_counter() - started) * 1000, 2)
+        return {**out, "stage_ms": {name: elapsed}}
+    return node
+
+
 def _build():
     builder = StateGraph(TriageState)
-    builder.add_node("redact", redact_node)
-    builder.add_node("rules", rules_node)
-    builder.add_node("llm", llm_node)
-    builder.add_node("fuse", fuse_node)
+    builder.add_node("redact", _timed("redact", redact_node))
+    builder.add_node("rules", _timed("rules", rules_node))
+    builder.add_node("llm", _timed("llm", llm_node))
+    builder.add_node("fuse", _timed("fuse", fuse_node))
     builder.add_edge(START, "redact")
     builder.add_edge("redact", "rules")
     builder.add_edge("redact", "llm")

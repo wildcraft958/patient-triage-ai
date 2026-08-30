@@ -89,6 +89,9 @@ class QueueEntry:
     # clinician who set the current level; while set, no automated path may
     # replace the level (deferred enrichment turns advisory, see service)
     decided_by: str | None = None
+    # trace of the run that produced the standing recommendation: measured
+    # time per pipeline stage and the PHI classes redaction removed
+    pipeline: dict | None = None
 
 
 ACTIVE_STATUSES = {"waiting", "reassess_due", "deteriorating"}
@@ -100,13 +103,15 @@ class WaitingRoom:
         self.clock = clock
         self.entries: dict[str, QueueEntry] = {}
 
-    def add(self, intake: PatientIntake, fused: FusedResult) -> QueueEntry:
+    def add(self, intake: PatientIntake, fused: FusedResult,
+            pipeline: dict | None = None) -> QueueEntry:
         now = self.clock.now_min
         entry = QueueEntry(
             intake=intake, fused=fused, triaged_at_min=now,
             last_assessed_min=now, vitals_history=[(now, intake.vitals)],
             status="in_treatment" if fused.esi == 1 else "waiting",
             belief=initial_belief(fused), belief_at_min=now,
+            pipeline=pipeline,
         )
         self.entries[intake.patient_id] = entry
         return entry

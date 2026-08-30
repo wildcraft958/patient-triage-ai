@@ -135,3 +135,37 @@ def test_display_name_never_reaches_the_reasoning_path():
 
     triage(named, transport=spying_transport)
     assert "Chen" not in seen["user"]
+
+
+# --- pipeline instrumentation -------------------------------------------
+
+
+def test_every_stage_reports_its_own_measured_duration():
+    """The console shows a nurse what produced her recommendation and what
+    each step cost. Those numbers are measured here, not estimated."""
+    state = triage(make_intake(), transport=fake_transport(3))
+    assert set(state["stage_ms"]) == {"redact", "rules", "llm", "fuse"}
+    assert all(isinstance(ms, float) and ms >= 0 for ms in state["stage_ms"].values())
+
+
+def test_stage_timings_survive_the_parallel_fan_out():
+    """Rules and reasoning run as concurrent branches, so the timing channel
+    needs a reducer. Without one LangGraph rejects the second writer and the
+    whole triage fails, which is worse than losing the number."""
+    state = triage(make_intake(), transport=fake_transport(2))
+    assert state["stage_ms"]["rules"] >= 0
+    assert state["stage_ms"]["llm"] >= 0
+    assert state["fused"].llm is not None
+
+
+def test_the_rules_only_path_still_accounts_for_every_stage():
+    state = triage(make_intake(), use_llm=False)
+    assert set(state["stage_ms"]) == {"redact", "rules", "llm", "fuse"}
+    assert state["llm_result"] is None
+
+
+def test_timing_does_not_disturb_what_the_nodes_produce():
+    timed = triage(make_intake(), transport=fake_transport(3))
+    assert timed["redacted_complaint"] == "abdominal pain for two days"
+    assert timed["rules_result"].esi == timed["fused"].rules.esi
+    assert "stage_ms" not in timed["fused"].model_dump()
