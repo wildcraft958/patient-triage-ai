@@ -17,7 +17,10 @@ import { fmt } from './format'
 
 const ms = (v) => (v == null ? '·' : `${Number(v).toFixed(v < 10 ? 1 : 0)} ms`)
 
-const LOG_HEIGHT = 232
+// Generous on purpose: scrolling the page down should land on a useful slab of
+// the log, with its own scroll reserved for going further back in the shift.
+// It still grows past this when the graph leaves room.
+const LOG_MIN_HEIGHT = 420
 
 const TONE = {
   neutral: 'border-line', brand: 'border-brand-line',
@@ -140,10 +143,12 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
   }, [scored])
 
   return (
-    <div className="h-full flex flex-col gap-3 min-h-0">
+    <div className="h-full flex flex-col gap-3 min-h-0 overflow-y-auto">
       <ShiftStrip metrics={metrics} />
 
-      <div className="flex-1 min-h-0 overflow-y-auto">
+      {/* The graph takes whatever height it needs and never scrolls inside
+          itself: a flow chart cut in half is not a flow chart. */}
+      <div className="shrink-0">
         <Card>
           <CardHead
             title="Intake pipeline"
@@ -286,8 +291,9 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
       </div>
 
       {/* The log runs under the graph rather than beside it: the graph is wide,
-          and a supervisor reads the two together rather than choosing one. */}
-      <div className="shrink-0 min-h-0" style={{ height: LOG_HEIGHT }}>
+          and a supervisor reads the two together rather than choosing one. It
+          takes the space the graph leaves and scrolls within itself. */}
+      <div className="flex-1 min-h-0" style={{ minHeight: LOG_MIN_HEIGHT }}>
         <ActivityLog refreshKey={refreshKey} />
       </div>
     </div>
