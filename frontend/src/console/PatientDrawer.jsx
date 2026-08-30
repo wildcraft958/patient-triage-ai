@@ -196,19 +196,10 @@ function AuditTrail({ patientId }) {
   )
 }
 
-export default function PatientDrawer({ detail, feedback, busy, onClose, width,
-                                        minWidth, maxWidth, onResize,
-                                        onAccept, onOverride, onReassess, onVitals }) {
-  const { can } = useSession()
-  const dialog = useDialog(onClose)
-
-  if (!detail) return null
-
-  const { intake, fused, status, waited_min, in_ed_min, vitals_history, decided_by } = detail
-  const inTreatment = status === 'in_treatment'
-  const disagreement = fused.notes.find((n) => n.startsWith('Paths disagree'))
-  const notes = fused.notes.filter((n) => n !== disagreement && n !== 'Paths agree')
-
+// The panel itself, independent of whether the record has arrived. Keeping it
+// mounted across a change of patient means the entrance animation plays when
+// the drawer opens rather than replaying on every click.
+function Shell({ dialog, width, minWidth, maxWidth, onResize, onClose, children }) {
   return (
     <>
       <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} aria-hidden="true" />
@@ -219,7 +210,55 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
                         motion-safe:animate-[drawer_.16s_ease-out]">
         <Splitter value={width} min={minWidth} max={maxWidth} side="right"
                   label="Patient record width" onChange={onResize} />
-        <div className="flex-1 min-w-0 overflow-y-auto">
+        <div className="flex-1 min-w-0 overflow-y-auto">{children}</div>
+      </aside>
+    </>
+  )
+}
+
+const Bar = ({ w }) => (
+  <div className={`h-2.5 ${w} rounded-sm bg-app motion-safe:animate-pulse`}
+       aria-hidden="true" />
+)
+
+export default function PatientDrawer({ detail, feedback, busy, onClose, width,
+                                        minWidth, maxWidth, onResize,
+                                        onAccept, onOverride, onReassess, onVitals }) {
+  const { can } = useSession()
+  const dialog = useDialog(onClose)
+  const shell = { dialog, width, minWidth, maxWidth, onResize, onClose }
+
+  // No record yet for the selected patient. The panel shows nothing rather
+  // than the last patient's record, and offers no decision control, because
+  // every one of them submits the record's own patient ID.
+  if (!detail) {
+    return (
+      <Shell {...shell}>
+        <header className="sticky top-0 bg-card border-b border-line px-4 py-3 z-10">
+          <div className="flex items-start gap-3">
+            <div className="size-9 rounded-full bg-app motion-safe:animate-pulse shrink-0"
+                 aria-hidden="true" />
+            <div className="min-w-0 flex-1 space-y-2 pt-1"><Bar w="w-32" /><Bar w="w-44" /></div>
+            <button onClick={onClose} aria-label="Close"
+                    className="p-1 rounded-sm text-ink-3 hover:bg-app cursor-pointer">
+              <X size={17} aria-hidden="true" />
+            </button>
+          </div>
+        </header>
+        <p role="status" className="px-4 py-3 text-[11.5px] text-ink-3">
+          Opening the record.
+        </p>
+      </Shell>
+    )
+  }
+
+  const { intake, fused, status, waited_min, in_ed_min, vitals_history, decided_by } = detail
+  const inTreatment = status === 'in_treatment'
+  const disagreement = fused.notes.find((n) => n.startsWith('Paths disagree'))
+  const notes = fused.notes.filter((n) => n !== disagreement && n !== 'Paths agree')
+
+  return (
+    <Shell {...shell}>
         <header className="sticky top-0 bg-card border-b border-line px-4 py-3 z-10">
           <div className="flex items-start gap-3">
             <Initials name={intake.display_name} id={intake.patient_id} esi={fused.esi} />
@@ -334,8 +373,6 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
           <Section title="Record">
             <AuditTrail key={intake.patient_id} patientId={intake.patient_id} />
           </Section>
-        </div>
-      </aside>
-    </>
+    </Shell>
   )
 }

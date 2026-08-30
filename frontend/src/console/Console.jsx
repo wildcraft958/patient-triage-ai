@@ -117,9 +117,14 @@ export default function Console() {
       if (!q.queue.length && !(q.in_care ?? []).length) return
       if (q.scenario_remaining == null) setRemaining(0)
       const first = (q.queue[0] ?? q.in_care[0]).patient_id
+      const mine = ++fetchSeq.current
       selectedRef.current = first
       setSelectedId(first)
-      setDetail(await api.getPatient(first).catch(() => null))
+      const d = await api.getPatient(first).catch(() => null)
+      // A click during this fetch owns the selection from then on. Without
+      // this the restore lands late and pulls the drawer back to whoever the
+      // shift happened to start with.
+      if (mine === fetchSeq.current) setDetail(d)
       api.getMetrics().then(setMetrics).catch(() => {})
       setLive(true)
     })()
@@ -283,6 +288,13 @@ export default function Console() {
 
   if (!user) return <SignIn />
 
+  // The drawer and both dialogs act on a record, and both dialogs submit the
+  // record's own patient_id. Rendering one while the board highlights someone
+  // else is a wrong-patient action waiting to happen, so a record only counts
+  // as shown while it is the record that is selected. Everything downstream
+  // reads this, never `detail`.
+  const shown = detail?.intake.patient_id === selectedId ? detail : null
+
   const started = remaining !== null || queue.length > 0 || inCare.length > 0
   const openAlerts = queue.filter((r) => r.alert && !r.alert_acknowledged).length
   const counts = {
@@ -332,7 +344,7 @@ export default function Console() {
           )}
 
           {view === 'pipeline' && (
-            <PipelineView detail={detail} metrics={metrics} refreshKey={refreshKey} />
+            <PipelineView detail={shown} metrics={metrics} refreshKey={refreshKey} />
           )}
           {view === 'registry' && <Registry refreshKey={refreshKey} />}
           {view === 'analytics' && (
@@ -351,8 +363,8 @@ export default function Console() {
         </main>
       </div>
 
-      {drawerOpen && detail && (
-        <PatientDrawer detail={detail} feedback={feedback} busy={busy}
+      {drawerOpen && (
+        <PatientDrawer detail={shown} feedback={feedback} busy={busy}
                        width={drawerWidth} minWidth={DRAWER_MIN} maxWidth={DRAWER_MAX}
                        onResize={setDrawerWidth}
                        onClose={() => setDrawerOpen(false)} onAccept={onAccept}
@@ -363,12 +375,12 @@ export default function Console() {
         <IntakeForm onSubmit={onCreatePatient} onClose={() => setShowIntake(false)}
                     nextId={`WALKIN-${(queue.length + inCare.length + 1).toString().padStart(2, '0')}`} />
       )}
-      {showOverride && detail && (
-        <OverrideModal detail={detail} onSubmit={onOverride}
+      {showOverride && shown && (
+        <OverrideModal detail={shown} onSubmit={onOverride}
                        onClose={() => setShowOverride(false)} />
       )}
-      {showVitals && detail && (
-        <VitalsModal detail={detail} onSubmit={onRecordVitals}
+      {showVitals && shown && (
+        <VitalsModal detail={shown} onSubmit={onRecordVitals}
                      onClose={() => setShowVitals(false)} />
       )}
       <ToastStack toasts={toasts} />
