@@ -1,11 +1,25 @@
 import { useEffect } from 'react'
+import { Moon, Sun } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { useTheme } from '../theme/themeContext'
 import '../marketing.css'
 
 function ScrollToTop() {
   const { pathname } = useLocation()
   useEffect(() => { window.scrollTo(0, 0) }, [pathname])
   return null
+}
+
+function ThemeToggle() {
+  const { dark, toggle } = useTheme()
+  const Icon = dark ? Sun : Moon
+  return (
+    <button onClick={toggle} className="theme-toggle"
+            title={dark ? 'Switch to the light theme' : 'Switch to the dark theme'}
+            aria-label={dark ? 'Switch to the light theme' : 'Switch to the dark theme'}>
+      <Icon size={17} aria-hidden="true" />
+    </button>
+  )
 }
 
 function Nav() {
@@ -19,6 +33,7 @@ function Nav() {
           <NavLink to="/deploy">Deploy</NavLink>
           <NavLink to="/security">Security</NavLink>
           <NavLink to="/about">About</NavLink>
+          <ThemeToggle />
           <Link className="btn btn-primary btn-sm" to="/console">
             Launch console<span className="arr">&rsaquo;</span>
           </Link>
