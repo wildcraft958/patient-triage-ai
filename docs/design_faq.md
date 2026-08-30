@@ -299,10 +299,12 @@ Reassess (`POST /patients/{id}/reassess`) says a clinician assessed the
 patient: it restarts the safe-wait clock, returns them to `waiting`,
 collapses the drifted acuity belief back onto the two paths, and writes a
 `reassessment_check` event with the clinician ID and how long the patient had
-gone unassessed. Acknowledge (`POST /patients/{id}/acknowledge`) says only
-that a named clinician saw the alert: it writes an `alert_ack` event, and it
-deliberately changes nothing clinical, so the patient keeps their level and
-stays overdue on the board. An acknowledgment that quietly cleared the
+gone unassessed. The close control beside it acknowledges
+(`POST /patients/{id}/acknowledge`), which says only that a named clinician
+saw the alert: it writes an `alert_ack` event, and it deliberately changes
+nothing clinical, so the patient keeps their level and stays overdue on the
+board. Closing an alert is therefore never a dismissal, and the control says
+so on hover. An acknowledgment that quietly cleared the
 overdue state would be a way to make a queue look safe without making it
 safe.
 
@@ -455,7 +457,7 @@ and fills when its own record lands, which is also how it should have behaved
 in the first place.
 
 The reason it survived as long as it did is the honest part: the backend had
-212 tests and the frontend had none. It has 67 now, and the first four written
+212 tests and the frontend had none. It has 92 now, and the first four written
 were the ones that reproduce this. We checked they fail without each half of
 the fix rather than assuming they would.
 

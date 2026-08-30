@@ -250,10 +250,10 @@ uv run uvicorn app.main:app --port 8000
 # 4. Frontend (new terminal)
 cd frontend
 npm install
-npm test                          # 67 tests
+npm test                          # 92 tests
 npm run dev                       # http://localhost:5173
 
-# 5. localhost:5173 opens the product site; "Launch console" (or /console)
+# 5. localhost:5173 opens the product site; "Launch the console" (or /console)
 #    opens the nurse console: sign in -> open a shift. The clock runs live
 #    by default at one department minute every four seconds; Next event
 #    steps the shift one arrival at a time
