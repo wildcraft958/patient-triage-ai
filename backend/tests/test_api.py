@@ -407,3 +407,75 @@ def test_benchmark_endpoint_reads_the_committed_eval_results():
     big = next(b for b in body if b["n"] == 216)
     assert big["configs"]["fused"]["high_acuity_sens"] == 100.0
     assert big["configs"]["fused"]["under_triage"] < big["configs"]["rules"]["under_triage"]
+
+
+# --- department capacity and load state ---------------------------------
+
+
+def test_profiles_declare_treatment_bay_capacity():
+    """Bays are department configuration, not a number invented for the
+    status bar: they sit in the same YAML as the wait limits and the surge
+    threshold, and they differ per hospital."""
+    from app.profiles import load_profile
+    assert load_profile("urban_500").treatment_bays == 18
+    assert load_profile("rural_100").treatment_bays == 6
+
+
+def test_available_bays_fall_as_patients_are_taken_into_care():
+    state = client.get("/queue").json()["state"]
+    assert state["treatment_bays"] == 18
+    assert state["beds_available"] == 18
+
+    client.post("/patients", json=patient("BAY1"))
+    assert client.get("/queue").json()["state"]["beds_available"] == 18, \
+        "a waiting patient occupies no bay"
+
+    client.post("/patients/BAY1/accept", json={"clinician_id": "RN-01"})
+    assert client.get("/queue").json()["state"]["beds_available"] == 17
+
+
+def test_average_wait_reads_the_waiting_queue_only():
+    client.post("/patients", json=patient("W1"))
+    client.post("/patients", json=patient("W2"))
+    client.post("/clock/advance", json={"minutes": 20})
+    # both waiting, both unassessed for 20 minutes
+    assert client.get("/queue").json()["state"]["avg_wait_min"] == 20.0
+
+    client.post("/patients/W1/accept", json={"clinician_id": "RN-01"})
+    client.post("/clock/advance", json={"minutes": 10})
+    state = client.get("/queue").json()["state"]
+    assert state["avg_wait_min"] == 30.0, "a patient in care is no longer waiting"
+
+
+def test_load_state_moves_from_normal_through_busy_to_surge():
+    assert client.get("/queue").json()["state"]["load"] == "normal"
+
+    # 60% of the urban surge threshold of 40 is 24 waiting patients
+    for i in range(24):
+        client.post("/patients", json=patient(f"L{i}"))
+    assert client.get("/queue").json()["state"]["load"] == "busy"
+
+    client.post("/surge", json={"forced": True})
+    assert client.get("/queue").json()["state"]["load"] == "surge"
+
+
+def test_load_reads_busy_when_the_bays_are_nearly_full():
+    for i in range(15):
+        client.post("/patients", json=patient(f"B{i}"))
+        client.post(f"/patients/B{i}/accept", json={"clinician_id": "RN-01"})
+    state = client.get("/queue").json()["state"]
+    assert state["beds_available"] == 3
+    assert state["load"] == "busy", "15 of 18 bays occupied is 83% and not normal"
+
+
+def test_profile_endpoint_publishes_the_configuration_driving_the_monitor():
+    """The console shows a hospital its own thresholds, so they have to be
+    the ones the monitor actually reads."""
+    r = client.get("/profile")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["profile_name"] == "urban_500"
+    assert body["max_wait_min"]["2"] == 10
+    assert body["surge_queue_threshold"] == 40
+    assert body["treatment_bays"] == 18
+    assert body["deterioration"]["hr_rise_pct"] == 15

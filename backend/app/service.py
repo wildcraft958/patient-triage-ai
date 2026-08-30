@@ -388,15 +388,46 @@ class TriageService:
         return [self._board_row(e) for e in self.room.entries.values()
                 if e.status == "in_treatment"]
 
+    # An ED is busy before it is in surge, and the bar should say so. Surge is
+    # the system's own state - it changes how triage runs - while busy is a
+    # reading of how close the department is to it, from either direction:
+    # bays filling up, or the waiting queue climbing toward the threshold.
+    BUSY_OCCUPANCY = 0.8
+    BUSY_QUEUE_FRACTION = 0.6
+
     def state_view(self) -> dict:
+        waiting = self.room.queue()
+        in_care = sum(1 for e in self.room.entries.values()
+                      if e.status == "in_treatment")
+        bays = self.profile.treatment_bays
+        available = max(0, bays - in_care)
         return {
             "profile": self.profile.profile_name,
+            "visits_per_day": self.profile.visits_per_day,
             "sim_min": self.clock.now_min,
             "surge_mode": self.surge_mode,
-            "waiting": len(self.room.queue()),
+            "waiting": len(waiting),
+            "in_care": in_care,
             "total_patients": len(self.room.entries),
+            "treatment_bays": bays,
+            "beds_available": available,
+            "avg_wait_min": (
+                round(sum(self.clock.now_min - e.last_assessed_min
+                          for e in waiting) / len(waiting), 1)
+                if waiting else 0.0
+            ),
+            "load": self._load_state(len(waiting), in_care, bays),
+            "surge_queue_threshold": self.profile.surge_queue_threshold,
             "pending_enrichment": len(self._enrichment_queue),
         }
+
+    def _load_state(self, waiting: int, in_care: int, bays: int) -> str:
+        if self.surge_mode:
+            return "surge"
+        crowded = bays and in_care / bays >= self.BUSY_OCCUPANCY
+        backing_up = (waiting
+                      >= self.profile.surge_queue_threshold * self.BUSY_QUEUE_FRACTION)
+        return "busy" if crowded or backing_up else "normal"
 
     # --- internals ---
 

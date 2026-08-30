@@ -192,6 +192,13 @@ def benchmark():
     return {"benchmarks": out}
 
 
+@router.get("/profile")
+def profile():
+    """The department configuration the monitor is actually reading. One YAML
+    per hospital is the scalability claim, so the console shows the file."""
+    return get_service().profile.model_dump()
+
+
 @router.get("/metrics")
 def metrics():
     svc = get_service()

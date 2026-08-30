@@ -10,6 +10,7 @@ max_wait_min:        # per-ESI safe wait before a re-assessment is due
   5: 150
 reassess_check_interval_min: 5
 surge_queue_threshold: 12    # waiting count that defers the LLM to the enrichment queue
+treatment_bays: 6
 alert_cooldown_min: 10       # short queue, monitor tolerates more frequent repeats
 deterioration:
   hr_rise_pct: 15
