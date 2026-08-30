@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import HeroQueue from './HeroQueue'
 import { CtaBand } from './Shell'
 
 export default function Home() {
@@ -17,10 +18,7 @@ export default function Home() {
             <Link className="btn btn-primary" to="/console">Launch the console<span className="arr">&rsaquo;</span></Link>
             <Link className="btn btn-outline" to="/evidence">See the evidence</Link>
           </div>
-          <div className="hero-shot">
-            <div className="shot-bar"><i /><i /><i /></div>
-            <img src="/dashboard.png" alt="The PatientTriage.ai nurse console: dual reasoning chains, confidence on every score, and a live reassessment queue" />
-          </div>
+          <HeroQueue />
         </div>
       </header>
 
