@@ -127,7 +127,10 @@ export default function Console() {
       // shift happened to start with.
       if (mine === fetchSeq.current) setDetail(d)
       api.getMetrics().then(setMetrics).catch(() => {})
-      setLive(true)
+      // A reload mid-shift resumes whatever the shift was doing: arrivals if
+      // the timeline still has events, the clock alone once it is spent.
+      if (q.scenario_remaining) setAuto(true)
+      else setLive(true)
     })()
     return () => { cancelled = true }
   }, [user])
@@ -139,17 +142,20 @@ export default function Console() {
       setDetail(null); setFeedback(''); setDrawerOpen(false)
       selectedRef.current = null; setSelectedId(null)
       setRemaining(r.events)
-      setOpened(true)
       setView('queue')
-      await refresh(null)
-      // Loading a scenario only queues the arrivals. Auto-play is what walks
-      // them through the door, and the card promises exactly that; the clock
-      // alone advances time without ever admitting a patient, which is a board
-      // that sits empty while the shift appears to run. Auto stops itself when
-      // the timeline is spent and live mode carries the waiting room from
-      // there.
+      // Loading a scenario only queues the arrivals; auto-play is what walks
+      // them through the door, and the card promises exactly that. The clock
+      // needs no separate ticker while it runs, because stepping an event
+      // advances it. Live mode takes over in onStep once the timeline is spent.
       setAuto(true)
-      setLive(true)
+      setLive(false)
+      // Last, so a refresh that rejects cannot leave the picker gone with an
+      // inert board behind it.
+      setOpened(true)
+      await refresh(null)
+    } catch (err) {
+      setOpened(false); setAuto(false); setLive(false)
+      toast('Could not open the shift', String(err.message ?? err), 'alarm')
     } finally { setBusy(false) }
   }
 
@@ -163,7 +169,12 @@ export default function Console() {
     try {
       const r = await api.stepScenario()
       setRemaining(r.remaining ?? 0)
-      if (r.done && (r.remaining ?? 0) === 0) setAuto(false)
+      if (r.done && (r.remaining ?? 0) === 0) {
+        // Timeline spent: hand the department over to the clock so the waiting
+        // room keeps evolving after the last arrival.
+        setAuto(false)
+        setLive(true)
+      }
       reportAlerts(r.alerts)
       const e = r.event
       if (e?.kind === 'arrive') {
@@ -181,6 +192,12 @@ export default function Console() {
       } else {
         await refresh()
       }
+    } catch (err) {
+      // Auto-play reschedules itself, so without this a step that keeps
+      // failing - a restarted backend has no scenario loaded and answers 400 -
+      // becomes a silent request every 1.1s with nothing on screen.
+      setAuto(false)
+      toast('Arrivals stopped', String(err.message ?? err), 'alarm')
     } finally { setBusy(false) }
   }, [refresh, reportAlerts, toast])
 

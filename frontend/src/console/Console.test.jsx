@@ -158,6 +158,44 @@ describe('a board nobody has arrived on', () => {
   })
 })
 
+describe('a shift running unattended', () => {
+  const loaded = {
+    queue: [], in_care: [], scenario_remaining: 27,
+    state: { ...QUEUE.state, total_patients: 0, waiting: 0, in_care: 0 },
+  }
+
+  it('stops auto-play when stepping starts failing', async () => {
+    // Auto-play reschedules itself. A restarted backend has no scenario and
+    // answers 400, and without a catch that became a silent failing request
+    // every 1.1 seconds with nothing on screen.
+    api.getQueue.mockResolvedValue(loaded)
+    api.loadScenario.mockResolvedValue({ events: 27 })
+    api.stepScenario.mockRejectedValue(new Error('no scenario loaded'))
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+
+    await user.click(await screen.findByText(/normal shift/i))
+    await waitFor(() => expect(api.stepScenario).toHaveBeenCalled(), { timeout: 3000 })
+    await screen.findByText(/arrivals stopped/i, {}, { timeout: 3000 })
+
+    const calls = api.stepScenario.mock.calls.length
+    await act(async () => { await new Promise((r) => setTimeout(r, 1600)) })
+    expect(api.stepScenario).toHaveBeenCalledTimes(calls)
+  })
+
+  it('leaves the picker usable when the shift will not open', async () => {
+    api.getQueue.mockResolvedValue(loaded)
+    api.loadScenario.mockRejectedValue(new Error('backend unreachable'))
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+
+    await user.click(await screen.findByText(/normal shift/i))
+
+    expect(await screen.findByText(/could not open the shift/i)).toBeInTheDocument()
+    expect(screen.getByText(/normal shift/i)).toBeInTheDocument()
+  })
+})
+
 describe('acting on the selected patient', () => {
   it('offers no decision controls until the selected record is on screen', async () => {
     // The wrong-patient vector itself. Both dialogs read the drawer's record
