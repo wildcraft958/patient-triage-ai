@@ -193,14 +193,14 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 213 tests
+uv run pytest                     # 214 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
 # 4. Frontend (new terminal)
 cd frontend
 npm install
-npm test                          # 41 tests
+npm test                          # 49 tests
 npm run dev                       # http://localhost:5173
 
 # 5. localhost:5173 opens the product site; "Launch console" (or /console)
