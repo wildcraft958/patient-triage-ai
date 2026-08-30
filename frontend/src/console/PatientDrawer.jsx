@@ -38,16 +38,34 @@ function Section({ title, children, right }) {
 // A short staggered reveal, done in CSS so it costs no render and stops
 // entirely under reduced motion. The panel reads as freshly reasoned without
 // making anyone wait to read it.
-function Chain({ items }) {
+// `cap` trims the visible points without hiding any: the rest are one click
+// away and the full chain is still what the audit log stores. Path A argues in
+// short clauses and needs no cap; Path B argues in paragraphs, and showing all
+// of them pushed the vitals off the bottom of the panel.
+function Chain({ items, cap }) {
+  const [all, setAll] = useState(false)
+  const capped = cap && !all && items.length > cap
+  const shown = capped ? items.slice(0, cap) : items
+
   return (
-    <ul className="space-y-1 text-[11px] leading-relaxed text-ink-2 list-disc pl-3.5">
-      {items.map((r, i) => (
-        <li key={i} className="motion-safe:animate-[fade_.22s_ease-out_both]"
-            style={{ animationDelay: `${i * 55}ms` }}>
-          {r}
-        </li>
-      ))}
-    </ul>
+    <>
+      <ul className="space-y-1 text-[11px] leading-relaxed text-ink-2 list-disc pl-3.5">
+        {shown.map((r, i) => (
+          <li key={i} className="motion-safe:animate-[fade_.22s_ease-out_both]"
+              style={{ animationDelay: `${i * 55}ms` }}>
+            {r}
+          </li>
+        ))}
+      </ul>
+      {capped && (
+        <button onClick={() => setAll(true)}
+                className="mt-1.5 text-[10.5px] font-semibold text-brand-ink cursor-pointer
+                           rounded-sm focus-visible:outline-2 focus-visible:outline-brand
+                           focus-visible:outline-offset-2 hover:underline">
+          Show all {items.length} points
+        </button>
+      )}
+    </>
   )
 }
 
@@ -85,7 +103,7 @@ function Paths({ fused, surge }) {
               self-rated {(fused.llm.confidence * 100).toFixed(0)}%
             </span>
           </p>
-          <Chain items={fused.llm.reasoning} />
+          <Chain items={fused.llm.reasoning} cap={3} />
         </div>
       ) : (
         <div className="rounded-md border border-line bg-app p-2.5">

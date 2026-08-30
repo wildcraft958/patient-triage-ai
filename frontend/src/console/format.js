@@ -62,17 +62,14 @@ export const SHIFTS = [
   {
     profile: 'urban_500', speedup: 1, tag: 'Urban trauma center · 500 visits a day',
     title: 'Normal shift',
-    body: 'Full dual-path scoring on every arrival. Twenty-four patients across '
-        + 'roughly two hours: a classic cardiac presentation, a feverish neonate, '
-        + 'a sepsis trajectory that worsens in the waiting room, and a heart attack '
-        + 'that arrives calling itself indigestion.',
+    body: 'Twenty-four patients over about two hours, each scored by both '
+        + 'engines. One of them deteriorates while waiting.',
   },
   {
     profile: 'rural_100', speedup: 3, tag: 'Rural emergency department · 100 visits a day',
     title: 'Surge stress test',
-    body: 'Arrivals compressed threefold. Past the surge threshold the system drops '
-        + 'to the deterministic fast path, about four milliseconds a triage, and the '
-        + 'reasoning pass is queued rather than dropped. Monitoring never stops.',
+    body: 'The same arrivals at three times the rate. Past the threshold '
+        + 'triage switches to the fast path and queues the reasoning pass.',
   },
 ]
 
