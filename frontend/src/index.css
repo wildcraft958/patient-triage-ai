@@ -276,6 +276,16 @@ body {
   to { background-position: 12px 0; }
 }
 
+/* The node the dart is passing through lifts for a moment. Cheap to composite
+   and it makes the graph read as something moving through stages rather than
+   a picture with a dot on it. */
+@keyframes node-wake {
+  0%   { box-shadow: 0 0 0 0 transparent; }
+  35%  { box-shadow: 0 0 0 1px var(--color-brand-line),
+                     0 6px 22px -6px var(--color-brand); }
+  100% { box-shadow: 0 0 0 0 transparent; }
+}
+
 /* The branch strokes drift the same way, but a dashed stroke moves by its
    offset rather than a background position. */
 @keyframes branch-drift {
