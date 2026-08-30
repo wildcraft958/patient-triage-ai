@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
-import { Activity, ChevronRight, Eye, ShieldCheck } from 'lucide-react'
+import { Activity, ArrowLeft, ChevronRight, Eye, ShieldCheck } from 'lucide-react'
 import { Btn } from '../console/ui'
 import { DIRECTORY, ROLES } from './roles'
 import { useSession } from './sessionContext'
@@ -26,13 +26,22 @@ export default function SignIn() {
   return (
     <div className="min-h-screen grid lg:grid-cols-[1.05fr_1fr] bg-app">
       <aside className="bg-rail text-rail-fg px-8 py-10 lg:px-14 lg:py-16 flex flex-col">
-        <Link to="/" className="inline-flex items-center gap-2.5 w-fit">
-          <span className="w-8 h-8 rounded-sm bg-brand grid place-items-center
-                           text-sm font-black tracking-tight">PT</span>
-          <span className="text-base font-bold tracking-tight">
-            PatientTriage<span className="text-brand">.ai</span>
+        {/* The lockup is identity, not navigation. Leaving is its own control,
+            so nobody lands on the marketing site by aiming at the brand. */}
+        <div className="flex items-center gap-3">
+          <Link to="/" aria-label="Back to the product site" title="Back to the product site"
+                className="p-1.5 -ml-1.5 rounded-sm text-rail-ink-2 hover:text-rail-fg
+                           hover:bg-rail-2 focus-visible:outline-2 focus-visible:outline-brand">
+            <ArrowLeft size={17} aria-hidden="true" />
+          </Link>
+          <span className="inline-flex items-center gap-2.5">
+            <span className="w-8 h-8 rounded-sm bg-brand grid place-items-center
+                             text-sm font-black text-brand-fg tracking-tight">PT</span>
+            <span className="text-base font-bold tracking-tight">
+              PatientTriage<span className="text-brand">.ai</span>
+            </span>
           </span>
-        </Link>
+        </div>
 
         <div className="mt-14 lg:mt-20 max-w-lg">
           <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand">
@@ -105,7 +114,7 @@ export default function SignIn() {
             </span>
             <input value={badge} onChange={(e) => setBadge(e.target.value)}
                    className="mt-1.5 w-full rounded-sm border border-line bg-card px-3 py-2
-                              text-sm tabular-nums focus:border-brand focus:outline-none" />
+                              text-sm tabular-nums text-ink focus:border-brand focus:outline-none" />
           </label>
 
           <label className="block mt-3.5">
