@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Activity, ArrowLeft, ChevronRight, Eye, ShieldCheck } from 'lucide-react'
+import { Mark } from '../brand/Logo'
 import { Btn } from '../console/ui'
 import { DIRECTORY, ROLES } from './roles'
 import { useSession } from './sessionContext'
@@ -35,8 +36,7 @@ export default function SignIn() {
             <ArrowLeft size={17} aria-hidden="true" />
           </Link>
           <span className="inline-flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-sm bg-brand grid place-items-center
-                             text-sm font-black text-brand-fg tracking-tight">PT</span>
+            <Mark size={32} />
             <span className="text-base font-bold tracking-tight">
               PatientTriage<span className="text-brand">.ai</span>
             </span>

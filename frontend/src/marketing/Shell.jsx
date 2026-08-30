@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { Moon, Sun } from 'lucide-react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
+import { Mark } from '../brand/Logo'
 import { useTheme } from '../theme/themeContext'
 import '../marketing.css'
 
@@ -26,7 +27,7 @@ function Nav() {
   return (
     <div className="mnav">
       <div className="wrap nav-inner">
-        <Link className="wordmark" to="/">PatientTriage<span>.ai</span></Link>
+        <Link className="wordmark" to="/"><Mark size={28} /><span className="wm-text">PatientTriage<span>.ai</span></span></Link>
         <div className="nav-links">
           <NavLink to="/product">Product</NavLink>
           <NavLink to="/evidence">Evidence</NavLink>
@@ -68,7 +69,7 @@ function Footer() {
       <div className="wrap">
         <div className="foot-grid">
           <div>
-            <Link className="wordmark" to="/">PatientTriage<span style={{ color: '#C89BFF' }}>.ai</span></Link>
+            <Link className="wordmark" to="/"><Mark size={26} /><span className="wm-text">PatientTriage<span>.ai</span></span></Link>
             <p style={{ marginTop: 8 }}>The system recommends. The clinician decides.</p>
           </div>
           <div style={{ display: 'flex', gap: 36 }}>

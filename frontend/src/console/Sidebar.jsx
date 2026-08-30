@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { VIEWS } from './views'
 import { useSession } from '../auth/sessionContext'
 import { useTheme } from '../theme/themeContext'
+import { Mark } from '../brand/Logo'
 import { Initials } from './ui'
 
 function Badge({ count, tone }) {
@@ -38,8 +39,7 @@ export default function Sidebar({ view, onView, counts, collapsed, onCollapse })
       {/* The lockup is not a link. Leaving a live shift is a deliberate act,
           not something that happens because a nurse aimed at the logo. */}
       <div className="flex items-center gap-2.5 h-12 px-3 border-b border-rail-2 shrink-0">
-        <span className="w-7 h-7 shrink-0 rounded-sm bg-brand grid place-items-center
-                         text-[11px] font-black text-brand-fg tracking-tight">PT</span>
+        <Mark size={28} />
         {wide && (
           <span className="text-[13px] font-bold text-rail-fg tracking-tight truncate">
             PatientTriage<span className="text-brand">.ai</span>

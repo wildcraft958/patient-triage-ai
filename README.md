@@ -1,4 +1,4 @@
-# PatientTriage.ai
+<img src="docs/logo.png" alt="PatientTriage.ai" width="330">
 
 **AI-assisted emergency department triage that does not stop at the door.** It scores every arriving patient with a dual-path engine (deterministic ESI rules in parallel with LLM clinical reasoning), then keeps watching everyone in the waiting room and tells the nurse who to check on next.
 

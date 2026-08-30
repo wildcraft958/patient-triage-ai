@@ -104,8 +104,11 @@
   border-bottom: 1px solid var(--mk-line);
 }
 .mkt .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 62px; }
-.mkt .wordmark { font-size: 17px; font-weight: 800; color: var(--mk-ink); text-decoration: none; }
-.mkt .wordmark span { color: var(--purple); }
+.mkt .wordmark {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-size: 17px; font-weight: 800; color: var(--mk-ink); text-decoration: none;
+}
+.mkt .wordmark .wm-text span { color: var(--purple); }
 .mkt .nav-links { display: flex; gap: 26px; align-items: center; }
 .mkt .theme-toggle {
   display: grid; place-items: center; width: 34px; height: 34px;
@@ -236,6 +239,7 @@
 .mkt .mfoot a { color: var(--mk-band-soft); text-decoration: none; }
 .mkt .mfoot a:hover { color: var(--mk-band-ink); }
 .mkt .mfoot .wordmark { color: var(--mk-band-ink); font-size: 15px; }
+.mkt .mfoot .wordmark .wm-text span { color: var(--mk-band-accent); }
 .mkt .disclaimer { margin-top: 22px; border-top: 1px solid var(--mk-band-2); padding-top: 18px; max-width: 760px; }
 
 /* subpage hero + prose */
