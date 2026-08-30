@@ -84,6 +84,17 @@ export default function Console() {
     setTimeout(() => setToasts((ts) => ts.filter((t) => t.id !== id)), TOAST_MS)
   }, [])
 
+  // The permission decision lives behind the API, so any of these can come
+  // back refused. Without this a 403 is an unhandled rejection and a click
+  // that silently does nothing.
+  const attempt = useCallback(async (title, fn) => {
+    try {
+      await fn()
+    } catch (err) {
+      toast(title, String(err.message ?? err), 'alarm')
+    }
+  }, [toast])
+
   const refresh = useCallback(async (id) => {
     const mine = ++fetchSeq.current
     const target = id ?? selectedRef.current
@@ -256,13 +267,13 @@ export default function Console() {
     if (mine === fetchSeq.current) setDetail(d)
   }
 
-  const onAccept = async (id) => {
+  const onAccept = (id) => attempt('Could not accept', async () => {
     const r = await api.acceptPatient(id, user.badge_id)
     setFeedback(`Accepted. Reward +${r.reward} recorded to the learning loop.`)
     await refresh(id)
-  }
+  })
 
-  const onOverride = async (id, body) => {
+  const onOverride = (id, body) => attempt('Could not override', async () => {
     const r = await api.overridePatient(id, body)
     setFeedback(r.under_triage
       ? `Override recorded, reward ${r.reward}. Under-triage signal: the system will learn to escalate this pattern.`
@@ -270,40 +281,40 @@ export default function Console() {
     toast('Override recorded', `Moved to ESI-${body.new_esi} by ${body.clinician_id}`, 'override')
     if (r.safety_warning) toast('Safety flag', r.safety_warning, 'alarm')
     await refresh(id)
-  }
+  })
 
-  const onReassess = async (id) => {
+  const onReassess = (id) => attempt('Could not reassess', async () => {
     setBusy(true)
     try {
       await api.reassessPatient(id, user.badge_id)
       toast('Reassessed', 'Checked at the bedside. Safe-wait clock restarted.', 'accept')
       await refresh(id)
     } finally { setBusy(false) }
-  }
+  })
 
-  const onAcknowledge = async (id) => {
+  const onAcknowledge = (id) => attempt('Could not acknowledge', async () => {
     setBusy(true)
     try {
       await api.acknowledgeAlert(id, user.badge_id)
       await refresh()
     } finally { setBusy(false) }
-  }
+  })
 
-  const onRecordVitals = async (id, vitals) => {
+  const onRecordVitals = (id, vitals) => attempt('Could not record vitals', async () => {
     const r = await api.recordVitals(id, vitals, user.badge_id)
     if (r.alert) reportAlerts([r.alert])
     else toast('Vitals recorded', 'No deterioration threshold crossed.', 'accept')
     pulse(id)
     await refresh(id)
-  }
+  })
 
-  const onCreatePatient = async (body) => {
+  const onCreatePatient = (body) => attempt('Could not admit the patient', async () => {
     const r = await api.addPatient(body)
     setShowIntake(false)
     toast('New arrival', `${body.display_name ?? body.patient_id} scored ESI-${r.fused.esi}`)
     pulse(body.patient_id)
     await refresh(body.patient_id)
-  }
+  })
 
   // The drawer belongs to the board. Carrying it onto Analytics or the
   // registry would leave a patient record open over a page that is not about

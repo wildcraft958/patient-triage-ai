@@ -231,6 +231,24 @@ describe('acting on the selected patient', () => {
   })
 })
 
+describe('an action the server refuses', () => {
+  it('tells the clinician instead of swallowing it', async () => {
+    // Permission is decided behind the API now, so a role that may not act
+    // gets a 403 even though it reached the control. Without a catch that is
+    // an unhandled rejection and a click that silently does nothing.
+    api.acceptPatient.mockRejectedValue(
+      new Error('"A medical assistant may not accept on this board"'))
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+
+    await user.click(await screen.findByText('Alma Whitfield'))
+    await user.click(await screen.findByRole('button', { name: /accept/i }))
+
+    expect(await screen.findByText(/could not accept/i)).toBeInTheDocument()
+    expect(screen.getByText(/may not accept on this board/i)).toBeInTheDocument()
+  })
+})
+
 describe('when Path B does not return', () => {
   // A live panel typing a novel complaint misses the response cache. The board
   // must not call that a surge deferral: nothing was queued, and saying so

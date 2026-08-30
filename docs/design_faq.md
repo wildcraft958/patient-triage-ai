@@ -350,9 +350,17 @@ acknowledgment in the audit trail, replacing a hardcoded constant. And the
 role you pick changes what the board permits, not just what it says: a
 medical assistant can record vitals and acknowledge alerts but the accept
 and override controls are disabled with an explicit "requires RN sign-off",
-and an administrator reads the board without touching a patient. A
-deployment binds the same session object to the hospital directory over SAML
-or OIDC; nothing downstream of the session changes.
+and an administrator reads the board without touching a patient.
+
+That last part used to be true only in the browser, which is worth being
+precise about, because a disabled button is a courtesy and not a control: the
+API is reachable without the console. The permission decision now happens on
+the server. The badge on the request resolves to a role and the endpoint
+refuses an action that role does not hold, so a medical assistant posting an
+override directly gets a 403 and nothing reaches the audit trail. What is
+still demonstration is identity itself, not authorisation: a deployment binds
+the same session to the hospital directory over SAML or OIDC, and nothing
+downstream of the resolved role changes when it does.
 
 ## The pipeline view shows milliseconds per stage. Where do those come from?
 
