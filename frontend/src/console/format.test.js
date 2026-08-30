@@ -86,3 +86,24 @@ describe('backend identifiers on their way to a clinician', () => {
     expect(alertLabel('NEW_KIND')).toBe('New kind')
   })
 })
+
+describe('every activity-log line, not just the helpers', () => {
+  // The shared maps went in and two describers in this same file were left
+  // interpolating the enum directly. Testing alertLabel in isolation could not
+  // see that, so this runs the describers themselves.
+  const PAYLOAD = {
+    esi: 2, confidence: 'high', paths_agree: true, kind: 'WAIT_BREACH',
+    reasons: ['waited 35 min'], previous_esi: 3, new_esi: 2,
+    trigger: 'DETERIORATION', outcome: 'llm_unavailable', clinician_id: 'RN-07',
+    reason: 'reassessed', waited_min: 12, reward: 1, under_triage: false,
+  }
+
+  it('puts no backend identifier in front of a clinician', () => {
+    const offenders = []
+    for (const [type, [, describe]] of Object.entries(EVENT_COMPONENT)) {
+      const line = describe(PAYLOAD)
+      if (/[a-z]_[a-z]|[A-Z]{2,}_[A-Z]{2,}/.test(line)) offenders.push(`${type}: ${line}`)
+    }
+    expect(offenders).toEqual([])
+  })
+})

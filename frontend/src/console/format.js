@@ -111,7 +111,8 @@ export const EVENT_COMPONENT = {
   triage: ['FUS', (p) => `Triage complete, ESI-${p.esi} at ${p.confidence} confidence`
                         + (p.paths_agree ? ', paths agreed' : ', paths disagreed')],
   alert: ['MON', (p) => `${alertLabel(p.kind)}: ${(p.reasons || []).join('; ')}`],
-  reassessment: ['MON', (p) => `Automatic re-triage, ESI-${p.previous_esi} to ESI-${p.new_esi} (${p.trigger})`],
+  reassessment: ['MON', (p) => `Automatic re-triage, ESI-${p.previous_esi} to ESI-${p.new_esi}`
+                        + ` (${alertLabel(p.trigger).toLowerCase()})`],
   surge_enrichment: ['LLM', (p) => (p.outcome
     ? `Deferred reasoning: ${outcomeLabel(p.outcome)}`
     : `Deferred reasoning attached, ESI-${p.previous_esi} to ESI-${p.new_esi}`)],
@@ -119,7 +120,7 @@ export const EVENT_COMPONENT = {
   override_safety_flag: ['SAF', (p) => `High-risk downgrade flagged and acknowledged by ${p.clinician_id}`],
   acceptance: ['RN', (p) => `${p.clinician_id} accepted ESI-${p.esi}`],
   reassessment_check: ['RN', (p) => `${p.clinician_id} reassessed at the bedside after ${p.waited_min} min`],
-  alert_ack: ['RN', (p) => `${p.clinician_id} acknowledged a ${p.kind} alert`],
+  alert_ack: ['RN', (p) => `${p.clinician_id} acknowledged: ${alertLabel(p.kind).toLowerCase()}`],
   reward: ['CAL', (p) => `Reward ${p.reward} recorded${p.under_triage ? ', under-triage signal' : ''}`],
 }
 
