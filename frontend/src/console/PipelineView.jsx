@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
-import { Lock, Send } from 'lucide-react'
 import * as api from '../api'
 import ActivityLog from './ActivityLog'
+import { AT, Branch, Edge, Node, feed } from './flow'
 import { Card, CardHead, Empty, Pill } from './ui'
 import { fmt, fmtMs as ms } from './format'
 
@@ -19,84 +19,6 @@ import { fmt, fmtMs as ms } from './format'
 // the log, with its own scroll reserved for going further back in the shift.
 // It still grows past this when the graph leaves room.
 const LOG_MIN_HEIGHT = 420
-
-const TONE = {
-  neutral: 'border-line', brand: 'border-brand-line',
-  ok: 'border-ok-line', warn: 'border-warn-line',
-}
-
-// Dashes drifting along the edge: the graph reads as something running rather
-// than a picture of it. Written out rather than composed, because Tailwind
-// extracts class names statically.
-const EDGE = 'h-0.5 w-12 self-center bg-repeat-x '
-  + 'bg-[linear-gradient(90deg,var(--color-line-2)_58%,transparent_58%)] '
-  + 'bg-[length:12px_100%] motion-safe:animate-[edge-drift-x_2.4s_linear_infinite]'
-
-/** One edge between two nodes. `dart` replays whenever its key changes. */
-function Edge({ dart }) {
-  return (
-    <div aria-hidden="true" className={`relative shrink-0 ${EDGE}`}>
-      <span key={dart}
-            className="absolute -top-1 size-2.5 rounded-full bg-brand opacity-0
-                       shadow-[0_0_10px_2px_var(--color-brand)] blur-[0.5px]
-                       motion-safe:animate-[edge-dart-x_1.6s_cubic-bezier(.4,0,.2,1)_1]" />
-    </div>
-  )
-}
-
-/**
- * The fork after redaction and the join before fusion, drawn as one stretched
- * SVG so the branch geometry survives any column width.
- */
-function Branch({ join = false, dart }) {
-  // The paths sit in a two-column grid, so the branch drops have to land on
-  // 25% and 75% to meet the middle of each node rather than near it.
-  const d = join
-    ? 'M25 2 V14 H75 V2 M50 14 V26'
-    : 'M50 2 V14 M25 26 V14 H75 V26'
-  return (
-    <svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"
-         data-branch={join ? 'join' : 'fork'}
-         className="w-full h-7 overflow-visible text-line-2">
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5"
-            vectorEffect="non-scaling-stroke" strokeDasharray="5 4"
-            className="motion-safe:animate-[branch-drift_2.4s_linear_infinite]" />
-      <path key={dart} d={d} fill="none" stroke="var(--color-brand)" strokeWidth="2"
-            vectorEffect="non-scaling-stroke" strokeDasharray="14 240"
-            className="opacity-0 motion-safe:animate-[branch-dart_1.6s_cubic-bezier(.4,0,.2,1)_1]" />
-    </svg>
-  )
-}
-
-function Node({ kind, name, body, ms: cost, tone = 'neutral', chip, boundary,
-                dart, delay = 0, className = '' }) {
-  return (
-    <div key={dart}
-         style={{ animationDelay: `${delay}ms` }}
-         className={`relative bg-card border ${TONE[tone]} rounded-md px-3 py-2.5
-                     min-w-0 shadow-sm ${className}
-                     motion-safe:animate-[node-wake_1.4s_ease-out_both]`}>
-      <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-3">{kind}</p>
-        {cost !== undefined && (
-          <span className="text-[10px] font-bold text-brand-ink tabular-nums">{ms(cost)}</span>
-        )}
-      </div>
-      <p className="text-[12.5px] font-semibold text-ink mt-0.5">{name}</p>
-      <div className="text-[11px] leading-relaxed text-ink-2 mt-1">{body}</div>
-      {chip && <div className="mt-2">{chip}</div>}
-      {boundary && (
-        <p className="flex items-center gap-1.5 mt-2 pt-2 border-t border-line
-                      text-[9.5px] font-bold uppercase tracking-[0.1em] text-ink-3">
-          {boundary === 'phi' ? <Lock size={11} aria-hidden="true" />
-                              : <Send size={11} aria-hidden="true" />}
-          {boundary === 'phi' ? 'The record as it arrived, on this machine'
-                              : 'A de-identified copy only'}
-        </p>
-      )}
-    </div>
-  )
-}
 
 function ShiftStrip({ metrics }) {
   const cells = [
@@ -170,7 +92,7 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
             <div className="p-4">
               {/* Intake and redaction, in line */}
               <div className="flex items-stretch gap-0">
-                <Node kind="Intake" dart={dart} delay={0} name="Arrival record" className="flex-1 basis-0"
+                <Node kind="Intake" dart={dart} delay={AT.intake} name="Arrival record" className="flex-1 basis-0"
                       body={
                         <>
                           {detail.intake.chief_complaint}
@@ -181,9 +103,9 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                           </span>
                         </>
                       } />
-                <Edge dart={dart} />
-                <Node kind="Redaction" dart={dart} delay={260} name="PHI removal" tone="brand"
-                      className="flex-1 basis-0" ms={pl.stage_ms?.redact}
+                <Edge dart={dart} delay={feed(AT.redact)} />
+                <Node kind="Redaction" dart={dart} delay={AT.redact} name="PHI removal" tone="brand"
+                      className="flex-1 basis-0" format={ms} ms={pl.stage_ms?.redact}
                       boundary="phi"
                       body={
                         pl.phi_entities_removed?.length ? (
@@ -203,24 +125,24 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                             text-ink-3 mt-2">
                 Both paths run concurrently from here
               </p>
-              <Branch dart={dart} />
+              <Branch dart={dart} delay={feed(AT.paths)} />
 
               {/* The two concurrent paths */}
               {/* Stretched, not natural height: the two run concurrently and
                   the join below meets both, so a short Path A and a long Path B
                   ending at different heights would leave one edge hanging. */}
               <div className="grid grid-cols-2 gap-3 items-stretch">
-                <Node kind="Path A" dart={dart} delay={620} name="ESI rules engine" tone="ok"
-                      ms={pl.stage_ms?.rules} boundary="phi"
+                <Node kind="Path A" dart={dart} delay={AT.paths} name="ESI rules engine" tone="ok"
+                      format={ms} ms={pl.stage_ms?.rules} boundary="phi"
                       body={
                         <>
                           <b className="text-ink">ESI-{fused.rules.esi}</b>
                           <span className="block mt-0.5">{fused.rules.reasons[0]}</span>
                         </>
                       } />
-                <Node kind="Path B" dart={dart} delay={620} name="Clinical reasoning" boundary="deidentified"
+                <Node kind="Path B" dart={dart} delay={AT.paths} name="Clinical reasoning" boundary="deidentified"
                       tone={pl.reasoning_ran ? 'ok' : 'warn'}
-                      ms={pl.stage_ms?.llm}
+                      format={ms} ms={pl.stage_ms?.llm}
                       chip={
                         <span className="flex flex-col gap-1.5 items-start">
                           <Pill tone="warn">The only component that leaves this machine</Pill>
@@ -247,7 +169,7 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                       } />
               </div>
 
-              <Branch join dart={dart} />
+              <Branch join dart={dart} delay={feed(AT.fuse)} />
               <p className="text-center text-[9.5px] font-bold uppercase tracking-[0.12em]
                             text-ink-3 mb-2">
                 Rejoined
@@ -255,7 +177,7 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
 
               {/* Fusion onward, in line */}
               <div className="flex items-stretch gap-0">
-                <Node kind="Fusion" dart={dart} delay={980} name="More acute wins" ms={pl.stage_ms?.fuse}
+                <Node kind="Fusion" dart={dart} delay={AT.fuse} name="More acute wins" format={ms} ms={pl.stage_ms?.fuse}
                       className="flex-1 basis-0" tone={fused.paths_agree ? 'ok' : 'warn'}
                       body={
                         <>
@@ -271,17 +193,17 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                           </span>
                         </>
                       } />
-                <Edge dart={dart} />
-                <Node kind="Calibration" dart={dart} delay={1120} name="Learned escalation" className="flex-1 basis-0"
+                <Edge dart={dart} delay={feed(AT.calibrate)} />
+                <Node kind="Calibration" dart={dart} delay={AT.calibrate} name="Learned escalation" className="flex-1 basis-0"
                       body="Applies patterns clinicians have repeatedly escalated for this complaint and age band." />
-                <Edge dart={dart} />
-                <Node kind="Safety" dart={dart} delay={1240} name="Guards and bias" className="flex-1 basis-0"
+                <Edge dart={dart} delay={feed(AT.safety)} />
+                <Node kind="Safety" dart={dart} delay={AT.safety} name="Guards and bias" className="flex-1 basis-0"
                       tone={fused.clinician_flag ? 'warn' : 'neutral'}
                       body={fused.clinician_flag
                         ? 'Flagged for clinician review before the board shows it as settled.'
                         : 'Missing-vitals guard clear; age-band drift within range.'} />
-                <Edge dart={dart} />
-                <Node kind="Audit" dart={dart} delay={1360} name="Append-only write" className="flex-1 basis-0"
+                <Edge dart={dart} delay={feed(AT.audit)} />
+                <Node kind="Audit" dart={dart} delay={AT.audit} name="Append-only write" className="flex-1 basis-0"
                       body="Both reasoning chains, the level, the confidence and the timestamp, written as the run completed." />
               </div>
 

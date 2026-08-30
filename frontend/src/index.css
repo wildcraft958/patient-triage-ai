@@ -337,8 +337,14 @@ body {
 }
 
 /* A bright segment running the length of a branch path, drawn over the static
-   stroke rather than replacing it. */
+   stroke rather than replacing it.
+   The opacity frames are not decoration. The element carries a static
+   opacity-0 so it is invisible between runs, and an animation only overrides a
+   property it actually mentions: without these the branch sweep never showed
+   at all, and the run appeared to vanish at the fork and reappear after it. */
 @keyframes branch-dart {
-  from { stroke-dashoffset: 240; }
-  to   { stroke-dashoffset: 0; }
+  0%   { stroke-dashoffset: 240; opacity: 0; }
+  12%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { stroke-dashoffset: 0; opacity: 0; }
 }
