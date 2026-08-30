@@ -21,7 +21,8 @@ Every mandated Round 2 expectation is hit and labeled below:
 ## 0:18 - 0:32 | Sign in
 
 Action: on the sign-in screen, leave the role on **Triage nurse** and click
-**Start shift**.
+**Start shift**. If you are recording at night, flip the theme from the rail
+first; the whole console and the product site follow it.
 
 > "A nurse signs in with her badge, and the badge is not decoration. It signs
 > every level she sets for the rest of the shift. Sign in as a medical
@@ -154,6 +155,8 @@ Action: open **Analytics** in the rail.
 - Backend and frontend running, board cleared, signed out (the sign-in screen)
 - Cache warm (already done), so every step is instant
 - Browser zoom 100%, hide the bookmarks bar, 1600x1000 window
+- Widen the patient record by dragging its left edge before you start; it
+  remembers the width, so the two reasoning chains sit side by side on camera
 - Live mode is on from the moment a shift opens and runs one minute of ED time
   every four seconds, so the deterioration alert fires while you are talking.
   If you need it sooner, Settings has Advance 15 min

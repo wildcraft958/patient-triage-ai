@@ -10,7 +10,7 @@ Team **NamoFans** (IIT Kharagpur): Monika Kumari (Team Leader) and Animesh Raj. 
 
 ![Nurse console: the shift board, with a deterioration alert above the queue and both reasoning chains open on the selected patient](docs/dashboard.png)
 
-The console is a signed-in clinical workstation, not a dashboard. You sign in with a badge and a role, and the role changes what the board allows: a triage nurse sets acuity levels, a medical assistant records vitals but cannot, an administrator reads without touching. Six sections. **Patient queue** ranks by acuity and shows each patient's level, belief, wait against the safe limit for that level, and vitals trend. **Monitoring** ranks the same people by reassessment priority, which is a different question and gets its own screen. **Pipeline** traces the run that produced the selected patient's recommendation, with measured time per stage and the identifier classes redaction removed. **Registry** lists every component with the model ids read from live configuration. **Analytics** carries the held-out benchmark, the bias monitor, and every clinician decision with the badge attached. **Settings** shows a department its own thresholds. Alerts sit above all of it, and answering one is two clicks: reassess, or acknowledge. Both are written to the audit trail.
+The console is a signed-in clinical workstation, not a dashboard. You sign in with a badge and a role, and the role changes what the board allows: a triage nurse sets acuity levels, a medical assistant records vitals but cannot, an administrator reads without touching. Six sections. **Patient queue** ranks by acuity and shows each patient's level, belief, wait against the safe limit for that level, and vitals trend. **Monitoring** ranks the same people by reassessment priority, which is a different question and gets its own screen. **Pipeline** traces the run that produced the selected patient's recommendation, with measured time per stage and the identifier classes redaction removed. **Registry** lists every component with the model ids read from live configuration. **Analytics** carries the held-out benchmark, the bias monitor, and every clinician decision with the badge attached. **Settings** shows a department its own thresholds. Alerts sit above all of it, and answering one is two clicks: reassess, or acknowledge. Both are written to the audit trail. The rail and the patient record drag to whatever width the workstation has, and the whole surface has a night theme, because a twelve-hour shift is not always a daytime one.
 
 ---
 
@@ -139,7 +139,13 @@ Every component is also listed with the model identifier read from the running
 process rather than restated, so the page cannot drift from the container it
 describes.
 
-![The component registry: eight components grouped by whether they see the record as it arrived or only a de-identified copy, each with its implementation, run count and measured latency](docs/registry.png)
+![The component registry: eight components grouped by whether they see the record as it arrived or only a de-identified copy, each with its short code, implementation, run count and measured latency](docs/registry.png)
+
+The same console at night. Acuity colour is not inverted with everything else:
+dark mode lifts the five ESI fills and flips their text, so the order a nurse
+reads before reading the number survives the theme.
+
+![The patient queue in the dark theme, with the same deterioration alert and the same acuity scale rendered for a night shift](docs/dashboard-dark.png)
 
 | Component | Where | Notes |
 |---|---|---|
@@ -187,7 +193,7 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 205 tests
+uv run pytest                     # 206 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 

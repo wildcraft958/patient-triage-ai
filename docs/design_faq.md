@@ -384,6 +384,27 @@ component ever sends anything off the machine. That is the clinical reasoning
 path, and it is the one component that has only ever seen a de-identified
 copy. A test pins both halves of that sentence together.
 
+## The console has a night theme. Did you just invert the acuity colours?
+
+No, and that was the one decision in the theme worth thinking about. ESI
+colour is a convention: dark red, red, orange, amber, green, in that order,
+read before the number is read. Inverting a palette moves hues around, and a
+scale whose order stops being recognisable has lost the only thing it was for.
+
+So the neutrals invert and the scale does not. Dark mode keeps the same five
+hues in the same order and lifts each fill until it holds against a dark
+ground, then flips the badge text from white to near-black through a token so
+the contrast survives the lift. Everything else in the console follows the
+same token set, which is why the theme is a redefinition of about forty
+variables rather than a second stylesheet: there is no second place for the
+two themes to disagree.
+
+The state tints needed the same care. A wait-limit row that was pale yellow in
+light mode became the heaviest object on a dark screen, which inverted the
+signal, since a wait breach is a clock running out and deterioration is a
+patient getting worse. The tinted row is now reserved for deterioration in
+both themes and the wait breach carries a coloured rail and a pill instead.
+
 ## Why a simulation clock instead of a background scheduler?
 
 Determinism. The demo replays 130 minutes of ED time in seconds, every test is
