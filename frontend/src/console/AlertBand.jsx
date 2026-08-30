@@ -64,8 +64,11 @@ export default function AlertBand({ rows, busy, onSelect, onReassess,
             </span>
             <span className="flex gap-1.5 shrink-0">
               <Btn size="sm" onClick={() => onSelect(r.patient_id)}>View</Btn>
+              {/* Reassess is the action the band is asking for, so it takes
+                  the product's own colour. The acuity scale says how sick a
+                  patient is, not how loud a button should be. */}
               {can.reassess && (
-                <Btn size="sm" variant="danger" disabled={busy}
+                <Btn size="sm" variant="primary" disabled={busy}
                      onClick={() => onReassess(r.patient_id)}>Reassess</Btn>
               )}
               {can.acknowledge && (

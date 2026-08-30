@@ -98,7 +98,7 @@ export default function MonitorBoard({ rows, selectedId, busy, onSelect, onReass
                     </td>
                     <td className="pr-3 py-2.5">
                       {urgent && can.reassess ? (
-                        <Btn size="sm" variant="danger" disabled={busy}
+                        <Btn size="sm" variant="primary" disabled={busy}
                              onClick={(e) => { e.stopPropagation(); onReassess(row.patient_id) }}>
                           Reassess now
                         </Btn>
