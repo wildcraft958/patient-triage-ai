@@ -1,4 +1,5 @@
-import { ChevronRight } from 'lucide-react'
+import { useState } from 'react'
+import { ChevronRight, Loader2 } from 'lucide-react'
 import { useSession } from '../auth/sessionContext'
 import { Card } from './ui'
 import { SHIFTS } from './format'
@@ -7,6 +8,10 @@ import { SHIFTS } from './format'
 // is what the board looks like before anyone has arrived.
 export default function EmptyBoard({ busy, onLoad }) {
   const { user, can } = useSession()
+  // Opening a shift scores two dozen patients through both engines, which on a
+  // cold container is seconds, not milliseconds. Dimming the card was not
+  // enough of an answer to the click: it has to say that it heard.
+  const [picked, setPicked] = useState(null)
 
   return (
     <Card className="p-8 lg:p-12">
@@ -25,7 +30,7 @@ export default function EmptyBoard({ busy, onLoad }) {
       <div className="grid md:grid-cols-2 gap-4 mt-8 max-w-4xl">
         {SHIFTS.map((s) => (
           <button key={s.profile} disabled={busy || !can.settings}
-                  onClick={() => onLoad(s.profile, s.speedup)}
+                  onClick={() => { setPicked(s.profile); onLoad(s.profile, s.speedup) }}
                   className="text-left rounded-lg border border-line bg-card p-5
                              hover:border-brand hover:shadow-md transition-all
                              disabled:opacity-50 disabled:cursor-default cursor-pointer">
@@ -36,6 +41,13 @@ export default function EmptyBoard({ busy, onLoad }) {
               {s.title} <ChevronRight size={16} aria-hidden="true" />
             </span>
             <span className="block text-[12px] leading-relaxed text-ink-2 mt-2">{s.body}</span>
+            {picked === s.profile && busy && (
+              <span role="status" className="mt-3 flex items-center gap-2 text-[11.5px]
+                                             font-semibold text-brand-ink">
+                <Loader2 size={13} className="motion-safe:animate-spin" aria-hidden="true" />
+                Opening the shift and scoring the first arrivals.
+              </span>
+            )}
           </button>
         ))}
       </div>

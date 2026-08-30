@@ -98,6 +98,52 @@ describe('a board nobody has arrived on', () => {
     expect(screen.queryByText(/nobody is on the board yet/i)).not.toBeInTheDocument()
   })
 
+  it('opens the board as soon as a shift is chosen, before anyone arrives', async () => {
+    // Loading a scenario only queues the arrivals; patients walk in as the
+    // clock runs. Waiting for the first of them to appear left the picker on
+    // screen after the click, which reads as a dead button.
+    api.getQueue.mockResolvedValue(loadedNotStepped)
+    api.loadScenario.mockResolvedValue({ events: 27 })
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+
+    await user.click(await screen.findByText(/normal shift/i))
+
+    await waitFor(() =>
+      expect(screen.queryByText(/normal shift/i)).not.toBeInTheDocument())
+    expect(screen.getByText(/nobody is on the board yet/i)).toBeInTheDocument()
+  })
+
+  it('answers the click while the shift is still opening', async () => {
+    // Scoring two dozen patients through both engines takes seconds on a cold
+    // container. Without a word on screen the card reads as a dead button.
+    api.getQueue.mockResolvedValue(loadedNotStepped)
+    const gate = deferred()
+    api.loadScenario.mockReturnValue(gate.promise)
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+
+    await user.click(await screen.findByText(/normal shift/i))
+    expect(await screen.findByText(/opening the shift/i)).toBeInTheDocument()
+
+    await act(async () => { gate.resolve({ events: 27 }) })
+    expect(screen.queryByText(/opening the shift/i)).not.toBeInTheDocument()
+  })
+
+  it('starts walking the arrivals in without a second click', async () => {
+    // "Open a shift to bring patients onto the board" is what the card
+    // promises. Live mode only advances the clock, so without auto-play the
+    // board sits empty while the shift appears to be running.
+    api.getQueue.mockResolvedValue(loadedNotStepped)
+    api.loadScenario.mockResolvedValue({ events: 27 })
+    api.stepScenario.mockResolvedValue({ remaining: 26, event: null, alerts: [] })
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+
+    await user.click(await screen.findByText(/normal shift/i))
+    await waitFor(() => expect(api.stepScenario).toHaveBeenCalled(), { timeout: 3000 })
+  })
+
   it('leaves the board up once patients have arrived', async () => {
     // The other half: the picker must not come back mid-shift just because
     // the queue momentarily empties while everyone is in a treatment bay.

@@ -60,6 +60,7 @@ export default function Console() {
   const [showOverride, setShowOverride] = useState(false)
   const [showVitals, setShowVitals] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
+  const [opened, setOpened] = useState(false)
   const [toasts, setToasts] = useState([])
   const [pulsingId, setPulsingId] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -135,12 +136,20 @@ export default function Console() {
     setBusy(true)
     try {
       const r = await api.loadScenario({ profile, speedup, use_llm: true })
-      setDetail(null); setFeedback(''); setAuto(false); setDrawerOpen(false)
+      setDetail(null); setFeedback(''); setDrawerOpen(false)
       selectedRef.current = null; setSelectedId(null)
       setRemaining(r.events)
+      setOpened(true)
       setView('queue')
       await refresh(null)
-      setLive(true)  // a shift that has opened is a shift that is running
+      // Loading a scenario only queues the arrivals. Auto-play is what walks
+      // them through the door, and the card promises exactly that; the clock
+      // alone advances time without ever admitting a patient, which is a board
+      // that sits empty while the shift appears to run. Auto stops itself when
+      // the timeline is spent and live mode carries the waiting room from
+      // there.
+      setAuto(true)
+      setLive(true)
     } finally { setBusy(false) }
   }
 
@@ -284,6 +293,7 @@ export default function Console() {
     setRemaining(null); setQueue([]); setInCare([]); setDetail(null)
     setState(null); setMetrics(null); setView('queue'); setDrawerOpen(false)
     setAuto(false); setLive(false); selectedRef.current = null; setSelectedId(null)
+    setOpened(false)
   }
 
   if (!user) return <SignIn />
@@ -295,13 +305,16 @@ export default function Console() {
   // reads this, never `detail`.
   const shown = detail?.intake.patient_id === selectedId ? detail : null
 
-  // A shift has started once somebody has actually arrived, not merely because
-  // a scenario is loaded and its events are queued. Keying this off `remaining`
-  // meant the deployed demo, which sits loaded and unstepped between shifts,
-  // suppressed the shift picker and opened on an empty board instead.
-  // total_patients counts the room rather than the queue, so a board where
-  // everyone is in a treatment bay still reads as started.
-  const started = (state?.total_patients ?? 0) > 0
+  // Two ways a shift is under way, and both are needed. `opened` is this
+  // operator choosing one: loading a scenario only queues the arrivals, so the
+  // board must appear on the click rather than waiting for the first patient
+  // to walk in. The room counts cover a reload mid-shift, and total_patients
+  // rather than the queue so a board where everyone is in a treatment bay
+  // still reads as started. Neither alone is enough: keying off the server's
+  // `remaining` suppressed the picker on a demo that sits loaded between
+  // shifts, and keying off arrivals alone made the picker look like a dead
+  // button for as long as it took the first one to arrive.
+  const started = opened || (state?.total_patients ?? 0) > 0
                   || queue.length > 0 || inCare.length > 0
   const openAlerts = queue.filter((r) => r.alert && !r.alert_acknowledged).length
   const counts = {
