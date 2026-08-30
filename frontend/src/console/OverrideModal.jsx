@@ -1,7 +1,8 @@
 import { useState } from 'react'
+import { useDialog } from './useDialog'
 import { useSession } from '../auth/sessionContext'
 import { Btn, EsiBadge, Pill } from './ui'
-import { ESI_BG, ESI_LABEL } from './format'
+import { ESI_BG, ESI_INK, ESI_LABEL } from './format'
 
 const QUICK = ['Clinical judgment', 'Vitals trending', 'Patient report',
                'Red flag on exam']
@@ -10,6 +11,7 @@ export default function OverrideModal({ detail, onSubmit, onClose }) {
   const { user } = useSession()
   const { intake, fused } = detail
   const [newEsi, setNewEsi] = useState(null)
+  const dialog = useDialog(onClose)
   const [reason, setReason] = useState('')
   const [ack, setAck] = useState(false)
   const [busy, setBusy] = useState(false)
@@ -33,10 +35,11 @@ export default function OverrideModal({ detail, onSubmit, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/45 grid place-items-center p-5"
-         onClick={onClose}>
-      <div role="dialog" aria-label="Override triage level" onClick={(e) => e.stopPropagation()}
-           className="bg-card rounded-lg w-[560px] max-w-full max-h-[90vh] overflow-y-auto
+    <div className="fixed inset-0 z-50 grid place-items-center p-5">
+      <div className="fixed inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
+      <div role="dialog" aria-modal="true" aria-label="Override triage level"
+           ref={dialog} tabIndex={-1}
+           className="relative bg-card rounded-lg w-[560px] max-w-full max-h-[90vh] overflow-y-auto
                       border-t-4 border-brand shadow-lg">
         <header className="px-5 pt-5 pb-4 border-b border-line">
           <h2 className="text-lg font-bold tracking-tight text-ink">Override triage level</h2>
@@ -56,9 +59,9 @@ export default function OverrideModal({ detail, onSubmit, onClose }) {
             {[1, 2, 3, 4, 5].map((l) => {
               const on = newEsi === l
               return (
-                <button key={l} onClick={() => setNewEsi(l)} aria-pressed={on}
+                <button key={l} onClick={() => { setNewEsi(l); setAck(false) }} aria-pressed={on}
                         className={`rounded-md border-2 py-2.5 cursor-pointer transition-colors
-                                    ${on ? `${ESI_BG[l]} border-transparent text-esi-ink`
+                                    ${on ? `${ESI_BG[l]} ${ESI_INK[l]} border-transparent`
                                          : 'bg-card border-line text-ink-2 hover:border-line-2'}`}>
                   <span className="block text-lg font-bold tabular-nums leading-none">{l}</span>
                   <span className="block text-[8.5px] font-bold uppercase tracking-wide mt-1
@@ -77,7 +80,7 @@ export default function OverrideModal({ detail, onSubmit, onClose }) {
             <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)}
                       placeholder="The clinical judgment behind the change"
                       className="mt-1.5 w-full rounded-sm border border-line px-3 py-2 text-xs
-                                 focus:border-brand focus:outline-none resize-y" />
+                                 focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1 resize-y" />
           </label>
 
           <div className="flex flex-wrap gap-1.5 mt-2">

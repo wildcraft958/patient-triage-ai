@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDialog } from './useDialog'
 import { PencilLine } from 'lucide-react'
 import ComplaintComposer from './ComplaintComposer'
 import { Btn } from './ui'
@@ -21,11 +22,13 @@ const OLDCARTS_FIELDS = [
 export default function IntakeForm({ onSubmit, onClose, nextId }) {
   const [f, setF] = useState({ patient_id: nextId, display_name: '', age_years: '',
     chief_complaint: '', complaint_category: 'other', responsiveness: 'alert' })
+  const dialog = useDialog(onClose)
   const [vit, setVit] = useState({})
   const [oc, setOc] = useState({})
   const [severity, setSeverity] = useState('')
   const [error, setError] = useState('')
   const [composing, setComposing] = useState(false)
+  const [busy, setBusy] = useState(false)
 
   const submit = async () => {
     setError('')
@@ -40,11 +43,14 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
         Object.entries(vit).filter(([, v]) => v !== '').map(([k, v]) => [k, Number(v)])),
       ...(Object.keys(oldcartsAnswers).length ? { oldcarts: oldcartsAnswers } : {}),
     }
+    setBusy(true)
+    // a duplicate patient record is a real consequence, not a cosmetic one
     try { await onSubmit(body) } catch (e) { setError(String(e.message || e)) }
+    finally { setBusy(false) }
   }
 
   const FIELD = 'flex flex-col gap-1 text-[10px] font-bold uppercase tracking-wide text-ink-3'
-  const INPUT = 'rounded-sm border border-line px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-ink focus:border-brand focus:outline-none w-full'
+  const INPUT = 'rounded-sm border border-line px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-ink focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1 w-full'
 
   const vitField = (key, label) => (
     <label key={key} className={FIELD}>
@@ -55,14 +61,17 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
   )
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/45 grid place-items-center p-5" onClick={onClose}>
-      <div role="dialog" aria-label="New arrival" onClick={(e) => e.stopPropagation()}
-           className="bg-card rounded-lg w-[680px] max-w-full max-h-[90vh] overflow-y-auto
+    <div className="fixed inset-0 z-50 grid place-items-center p-5">
+      <div className="fixed inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
+      <div role="dialog" aria-modal="true" aria-label="New arrival"
+           ref={dialog} tabIndex={-1}
+           className="relative bg-card rounded-lg w-[680px] max-w-full max-h-[90vh] overflow-y-auto
                       border-t-4 border-brand shadow-lg px-5 py-5">
         <h2 className="text-lg font-bold tracking-tight text-ink">New arrival</h2>
         <p className="mt-1 mb-4 text-xs leading-relaxed text-ink-2">
-          The name stays on this screen. Only age, complaint, vitals and history
-          reach the reasoning path, and the complaint is redacted on the way.
+          The name identifies the patient on the board and never enters the
+          reasoning path. Only age, complaint, vitals and history reach it, and
+          the complaint is redacted on the way.
         </p>
         <div className="grid grid-cols-3 gap-2.5">
           <label className={FIELD}><span>Patient name</span>
@@ -133,7 +142,8 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
         <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-line">
           <Btn onClick={onClose}>Cancel</Btn>
           <Btn variant="primary"
-               disabled={!f.patient_id || f.age_years === '' || f.chief_complaint.length < 3}
+               disabled={busy || !f.patient_id || f.age_years === ''
+                         || f.chief_complaint.length < 3}
                onClick={submit}>Triage this patient</Btn>
         </div>
       </div>

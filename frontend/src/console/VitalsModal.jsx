@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { useDialog } from './useDialog'
 import { Btn } from './ui'
 import { VITAL_DEFS } from './format'
 
@@ -9,6 +10,7 @@ export default function VitalsModal({ detail, onSubmit, onClose }) {
   const latest = detail.vitals_history?.[detail.vitals_history.length - 1]?.vitals ?? {}
   const [values, setValues] = useState(() =>
     Object.fromEntries(VITAL_DEFS.map(({ key }) => [key, latest[key] ?? ''])))
+  const dialog = useDialog(onClose)
   const [busy, setBusy] = useState(false)
 
   const set = (key, v) => setValues((s) => ({ ...s, [key]: v }))
@@ -26,9 +28,11 @@ export default function VitalsModal({ detail, onSubmit, onClose }) {
   }
 
   return (
-    <div className="fixed inset-0 z-50 bg-ink/45 grid place-items-center p-5" onClick={onClose}>
-      <div role="dialog" aria-label="Record vitals" onClick={(e) => e.stopPropagation()}
-           className="bg-card rounded-lg w-[460px] max-w-full border-t-4 border-brand shadow-lg">
+    <div className="fixed inset-0 z-50 grid place-items-center p-5">
+      <div className="fixed inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
+      <div role="dialog" aria-modal="true" aria-label="Record vitals"
+           ref={dialog} tabIndex={-1}
+           className="relative bg-card rounded-lg w-[460px] max-w-full border-t-4 border-brand shadow-lg">
         <header className="px-5 pt-5 pb-4 border-b border-line">
           <h2 className="text-lg font-bold tracking-tight text-ink">Record vitals</h2>
           <p className="mt-1 text-xs text-ink-2">
@@ -46,7 +50,7 @@ export default function VitalsModal({ detail, onSubmit, onClose }) {
               <input type="number" step="any" value={values[key]}
                      onChange={(e) => set(key, e.target.value)}
                      className="mt-1 w-full rounded-sm border border-line px-2 py-1.5 text-sm
-                                tabular-nums focus:border-brand focus:outline-none" />
+                                tabular-nums focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1" />
             </label>
           ))}
         </div>

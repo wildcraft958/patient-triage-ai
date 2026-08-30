@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
+import { useDialog } from './useDialog'
 import { ChevronDown, X } from 'lucide-react'
 import * as api from '../api'
 import { useSession } from '../auth/sessionContext'
@@ -199,12 +200,7 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
                                         minWidth, maxWidth, onResize,
                                         onAccept, onOverride, onReassess, onVitals }) {
   const { can } = useSession()
-
-  useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose() }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+  const dialog = useDialog(onClose)
 
   if (!detail) return null
 
@@ -216,8 +212,8 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
   return (
     <>
       <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} aria-hidden="true" />
-      <aside role="dialog" aria-label="Triage recommendation"
-             style={{ width }}
+      <aside role="dialog" aria-modal="true" aria-label="Triage recommendation"
+             ref={dialog} tabIndex={-1} style={{ width }}
              className="fixed right-0 top-0 bottom-0 max-w-full bg-card z-50 flex
                         border-l border-line shadow-lg
                         motion-safe:animate-[drawer_.16s_ease-out]">
