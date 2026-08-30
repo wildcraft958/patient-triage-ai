@@ -227,7 +227,7 @@ function AuditTrail({ patientId }) {
 function Shell({ dialog, width, minWidth, maxWidth, onResize, onClose, children }) {
   return (
     <>
-      <Scrim className="z-40 bg-scrim/30" onClick={onClose} />
+      <Scrim tone="panel" className="z-40" onClick={onClose} />
       <aside role="dialog" aria-modal="true" aria-label="Triage recommendation"
              ref={dialog} tabIndex={-1} style={{ width }}
              className="fixed right-0 top-0 bottom-0 max-w-full bg-card z-50 flex

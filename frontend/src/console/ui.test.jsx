@@ -55,4 +55,13 @@ describe('form controls', () => {
     expect(container.firstElementChild.className).toMatch(/\bbg-scrim\//)
     expect(container.firstElementChild.className).not.toMatch(/\bbg-ink\b|\bbg-ink\//)
   })
+
+  // Two bg-scrim classes on one element is a fight decided by stylesheet
+  // order rather than by what the caller meant, and it put the whole board
+  // under a heavy wash behind the patient record.
+  it.each(['full', 'panel'])('sets exactly one %s strength', (tone) => {
+    const { container } = render(<Scrim tone={tone} className="z-40" />)
+    const found = container.firstElementChild.className.match(/bg-scrim\/\d+/g)
+    expect(found).toHaveLength(1)
+  })
 })

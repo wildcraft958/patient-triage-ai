@@ -70,10 +70,21 @@ export function Textarea({ size = 'sm', className = '', ...rest }) {
 
 // What a dialog dims the board with. Never the body ink: that token is near
 // white in dark, so bg-ink/45 washed the console out instead of dimming it.
-export function Scrim({ className = '', ...rest }) {
+//
+// The strength is a prop rather than something the caller appends, because two
+// bg-scrim classes on one element is a fight decided by stylesheet order, not
+// by the order they were written.
+const SCRIM = {
+  // A modal takes the screen; the patient record is a side panel that a
+  // clinician reads against the board, so it barely dims at all.
+  full: 'bg-scrim/55',
+  panel: 'bg-scrim/25',
+}
+
+export function Scrim({ tone = 'full', className = '', ...rest }) {
   return (
     <div aria-hidden="true"
-         className={`fixed inset-0 bg-scrim/55 ${className}`} {...rest} />
+         className={`fixed inset-0 ${SCRIM[tone]} ${className}`} {...rest} />
   )
 }
 
