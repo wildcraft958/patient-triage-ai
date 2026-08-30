@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import * as api from '../api'
 import { useSession } from '../auth/sessionContext'
+import { RESTRICTED } from '../auth/roles'
 import { Btn, Card, CardHead, Empty, Pill } from './ui'
 import { ESI_LABEL, SHIFTS, UNIT_LABEL } from './format'
 
@@ -57,12 +58,12 @@ function Config({ profile }) {
   )
 }
 
-export default function Settings({ state, remaining, busy, auto, live, refreshKey,
+export default function Settings({ state, remaining, busy, auto, live,
                                    onLoad, onAuto, onLive, onAdvance, onSurge, onRestart }) {
   const { user, role, signOut, can } = useSession()
   const [profile, setProfile] = useState(null)
 
-  useEffect(() => { api.getProfile().then(setProfile).catch(() => {}) }, [refreshKey])
+  useEffect(() => { api.getProfile().then(setProfile).catch(() => {}) }, [state?.profile])
 
   const running = remaining != null
 
@@ -102,17 +103,23 @@ export default function Settings({ state, remaining, busy, auto, live, refreshKe
         <Card>
           <CardHead title="Department clock and load" />
           <div className="p-4 flex flex-wrap gap-2">
-            <Btn variant={live ? 'danger' : 'outline'} onClick={onLive}>
+            <Btn variant={live ? 'danger' : 'outline'} onClick={onLive}
+                 disabled={!can.settings} title={can.settings ? undefined : RESTRICTED}>
               {live ? 'Pause the clock' : 'Run the clock live'}
             </Btn>
             {running && (
               <Btn variant={auto ? 'danger' : 'outline'} onClick={onAuto}
-                   disabled={remaining === 0}>
+                   disabled={remaining === 0 || !can.settings}>
                 {auto ? 'Pause arrivals' : 'Play arrivals'}
               </Btn>
             )}
-            <Btn disabled={busy} onClick={() => onAdvance(15)}>Advance 15 min</Btn>
-            <Btn variant={state?.surge_mode ? 'danger' : 'outline'} onClick={onSurge}>
+            <Btn disabled={busy || !can.settings} onClick={() => onAdvance(15)}>
+              Advance 15 min
+            </Btn>
+            {/* forcing surge drops the whole pipeline to the deterministic
+                fast path; that is not a read-only action */}
+            <Btn variant={state?.surge_mode ? 'danger' : 'outline'} onClick={onSurge}
+                 disabled={!can.settings} title={can.settings ? undefined : RESTRICTED}>
               {state?.surge_mode ? 'Release surge' : 'Force surge'}
             </Btn>
           </div>

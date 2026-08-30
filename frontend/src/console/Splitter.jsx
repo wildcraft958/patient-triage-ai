@@ -15,6 +15,7 @@ export default function Splitter({ value, min, max, onChange, label,
   const clamp = useCallback((v) => Math.min(max, Math.max(min, v)), [min, max])
 
   const onPointerDown = (e) => {
+    if (e.button !== 0) return
     dragging.current = true
     start.current = { x: e.clientX, value }
     e.currentTarget.setPointerCapture(e.pointerId)

@@ -4,7 +4,7 @@ import SignIn from '../auth/SignIn'
 import { useSession } from '../auth/sessionContext'
 import AlertBand from './AlertBand'
 import ChunkBoundary from './ChunkBoundary'
-import { clearStaleChunkFlag, reloadOnStaleChunk } from './chunkRecovery'
+import { reloadOnStaleChunk } from './chunkRecovery'
 import EmptyBoard from './EmptyBoard'
 import IntakeForm from './IntakeForm'
 import MonitorBoard from './MonitorBoard'
@@ -66,11 +66,13 @@ export default function Console() {
   const [collapsed, setCollapsed] = useState(() => {
     try { return sessionStorage.getItem(RAIL_KEY) === '1' } catch { return false }
   })
-  const [railWidth, setRailWidth] = usePaneWidth('pt.rail.width', 220)
-  const [drawerWidth, setDrawerWidth] = usePaneWidth('pt.drawer.width', 460)
+  const [railWidth, setRailWidth] = usePaneWidth('pt.rail.width', 220, RAIL_MIN, RAIL_MAX)
+  const [drawerWidth, setDrawerWidth] = usePaneWidth('pt.drawer.width', 460, DRAWER_MIN, DRAWER_MAX)
 
   const selectedRef = useRef(null)
   const toastSeq = useRef(0)
+  // monotonic: a response that is not from the newest request is dropped
+  const fetchSeq = useRef(0)
 
   const toast = useCallback((title, text, tone) => {
     const id = ++toastSeq.current
@@ -79,8 +81,10 @@ export default function Console() {
   }, [])
 
   const refresh = useCallback(async (id) => {
+    const mine = ++fetchSeq.current
     const target = id ?? selectedRef.current
     const q = await api.getQueue()
+    if (mine !== fetchSeq.current) return  // a newer refresh already answered
     setQueue(q.queue)
     setInCare(q.in_care ?? [])
     setState(q.state)
@@ -90,7 +94,8 @@ export default function Console() {
     if (target) {
       selectedRef.current = target
       setSelectedId(target)
-      setDetail(await api.getPatient(target).catch(() => null))
+      const d = await api.getPatient(target).catch(() => null)
+      if (mine === fetchSeq.current) setDetail(d)
     }
   }, [])
 
@@ -99,9 +104,6 @@ export default function Console() {
       a.kind === 'WAIT_BREACH' ? 'Wait limit exceeded' : 'Patient deteriorating',
       a.message || a.reasons.join('; '), 'alarm'))
   }, [toast])
-
-  // the app rendered, so whatever chunk failed last time is behind us
-  useEffect(() => { clearStaleChunkFlag() }, [])
 
   // reload continuity: a refresh mid-shift lands back on a populated board
   useEffect(() => {
@@ -207,11 +209,13 @@ export default function Console() {
   }
 
   const onSelect = async (id) => {
+    const mine = ++fetchSeq.current
     selectedRef.current = id
     setSelectedId(id)
     setFeedback('')
-    setDetail(await api.getPatient(id).catch(() => null))
     if (view === 'queue' || view === 'monitor') setDrawerOpen(true)
+    const d = await api.getPatient(id).catch(() => null)
+    if (mine === fetchSeq.current) setDetail(d)
   }
 
   const onAccept = async (id) => {
@@ -248,7 +252,7 @@ export default function Console() {
   }
 
   const onRecordVitals = async (id, vitals) => {
-    const r = await api.recordVitals(id, vitals)
+    const r = await api.recordVitals(id, vitals, user.badge_id)
     if (r.alert) reportAlerts([r.alert])
     else toast('Vitals recorded', 'No deterioration threshold crossed.', 'accept')
     pulse(id)
@@ -340,7 +344,7 @@ export default function Console() {
           )}
           {view === 'settings' && (
             <Settings state={state} remaining={remaining} busy={busy} auto={auto}
-                      live={live} refreshKey={refreshKey} onLoad={onLoad}
+                      live={live} onLoad={onLoad}
                       onAuto={() => setAuto((a) => !a)} onLive={() => setLive((l) => !l)}
                       onAdvance={onAdvance} onSurge={onSurge} onRestart={onRestart} />
           )}

@@ -5,6 +5,9 @@ import { usePaneWidth } from './usePaneWidth'
 import { Card, CardHead, Empty, Pill } from './ui'
 import { fmt } from './format'
 
+const LOG_MIN = 280
+const LOG_MAX = 620
+
 // The pipeline that produced the selected patient's recommendation, with the
 // time each stage actually took. Every number here is measured, not modelled:
 // the graph nodes are wrapped and their wall time rides on the queue entry.
@@ -79,7 +82,7 @@ function ShiftStrip({ metrics }) {
 export default function PipelineView({ detail, metrics, refreshKey }) {
   const pl = detail?.pipeline
   const fused = detail?.fused
-  const [logWidth, setLogWidth] = usePaneWidth('pt.pipelog.width', 380)
+  const [logWidth, setLogWidth] = usePaneWidth('pt.pipelog.width', 380, LOG_MIN, LOG_MAX)
 
   return (
     <div className="h-full flex flex-col gap-3 min-h-0">
@@ -217,7 +220,7 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
       </Card>
       </div>
 
-      <Splitter value={logWidth} min={280} max={620} side="right"
+      <Splitter value={logWidth} min={LOG_MIN} max={LOG_MAX} side="right"
                 label="Activity log width" onChange={setLogWidth}
                 className="mx-2" />
 
