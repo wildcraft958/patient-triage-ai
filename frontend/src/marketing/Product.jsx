@@ -117,6 +117,18 @@ export default function Product() {
         </div>
       </section>
 
+      <section className="tight">
+        <div className="wrap">
+          <div className="eyebrow">Running it</div>
+          <h2 className="section-title">One container, three ways to run it.</h2>
+          <div className="hero-ctas">
+            <Link className="btn btn-outline" to="/deploy">
+              Deployment models and what a pilot measures<span className="arr">&rsaquo;</span>
+            </Link>
+          </div>
+        </div>
+      </section>
+
       <CtaBand title="Twenty minutes. Your questions, our replay." />
     </>
   )

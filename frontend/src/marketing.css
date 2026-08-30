@@ -67,7 +67,14 @@
 }
 .mkt .theme-toggle:hover { border-color: var(--purple); color: var(--purple-deep); }
 .mkt .nav-links a { color: var(--ink-soft); text-decoration: none; font-size: 13.5px; font-weight: 700; }
+.mkt .nav-links a:not(.btn) { position: relative; padding: 6px 0; }
 .mkt .nav-links a:hover, .mkt .nav-links a.active { color: var(--purple-deep); }
+/* Where you are, as a mark rather than a shade. The active state was a colour
+   change on 13.5px text, which on a page this size reads as nothing. */
+.mkt .nav-links a.active::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 2px;
+  background: var(--purple);
+}
 .mkt .nav-links .btn-primary, .mkt .nav-links .btn-primary:hover { color: var(--mk-onpurple); }
 
 /* buttons */
@@ -230,7 +237,10 @@
 
 /* cta band */
 .mkt .cta-band { background: linear-gradient(120deg, var(--purple), var(--purple-darker)); color: var(--mk-onpurple); }
-.mkt .cta-band h2 { font-size: 36px; letter-spacing: -0.5px; max-width: 700px; text-wrap: balance; }
+.mkt .cta-band h2 {
+  font-size: 36px; line-height: 1.14; letter-spacing: -0.5px;
+  font-weight: 800; max-width: 700px; text-wrap: balance;
+}
 .mkt .cta-band p { margin-top: 14px; color: var(--mk-onpurple-soft); max-width: 560px; }
 .mkt .cta-band .hero-ctas { margin-top: 30px; }
 
@@ -238,6 +248,12 @@
 .mkt .mfoot { background: var(--mk-band); color: var(--mk-band-soft);
   border-top: 1px solid var(--mk-band-line); padding: 44px 0; font-size: 12.5px; }
 .mkt .foot-grid { display: flex; justify-content: space-between; gap: 30px; flex-wrap: wrap; }
+.mkt .foot-cols { display: flex; gap: 52px; flex-wrap: wrap; }
+.mkt .foot-cols > div { display: flex; flex-direction: column; gap: 7px; }
+.mkt .foot-head {
+  font-size: 10.5px; font-weight: 800; letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--mk-band-accent); margin-bottom: 3px;
+}
 .mkt .mfoot a { color: var(--mk-band-soft); text-decoration: none; }
 .mkt .mfoot a:hover { color: var(--mk-band-ink); }
 .mkt .mfoot .wordmark { color: var(--mk-band-ink); font-size: 15px; }
@@ -247,7 +263,10 @@
 /* subpage hero + prose */
 .mkt .page-hero { padding: 74px 0 50px; border-bottom: 1px solid var(--mk-line); }
 .mkt .page-hero h1 { font-size: 42px; }
-.mkt .prose { max-width: 780px; }
+/* The reading measure belongs to the paragraphs, not to the container. Put it
+   on the container and it also re-centres, so a prose section sat 120px right
+   of the page heading above it. */
+.mkt .prose > * { max-width: 780px; }
 .mkt .prose h3 { font-size: 21px; margin: 34px 0 10px; }
 .mkt .prose p { color: var(--ink-soft); margin-bottom: 12px; }
 .mkt .prose ul { margin: 8px 0 16px 20px; color: var(--ink-soft); }

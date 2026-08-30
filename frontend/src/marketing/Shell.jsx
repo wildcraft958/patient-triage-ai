@@ -28,15 +28,19 @@ function Nav() {
     <div className="mnav">
       <div className="wrap nav-inner">
         <Link className="wordmark" to="/"><Mark size={28} /><span className="wm-text">PatientTriage<span>.ai</span></span></Link>
+        {/* Four destinations, not five. "Deploy" was the one nobody could
+            read off the word: it reached a page about where the model runs,
+            and it sat next to four nouns describing the product. It is linked
+            from the deployment section and from the footer, where a reader
+            looking for it is already looking. */}
         <div className="nav-links">
           <NavLink to="/product">Product</NavLink>
           <NavLink to="/evidence">Evidence</NavLink>
-          <NavLink to="/deploy">Deploy</NavLink>
           <NavLink to="/security">Security</NavLink>
           <NavLink to="/about">About</NavLink>
           <ThemeToggle />
           <Link className="btn btn-primary btn-sm" to="/console">
-            Launch console<span className="arr">&rsaquo;</span>
+            Launch the console<span className="arr">&rsaquo;</span>
           </Link>
         </div>
       </div>
@@ -63,6 +67,12 @@ export function CtaBand({ title, sub, showConsole = true }) {
   )
 }
 
+const FOOTER = [
+  ['The product', [['/product', 'What it does'], ['/console', 'The live console']]],
+  ['The evidence', [['/evidence', 'Benchmarks and method'], ['/security', 'Security and governance']]],
+  ['Running it', [['/deploy', 'Deployment models'], ['/about', 'About the team']]],
+]
+
 function Footer() {
   return (
     <div className="mfoot">
@@ -72,14 +82,16 @@ function Footer() {
             <Link className="wordmark" to="/"><Mark size={26} /><span className="wm-text">PatientTriage<span>.ai</span></span></Link>
             <p style={{ marginTop: 8 }}>The system recommends. The clinician decides.</p>
           </div>
-          <div style={{ display: 'flex', gap: 36 }}>
-            <div><Link to="/product">Product</Link></div>
-            <div><Link to="/evidence">Evidence</Link></div>
-            <div><Link to="/deploy">Deploy</Link></div>
-            <div><Link to="/security">Security</Link></div>
-            <div><Link to="/about">About</Link></div>
-            <div><Link to="/console">Console</Link></div>
-          </div>
+          {/* Grouped and labelled, so every destination says what it is
+              rather than sitting in a row of six bare nouns. */}
+          <nav className="foot-cols" aria-label="Site">
+            {FOOTER.map(([heading, links]) => (
+              <div key={heading}>
+                <p className="foot-head">{heading}</p>
+                {links.map(([to, label]) => <Link key={to} to={to}>{label}</Link>)}
+              </div>
+            ))}
+          </nav>
         </div>
         <div className="disclaimer">
           Built by Team NamoFans (IIT Kharagpur) for the Accenture Innovation Challenge 2026.
