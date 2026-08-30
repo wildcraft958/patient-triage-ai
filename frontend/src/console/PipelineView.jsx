@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import * as api from '../api'
 import ActivityLog from './ActivityLog'
-import { AT, Branch, Edge, Node, feed } from './flow'
+import { Branch, Edge, Node } from './flow'
+import { AT, feed } from './flowClock'
 import { Card, CardHead, Empty, Pill } from './ui'
 import { fmt, fmtMs as ms } from './format'
 
