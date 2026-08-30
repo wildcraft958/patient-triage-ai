@@ -204,7 +204,9 @@ def test_a_deteriorating_row_carries_its_trend_and_alert_text():
         "hr": 118, "rr": 24, "spo2": 91, "temp_c": 38.9, "sbp": 95, "pain": 6})
     row = client.get("/queue").json()["queue"][0]
     assert row["vitals_worsening"][0].startswith("HR 88 -> 118")
-    assert "immediate reassessment" in row["alert"]
+    # The alert carries what changed, not an instruction the board already
+    # gives with a pill and a button.
+    assert "HR 88 -> 118" in row["alert"] and "danger zone" in row["alert"]
 
 
 def test_patients_in_care_are_listed_beside_the_waiting_queue():
@@ -293,7 +295,7 @@ def test_reassess_answers_the_alert_and_resets_the_wait_clock():
     client.post("/patients", json=patient())
     client.post("/clock/advance", json={"minutes": 45})  # ESI-3 limit is 30
     row = client.get("/queue").json()["queue"][0]
-    assert row["status"] == "reassess_due" and "safe wait limit" in row["alert"]
+    assert row["status"] == "reassess_due" and "45 min wait" in row["alert"]
 
     r = client.post("/patients/P1/reassess", json={"clinician_id": "RN-07"})
     assert r.json()["status"] == "waiting"

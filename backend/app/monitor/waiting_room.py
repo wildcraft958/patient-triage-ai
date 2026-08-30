@@ -144,10 +144,13 @@ class WaitingRoom:
                     kind="WAIT_BREACH",
                     reasons=[f"waiting {waited:.0f} min exceeds the {limit} min "
                              f"limit for ESI-{entry.fused.esi}"],
+                    # Facts only. The board puts a WAIT LIMIT pill and a
+                    # Reassess button either side of this, so spelling out
+                    # "safe wait limit exceeded, consider reassessment" said
+                    # the same thing a third time and crowded the row.
                     message=(f"{_who(entry)} "
                              f"(ESI-{entry.fused.esi}, {_complaint(entry)}, "
-                             f"{waited:.0f} min wait) - safe wait limit exceeded. "
-                             f"Consider reassessment."),
+                             f"{waited:.0f} min wait)"),
                 )
                 entry.status = "reassess_due"
                 entry.alerts.append(alert)
@@ -194,8 +197,8 @@ class WaitingRoom:
                 patient_id=patient_id, at_min=now, kind="DETERIORATION",
                 reasons=reasons, needs_retriage=True,
                 message=(f"{_who(entry)} (ESI-{entry.fused.esi}, "
-                         f"{_complaint(entry)}, {waited:.0f} min wait) - "
-                         f"{'; '.join(reasons)}. Recommend immediate reassessment."),
+                         f"{_complaint(entry)}, {waited:.0f} min wait): "
+                         f"{'; '.join(reasons)}"),
             )
             entry.status = "deteriorating"
             entry.alerts.append(alert)
