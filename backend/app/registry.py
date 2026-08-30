@@ -13,7 +13,11 @@ copy. The console draws the same split as a diagram; this is it as a list.
 from statistics import mean
 
 PHI = "phi"                    # sees the patient record as it arrived
-DEIDENTIFIED = "deidentified"  # sees the redacted copy only
+DEIDENTIFIED = "deidentified"  # receives a de-identified copy only
+
+# The sharpest privacy statement the system can make: exactly one component
+# sends anything off this machine, and it has only ever seen a redacted copy.
+EGRESS = "clinical_reasoning"
 
 
 def _stage_average(entries, stage: str) -> float:
@@ -136,18 +140,19 @@ def snapshot(service) -> dict:
             "name": "Learned calibration",
             "kind": "learned",
             "stage": "Calibration",
-            "boundary": DEIDENTIFIED,
+            "boundary": PHI,
             "status": "active",
             "implementation": "per complaint and age band, clinician-supervised",
             "summary": (
-                f"{len(service.calibration.cells)} cells tracked. A cell that "
-                f"passes {ESCALATE_THRESHOLD:.0%} starts escalating that pattern "
-                f"on its own."
+                f"{len(service.calibration.cells)} cells tracked, "
+                f"{service._calibration_escalations} escalations applied. A cell "
+                f"that passes {ESCALATE_THRESHOLD:.0%} starts escalating that "
+                f"pattern on its own."
             ),
             "decides": "whether a pattern clinicians keep escalating is escalated up front",
             "cannot": "downgrade anyone; it only ever moves toward more acute",
             "on_failure": "an empty table is a no-op, and triage is unaffected",
-            "invocations": service._calibration_escalations,
+            "invocations": triages,
             "latency_ms": 0.0,
         },
         {
@@ -187,10 +192,12 @@ def snapshot(service) -> dict:
             "latency_ms": 0.0,
         },
     ]
+    for c in components:
+        c["egress"] = c["id"] == EGRESS
     return {
         "components": components,
         "boundary": {
-            PHI: "Inside the trust boundary: sees the record as it arrived",
-            DEIDENTIFIED: "Outside the trust boundary: de-identified input only",
+            PHI: "Runs on the record as it arrived, on this machine",
+            DEIDENTIFIED: "Receives a de-identified copy only",
         },
     }

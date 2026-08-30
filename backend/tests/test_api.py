@@ -521,6 +521,18 @@ def test_registry_reports_the_models_the_container_is_actually_running():
     assert by_id["phi_redactor"]["boundary"] == "phi"
     assert by_id["clinical_reasoning"]["boundary"] == "deidentified"
     assert by_id["rules_engine"]["boundary"] == "phi"
+    # calibration is handed the intake object, so calling it de-identified
+    # would overstate the claim
+    assert by_id["calibration_loop"]["boundary"] == "phi"
+
+
+def test_exactly_one_component_sends_anything_off_the_machine():
+    """The privacy claim in one assertion: the reasoning path is the only
+    egress, and it only ever receives a redacted copy."""
+    components = client.get("/system/registry").json()["components"]
+    egress = [c for c in components if c["egress"]]
+    assert [c["id"] for c in egress] == ["clinical_reasoning"]
+    assert egress[0]["boundary"] == "deidentified"
 
 
 def test_registry_invocation_counts_track_the_shift():
