@@ -423,3 +423,43 @@ EHR integration (HL7/FHIR), which we mock; (3) the ESI resource-count
 estimate should learn from the hospital's own historical data; (4) alert
 thresholds need tuning per site to avoid alarm fatigue, which is why they
 live in the hospital profile YAML rather than in code.
+
+## Can the console ever act on a patient other than the one selected?
+
+No, and it is worth saying how we know, because for a while it could.
+
+The console holds two pieces of state: the row the board highlights, and the
+record fetched for it. The record drives the drawer, and both the override and
+the vitals dialogs submit that record's own patient ID. So any moment where
+the two disagreed was a moment where a decision could land on the wrong
+patient. Two things let them disagree. A one-time fetch on page load, the one
+that puts you back on a populated board after a refresh, wrote its result
+without checking whether you had clicked someone else while it was in flight.
+And after any click, the drawer kept rendering the previous record until the
+new one arrived.
+
+Both are closed, and closed differently from how they were found. The load
+fetch now loses to a later click, the same way the other two fetch sites
+already worked. More importantly, a record now reaches the drawer or either
+dialog only while it is the record that is selected, so the divergence is not
+something the component can represent any more. The drawer opens on the click
+and fills when its own record lands, which is also how it should have behaved
+in the first place.
+
+The reason it survived as long as it did is the honest part: the backend had
+212 tests and the frontend had none. It has 27 now, and the first four written
+were the ones that reproduce this. We checked they fail without each half of
+the fix rather than assuming they would.
+
+## The registry shows sub-millisecond timings for the language model. Is that real?
+
+It is real, and it is not inference time. This build replays a committed
+response cache so the demo is deterministic and costs nothing to run, which
+means the measured figure for Path B is a disk read. A live call to the model
+is one to three seconds.
+
+The registry computes that caveat and both screens that show the number now
+show the caveat with it: the component card in the registry, and the Path B
+stage in the pipeline view. It used to be computed and never rendered, which
+is the same as not having it, since the only person it protects is the one
+reading the number.

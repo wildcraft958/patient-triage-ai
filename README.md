@@ -163,7 +163,7 @@ reads before reading the number survives the theme.
 | GRPO optimizer | `backend/app/learning/grpo.py` | Group-relative advantages over the experience repository; `scripts/train_policy.py` |
 | ICD-10 coding + FHIR export | `backend/app/engine/icd10.py`, `backend/app/fhir.py` | Provisional encounter codes; FHIR R4 Bundle per episode |
 | Evaluation harness | `eval/run_eval.py` | Published-benchmark metrics, reproducible |
-| Product site + nurse console | `frontend/` | React + Vite + Tailwind; product site at `/`, console at `/console`: badge sign-in with three roles, acuity-ranked queue, reassessment board, live pipeline trace, component registry, analytics, one-click override, OLDCARTS intake form with voice dictation |
+| Product site + nurse console | `frontend/` | React + Vite + Tailwind; product site at `/`, console at `/console`: badge sign-in with three roles, acuity-ranked queue, reassessment board, live pipeline trace, component registry, analytics, one-click override, OLDCARTS intake form, light and dark themes, resizable panes |
 
 ### The intake classifier: distillation end to end
 
@@ -193,13 +193,14 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 211 tests
+uv run pytest                     # 212 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
 # 4. Frontend (new terminal)
 cd frontend
 npm install
+npm test                          # 27 tests
 npm run dev                       # http://localhost:5173
 
 # 5. localhost:5173 opens the product site; "Launch console" (or /console)
