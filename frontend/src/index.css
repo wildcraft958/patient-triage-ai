@@ -267,3 +267,31 @@ body {
   from { transform: translateY(6px); opacity: 0; }
   to { transform: none; opacity: 1; }
 }
+
+/* Pipeline flowchart. The dashes drift along every edge so the graph reads as
+   something running rather than a diagram of it; the dart is one triage
+   travelling the path, fired when the scored count actually moves. Both are
+   decoration, so both sit behind motion-safe at the call site. */
+@keyframes edge-drift-x {
+  to { background-position: 12px 0; }
+}
+
+/* The branch strokes drift the same way, but a dashed stroke moves by its
+   offset rather than a background position. */
+@keyframes branch-drift {
+  to { stroke-dashoffset: -9; }
+}
+
+@keyframes edge-dart-x {
+  0%   { left: 0; opacity: 0; }
+  12%  { opacity: 1; }
+  80%  { opacity: 1; }
+  100% { left: 100%; opacity: 0; }
+}
+
+/* A bright segment running the length of a branch path, drawn over the static
+   stroke rather than replacing it. */
+@keyframes branch-dart {
+  from { stroke-dashoffset: 240; }
+  to   { stroke-dashoffset: 0; }
+}
