@@ -48,7 +48,7 @@ export default function Product() {
           <div className="split" style={{ marginTop: 32 }}>
             <div>
               <p>Every waiting patient carries a live priority score:</p>
-              <div className="callout" style={{ background: '#fff' }}>
+              <div className="callout">
                 <b>priority = deterioration risk &times; wait pressure &times; uncertainty &times; severity</b>
               </div>
               <p>

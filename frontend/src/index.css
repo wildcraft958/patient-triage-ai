@@ -33,7 +33,7 @@
 
   --color-ink: #241435;
   --color-ink-2: #5B4E6B;
-  --color-ink-3: #8C81A0;
+  --color-ink-3: #786C8F;
 
   --color-line: #E9E1F5;
   --color-line-2: #D6C8EA;
@@ -51,10 +51,15 @@
   --color-esi-3: #EA580C;
   --color-esi-4: #CA8A04;
   --color-esi-5: #16A34A;
-  /* Badge text. Light mode fills are deep enough for white; dark mode lifts
-     the fills and flips this, because inverting the scale itself would break
-     the convention a nurse reads before the number. */
-  --color-esi-ink: #FFFFFF;
+  /* Badge text, per level. One ink token cannot serve all five fills: white
+     clears 4.5:1 on the two deep fills and misses it on the lighter three.
+     The ink flips where the ramp turns light, rather than the fills going
+     dark to suit the ink and flattening the scale a nurse reads by. */
+  --color-esi-1-ink: #FFFFFF;
+  --color-esi-2-ink: #FFFFFF;
+  --color-esi-3-ink: #1A1024;
+  --color-esi-4-ink: #1A1024;
+  --color-esi-5-ink: #1A1024;
 
   --color-alert-bg: #FDF2F4;
   --color-alert-line: #F6CFD5;
@@ -100,7 +105,7 @@
 
   --color-ink: #EDE7F6;
   --color-ink-2: #B9AECB;
-  --color-ink-3: #7E7391;
+  --color-ink-3: #8A809B;
 
   --color-line: #322A42;
   --color-line-2: #453A5A;
@@ -118,7 +123,11 @@
   --color-esi-3: #FB923C;
   --color-esi-4: #FACC15;
   --color-esi-5: #4ADE80;
-  --color-esi-ink: #1A1024;
+  --color-esi-1-ink: #1A1024;
+  --color-esi-2-ink: #1A1024;
+  --color-esi-3-ink: #1A1024;
+  --color-esi-4-ink: #1A1024;
+  --color-esi-5-ink: #1A1024;
 
   --color-alert-bg: #2B181D;
   --color-alert-line: #4E2630;
@@ -159,7 +168,7 @@
 
     --color-ink: #EDE7F6;
     --color-ink-2: #B9AECB;
-    --color-ink-3: #7E7391;
+    --color-ink-3: #8A809B;
 
     --color-line: #322A42;
     --color-line-2: #453A5A;
@@ -175,7 +184,11 @@
     --color-esi-3: #FB923C;
     --color-esi-4: #FACC15;
     --color-esi-5: #4ADE80;
-    --color-esi-ink: #1A1024;
+    --color-esi-1-ink: #1A1024;
+    --color-esi-2-ink: #1A1024;
+    --color-esi-3-ink: #1A1024;
+    --color-esi-4-ink: #1A1024;
+    --color-esi-5-ink: #1A1024;
 
     --color-alert-bg: #2B181D;
     --color-alert-line: #4E2630;

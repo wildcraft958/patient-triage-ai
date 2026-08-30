@@ -1,4 +1,4 @@
-import { ESI_BG, ESI_LABEL } from './format'
+import { ESI_BG, ESI_INK, ESI_LABEL } from './format'
 
 // Design-system primitives for the console. Every screen composes these, so
 // a patient, an acuity level and an action look the same wherever they show
@@ -13,7 +13,7 @@ const BTN_BASE = 'inline-flex items-center justify-center gap-1.5 font-semibold 
 const BTN_VARIANT = {
   primary: 'bg-brand text-brand-fg border-brand hover:bg-brand-ink hover:border-brand-ink',
   outline: 'bg-card text-ink border-line-2 hover:border-brand hover:text-brand-ink',
-  danger: 'bg-esi-2 text-esi-ink border-esi-2 hover:bg-esi-1 hover:border-esi-1',
+  danger: 'bg-esi-2 text-esi-2-ink border-esi-2 hover:bg-esi-1 hover:border-esi-1',
   ghost: 'bg-transparent text-ink-2 border-transparent hover:bg-app hover:text-ink',
   dark: 'bg-rail-2 text-rail-ink border-rail-3 hover:bg-rail-3',
 }
@@ -41,8 +41,8 @@ export function EsiBadge({ esi, size = 'md' }) {
     lg: 'text-sm px-3 py-1.5 min-w-[62px]',
   }[size]
   return (
-    <span className={`${ESI_BG[esi]} ${dims} inline-block text-center rounded-sm
-                      text-esi-ink font-bold tabular-nums tracking-tight`}
+    <span className={`${ESI_BG[esi]} ${ESI_INK[esi]} ${dims} inline-block rounded-sm
+                      text-center font-bold tabular-nums tracking-tight`}
           title={`ESI-${esi} ${ESI_LABEL[esi]}`}>
       ESI-{esi}
     </span>
@@ -57,7 +57,7 @@ export function Initials({ name, id, esi, size = 'md' }) {
     .map((w) => w[0]).slice(0, 2).join('').toUpperCase() || '?'
   const dims = { sm: 'w-7 h-7 text-[10px]', md: 'w-9 h-9 text-xs' }[size]
   return (
-    <span className={`${esi ? `${ESI_BG[esi]} text-esi-ink` : 'bg-ink-2 text-card'}
+    <span className={`${esi ? `${ESI_BG[esi]} ${ESI_INK[esi]}` : 'bg-ink-2 text-card'}
                       ${dims} shrink-0 rounded-sm inline-flex items-center
                       justify-center font-bold tracking-tight`}>
       {letters}
@@ -72,7 +72,7 @@ const PILL_TONE = {
   warn: 'bg-warn-bg text-warn-ink border-warn-line',
   ok: 'bg-ok-bg text-ok-ink border-ok-line',
   info: 'bg-info-bg text-info-ink border-info-line',
-  solid: 'bg-esi-2 text-esi-ink border-esi-2',
+  solid: 'bg-esi-2 text-esi-2-ink border-esi-2',
 }
 
 export function Pill({ tone = 'neutral', className = '', children, ...rest }) {

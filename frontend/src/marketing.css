@@ -28,7 +28,7 @@
   --mk-band-2: #2C2138;
   --mk-shadow: rgba(98, 21, 184, 0.14);
   --mk-line-strong: #C9AEE9;
-  --mk-onpurple-soft: #EBD9FF;
+  --mk-onpurple-soft: #F5EBFF;
 
   font-family: 'Inter var', Inter, system-ui, -apple-system, 'Segoe UI', sans-serif;
   color: var(--mk-ink);
@@ -41,7 +41,7 @@
   --purple: #B95CFF;
   --purple-mid: #A063E0;
   --purple-deep: #C88BFF;
-  --purple-darker: #8B3FD4;
+  --purple-darker: #AA73E0;
   --mk-ink: #EDE7F6;
   --ink-soft: #B9AECB;
   --mk-muted: #8A7F9C;
@@ -54,7 +54,7 @@
   --mk-card: #1E1729;
   --mk-nav: rgba(22, 17, 31, 0.94);
   --mk-onpurple: #1A1024;
-  --mk-onpurple-soft: #2E1A44;
+  --mk-onpurple-soft: #291639;
 
   --mk-band: #1E1729;
   --mk-band-ink: #EDE7F6;
@@ -70,7 +70,7 @@
     --purple: #B95CFF;
     --purple-mid: #A063E0;
     --purple-deep: #C88BFF;
-    --purple-darker: #8B3FD4;
+    --purple-darker: #AA73E0;
     --mk-ink: #EDE7F6;
     --ink-soft: #B9AECB;
     --mk-muted: #8A7F9C;
@@ -83,7 +83,7 @@
     --mk-card: #1E1729;
     --mk-nav: rgba(22, 17, 31, 0.94);
     --mk-onpurple: #1A1024;
-    --mk-onpurple-soft: #2E1A44;
+    --mk-onpurple-soft: #291639;
 
     --mk-band: #1E1729;
     --mk-band-ink: #EDE7F6;

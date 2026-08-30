@@ -7,8 +7,11 @@
 export const ESI_BG = {
   1: 'bg-esi-1', 2: 'bg-esi-2', 3: 'bg-esi-3', 4: 'bg-esi-4', 5: 'bg-esi-5',
 }
-export const ESI_TEXT = {
-  1: 'text-esi-1', 2: 'text-esi-2', 3: 'text-esi-3', 4: 'text-esi-4', 5: 'text-esi-5',
+// White text clears contrast on the two deep fills and fails on the lighter
+// three, so the ink is per level rather than one token for the whole ramp.
+export const ESI_INK = {
+  1: 'text-esi-1-ink', 2: 'text-esi-2-ink', 3: 'text-esi-3-ink',
+  4: 'text-esi-4-ink', 5: 'text-esi-5-ink',
 }
 export const ESI_LABEL = {
   1: 'Resuscitation', 2: 'Emergency', 3: 'Urgent', 4: 'Less urgent', 5: 'Non urgent',
@@ -53,8 +56,6 @@ export const UNIT_LABEL = {
   urban_500: 'Urban trauma center · 500 visits/day',
   rural_100: 'Rural emergency department · 100 visits/day',
 }
-
-export const ROUND = (n) => Math.round(Number(n) || 0)
 
 // The two shifts a console operator can open. Data, not a component.
 export const SHIFTS = [

@@ -5,7 +5,7 @@ import { UNIT_LABEL, shiftClock } from './format'
 const LOAD = {
   normal: ['Normal', 'bg-esi-5'],
   busy: ['Busy', 'bg-esi-4'],
-  surge: ['Surge', 'bg-esi-2 animate-pulse'],
+  surge: ['Surge', 'bg-esi-2 motion-safe:animate-pulse'],
 }
 
 function Group({ icon: Icon, children, title, at = 'md' }) {
@@ -73,7 +73,7 @@ export default function StatusBar({ state, alerts, live, busy, remaining,
           <Bell size={16} aria-hidden="true" />
           {alerts > 0 && (
             <span className="absolute -top-0.5 -right-0.5 min-w-[15px] h-[15px] px-1
-                             rounded-full bg-esi-2 text-esi-ink text-[9px] font-bold
+                             rounded-full bg-esi-2 text-esi-2-ink text-[9px] font-bold
                              grid place-items-center tabular-nums">
               {alerts}
             </span>
