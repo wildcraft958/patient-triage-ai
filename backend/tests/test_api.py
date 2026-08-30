@@ -527,6 +527,26 @@ def test_the_surge_fast_path_is_visible_in_the_trace():
     assert pl["reasoning_ran"] is False
 
 
+def test_a_path_b_failure_is_not_reported_as_a_surge_deferral():
+    """The third pipeline state. Under surge Path B is deferred and will run
+    later; on a genuine failure nothing is queued and Path A carries the
+    triage alone. Both leave `reasoning_ran` false, and only the trace tells
+    them apart, so the console can only label them correctly if the API keeps
+    them distinct. In the deployed demo a complaint the response cache has
+    never seen is how a live panel reaches this state; here the transport is
+    made to fail outright, which is the same branch."""
+    def dead_transport(system: str, user: str) -> str:
+        raise RuntimeError("no response for this prompt")
+
+    api.reset_service(profile_name="urban_500", audit_path=":memory:",
+                      transport=dead_transport)
+    client.post("/patients", json=patient("MISS1"))
+    pl = client.get("/patients/MISS1").json()["pipeline"]
+
+    assert pl["reasoning_ran"] is False
+    assert pl["surge_path"] is False
+
+
 def test_registry_reports_the_models_the_container_is_actually_running():
     from app.config import settings
     by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
