@@ -528,11 +528,19 @@ def test_registry_reports_the_models_the_container_is_actually_running():
 
 def test_exactly_one_component_sends_anything_off_the_machine():
     """The privacy claim in one assertion: the reasoning path is the only
-    egress, and it only ever receives a redacted copy."""
+    egress, and it only ever receives a redacted copy.
+
+    Tied to the configured remote model rather than to the component id, so
+    that adding a second component that talks to a remote model fails here
+    instead of quietly inheriting egress=False."""
+    from app.config import settings
     components = client.get("/system/registry").json()["components"]
-    egress = [c for c in components if c["egress"]]
-    assert [c["id"] for c in egress] == ["clinical_reasoning"]
-    assert egress[0]["boundary"] == "deidentified"
+    names_remote = {c["id"] for c in components
+                    if settings.llm_model in c["implementation"]}
+    marked = {c["id"] for c in components if c["egress"]}
+    assert marked == names_remote, "egress must follow the remote model, not the id"
+    assert len(marked) == 1
+    assert next(c for c in components if c["egress"])["boundary"] == "deidentified"
 
 
 def test_registry_invocation_counts_track_the_shift():
@@ -595,3 +603,66 @@ def test_every_component_publishes_a_stable_short_code():
     assert by_id["phi_redactor"] == "RDX"
     assert by_id["rules_engine"] == "ESI"
     assert by_id["clinical_reasoning"] == "LLM"
+
+
+def test_component_counts_follow_every_path_that_runs_them():
+    """Redaction, rules and fusion run on a deterioration re-triage as well as
+    on arrival. Counting arrivals only undercounts the pipeline by exactly the
+    paths that matter most, which is the drift the registry exists to prevent."""
+    def runs():
+        return {c["id"]: c["invocations"]
+                for c in client.get("/system/registry").json()["components"]}
+
+    client.post("/patients", json=patient("CNT1", complaint_category="sepsis_concern",
+                                          vitals={"hr": 96, "rr": 18, "spo2": 97,
+                                                  "temp_c": 38.1, "sbp": 122, "pain": 6}))
+    before = runs()
+    client.post("/clock/advance", json={"minutes": 20})
+    r = client.post("/patients/CNT1/vitals?source=nurse",
+                    json={"hr": 124, "rr": 24, "spo2": 93, "temp_c": 39.0,
+                          "sbp": 98, "pain": 8})
+    assert r.json()["retriaged"] is not None, "the trend should force a re-triage"
+    after = runs()
+
+    for component in ("phi_redactor", "rules_engine", "fusion_policy",
+                      "clinical_reasoning", "calibration_loop"):
+        assert after[component] == before[component] + 1, component
+
+
+def test_the_reasoning_path_is_not_counted_when_surge_skips_it():
+    """The surge fast path enters the node and returns without calling the
+    model. Counting that as a run, or averaging its near-zero duration into
+    the published latency, would advertise work that never happened."""
+    client.post("/surge", json={"forced": True})
+    before = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
+    client.post("/patients", json=patient("SRG1"))
+    after = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
+
+    assert after["clinical_reasoning"]["invocations"] == \
+        before["clinical_reasoning"]["invocations"]
+    assert after["rules_engine"]["invocations"] == \
+        before["rules_engine"]["invocations"] + 1
+
+
+def test_a_component_that_was_never_timed_says_so():
+    """Five of eight components have no measured stage. Publishing 0.0 for
+    them is indistinguishable from a real sub-millisecond measurement."""
+    client.post("/patients", json=patient("LAT1"))
+    by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}
+    assert by_id["acuity_monitor"]["latency_ms"] is None
+    assert by_id["safety_monitor"]["latency_ms"] is None
+    assert by_id["phi_redactor"]["latency_ms"] > 0
+
+
+def test_a_profile_without_declared_bays_still_loads():
+    """One YAML per hospital is the scalability claim. A required field with
+    no default turns every existing profile file into a startup failure."""
+    from app.profiles import HospitalProfile
+    profile = HospitalProfile(
+        profile_name="no_bays", visits_per_day=200,
+        max_wait_min={2: 10, 3: 30, 4: 60, 5: 120},
+        reassess_check_interval_min=10, surge_queue_threshold=20,
+        deterioration={"hr_rise_pct": 15, "sbp_drop_pct": 15,
+                       "spo2_drop_points": 3, "temp_rise_c": 0.5},
+    )
+    assert profile.treatment_bays is None

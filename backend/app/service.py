@@ -61,8 +61,32 @@ class TriageService:
         self.bias = BiasMonitor()
         self._enrichment_queue: list[str] = []
         self._latencies_ms: list[float] = []
-        self._classifier_runs = 0
         self._calibration_escalations = 0
+        # How often each component has actually run. Counted where the work
+        # happens rather than derived from arrivals: redaction, rules and
+        # fusion also run on a deterioration re-triage and on deferred
+        # enrichment, and counting arrivals alone silently undercounts
+        # exactly the paths that matter most.
+        self._component_runs: dict[str, int] = {}
+
+    def _count(self, *component_ids: str) -> None:
+        for cid in component_ids:
+            self._component_runs[cid] = self._component_runs.get(cid, 0) + 1
+
+    @_locked
+    @_locked
+    def room_snapshot(self) -> list:
+        """A stable list of the entries for a reader that is not mutating
+        them. Iterating self.room.entries unlocked races an arrival and
+        raises RuntimeError mid-response."""
+        return list(self.room.entries.values())
+
+    @_locked
+    def component_runs(self) -> dict[str, int]:
+        """Run counts per component, as a copy. Public because the registry
+        reads them, and reading them through the underscore is how they
+        drifted from the call sites in the first place."""
+        return dict(self._component_runs)
 
     # --- surge ---
 
@@ -86,7 +110,7 @@ class TriageService:
         classifier_ran = (intake.complaint_category == "other"
                           or intake.complaint_category not in KNOWN_CATEGORIES)
         if classifier_ran:
-            self._classifier_runs += 1
+            self._count("intake_classifier")
             detected = classify_category(intake.chief_complaint)
             if detected != intake.complaint_category:
                 intake = intake.model_copy(update={"complaint_category": detected})
@@ -101,6 +125,7 @@ class TriageService:
             fused = fused.model_copy(update={"notes": fused.notes + [
                 "Surge: Path B queued for deferred enrichment"]})
         fused = self._apply_calibration(intake, fused)
+        self._count("safety_monitor")
         fused, safety = safety_check(intake, fused)
         latency_ms = round((time.perf_counter() - started) * 1000, 1)
         self._latencies_ms.append(latency_ms)
@@ -123,6 +148,7 @@ class TriageService:
     @_locked
     def record_vitals(self, patient_id: str, vitals: Vitals,
                       source: str = "nurse") -> dict:
+        self._count("acuity_monitor")
         alert = self.room.record_vitals(patient_id, vitals)
         result: dict = {"alert": alert, "retriaged": None}
         if alert is not None:
@@ -189,6 +215,7 @@ class TriageService:
                                {"outcome": "llm_unavailable"})
                 continue
             fused = self._apply_calibration(entry.intake, fused)
+            self._count("safety_monitor")
             fused, _ = safety_check(entry.intake, fused)
             if entry.decided_by is not None:
                 # a clinician decided while Path B was queued: their level is
@@ -416,12 +443,13 @@ class TriageService:
     BUSY_OCCUPANCY = 0.8
     BUSY_QUEUE_FRACTION = 0.6
 
+    @_locked
     def state_view(self) -> dict:
         waiting = self.room.queue()
         in_care = sum(1 for e in self.room.entries.values()
                       if e.status == "in_treatment")
         bays = self.profile.treatment_bays
-        available = max(0, bays - in_care)
+        available = None if bays is None else max(0, bays - in_care)
         return {
             "profile": self.profile.profile_name,
             "visits_per_day": self.profile.visits_per_day,
@@ -445,7 +473,7 @@ class TriageService:
     def _load_state(self, waiting: int, in_care: int, bays: int) -> str:
         if self.surge_mode:
             return "surge"
-        crowded = bays and in_care / bays >= self.BUSY_OCCUPANCY
+        crowded = bool(bays) and in_care / bays >= self.BUSY_OCCUPANCY
         backing_up = (waiting
                       >= self.profile.surge_queue_threshold * self.BUSY_QUEUE_FRACTION)
         return "busy" if crowded or backing_up else "normal"
@@ -457,6 +485,11 @@ class TriageService:
         """The recommendation and the trace of what produced it. The trace is
         what the pipeline view renders: measured time per stage and the PHI
         classes redaction actually removed for this patient."""
+        self._count("phi_redactor", "rules_engine", "fusion_policy")
+        # the node is entered under surge but returns without calling the
+        # model, and a run that did no work is not a run
+        if use_llm:
+            self._count("clinical_reasoning")
         state = triage(intake, use_llm=use_llm, transport=self.transport)
         trace = {
             "stage_ms": state["stage_ms"],
@@ -466,6 +499,7 @@ class TriageService:
         return state["fused"], trace
 
     def _apply_calibration(self, intake: PatientIntake, fused: FusedResult) -> FusedResult:
+        self._count("calibration_loop")
         band = age_band(intake)
         adjusted = self.calibration.apply(intake.complaint_category, band, fused.esi)
         if adjusted != fused.esi:
