@@ -581,6 +581,57 @@ def test_patient_detail_publishes_the_age_band_limits_it_was_scored_against():
     assert adult["fused"] and baby["fused"]
 
 
+# --- who may do what, decided on the server ----------------------------------
+
+
+def test_a_medical_assistant_cannot_change_an_acuity_level():
+    """The console disables accept and override for an MA with "requires RN
+    sign-off". A disabled button is a courtesy, not a control: the API is
+    reachable without the console, so the refusal has to live behind it."""
+    client.post("/patients", json=patient("RB1"))
+
+    override = client.post("/patients/RB1/override", json={
+        "new_esi": 4, "clinician_id": "MA-14", "reason": "looks comfortable"})
+    accept = client.post("/patients/RB1/accept", json={"clinician_id": "MA-14"})
+
+    assert override.status_code == 403
+    assert accept.status_code == 403
+    assert "MA-14" not in str(client.get("/audit").json())
+
+
+def test_a_medical_assistant_can_still_do_the_job_the_role_is_for():
+    client.post("/patients", json=patient("RB2"))
+    vitals = client.post("/patients/RB2/vitals?clinician_id=MA-14", json={
+        "hr": 92, "rr": 17, "spo2": 97, "temp_c": 37.3, "sbp": 124, "pain": 4})
+    reassess = client.post("/patients/RB2/reassess", json={"clinician_id": "MA-14"})
+
+    assert vitals.status_code == 200
+    assert reassess.status_code == 200
+
+
+def test_an_administrator_reads_the_board_without_touching_a_patient():
+    client.post("/patients", json=patient("RB3"))
+    for path, body in [("/patients/RB3/accept", {"clinician_id": "ADM-02"}),
+                       ("/patients/RB3/reassess", {"clinician_id": "ADM-02"})]:
+        assert client.post(path, json=body).status_code == 403
+    assert client.get("/patients/RB3").status_code == 200
+
+
+def test_a_nurse_may_do_all_of_it():
+    client.post("/patients", json=patient("RB4"))
+    r = client.post("/patients/RB4/override", json={
+        "new_esi": 2, "clinician_id": "RN-07", "reason": "reassessed at the bedside"})
+    assert r.status_code == 200
+
+
+def test_a_badge_no_role_can_be_resolved_for_is_refused():
+    """Better a refusal than a silent grant. A deployment resolves the badge
+    against the hospital directory; an unresolvable one acts as nobody."""
+    client.post("/patients", json=patient("RB5"))
+    r = client.post("/patients/RB5/accept", json={"clinician_id": "XX-99"})
+    assert r.status_code == 403
+
+
 def test_registry_reports_the_models_the_container_is_actually_running():
     from app.config import settings
     by_id = {c["id"]: c for c in client.get("/system/registry").json()["components"]}

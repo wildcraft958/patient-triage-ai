@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field
 
+from app.auth import require
 from app.models import PatientIntake, Vitals
 from app.service import (
     CALIBRATION_PATH,
@@ -71,6 +72,10 @@ def record_vitals(patient_id: str, vitals: Vitals, source: str = "nurse",
     _require(patient_id)
     if source not in ("nurse", "wearable", "kiosk"):
         raise HTTPException(422, f"unknown vitals source '{source}'")
+    # A reading can arrive with nobody at the bedside (wearable, kiosk, the
+    # replayed timeline), so the badge is authorised only when one is claimed.
+    if clinician_id is not None:
+        require(clinician_id, "vitals")
     result = get_service().record_vitals(patient_id, vitals, source=source,
                                          clinician_id=clinician_id)
     return {"alert": result["alert"], "retriaged": result["retriaged"]}
@@ -79,6 +84,7 @@ def record_vitals(patient_id: str, vitals: Vitals, source: str = "nurse",
 @router.post("/patients/{patient_id}/override")
 def override(patient_id: str, body: OverrideBody):
     _require(patient_id)
+    require(body.clinician_id, "override")
     try:
         return get_service().override(
             patient_id, body.new_esi, body.clinician_id, body.reason,
@@ -91,6 +97,7 @@ def override(patient_id: str, body: OverrideBody):
 @router.post("/patients/{patient_id}/accept")
 def accept(patient_id: str, body: ClinicianBody):
     _require(patient_id)
+    require(body.clinician_id, "accept")
     return {"reward": get_service().accept(patient_id, body.clinician_id)}
 
 
@@ -99,12 +106,14 @@ def reassess(patient_id: str, body: ClinicianBody):
     """A bedside check with no new vitals: restarts the safe-wait clock and
     answers the standing alert. Recording vitals goes through /vitals."""
     _require(patient_id)
+    require(body.clinician_id, "reassess")
     return get_service().reassess(patient_id, body.clinician_id)
 
 
 @router.post("/patients/{patient_id}/acknowledge")
 def acknowledge(patient_id: str, body: ClinicianBody):
     _require(patient_id)
+    require(body.clinician_id, "acknowledge")
     try:
         return get_service().acknowledge_alert(patient_id, body.clinician_id)
     except NoStandingAlert as e:
