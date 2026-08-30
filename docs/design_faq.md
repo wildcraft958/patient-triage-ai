@@ -455,7 +455,7 @@ and fills when its own record lands, which is also how it should have behaved
 in the first place.
 
 The reason it survived as long as it did is the honest part: the backend had
-212 tests and the frontend had none. It has 62 now, and the first four written
+212 tests and the frontend had none. It has 63 now, and the first four written
 were the ones that reproduce this. We checked they fail without each half of
 the fix rather than assuming they would.
 
