@@ -6,6 +6,7 @@ import Shell from './marketing/Shell'
 import Home from './marketing/Home'
 import Product from './marketing/Product'
 import Evidence from './marketing/Evidence'
+import Deploy from './marketing/Deploy'
 import Security from './marketing/Security'
 import About from './marketing/About'
 import Console from './console/Console'
@@ -19,6 +20,7 @@ const router = createBrowserRouter([
       { index: true, element: <Home /> },
       { path: 'product', element: <Product /> },
       { path: 'evidence', element: <Evidence /> },
+      { path: 'deploy', element: <Deploy /> },
       { path: 'security', element: <Security /> },
       { path: 'about', element: <About /> },
     ],

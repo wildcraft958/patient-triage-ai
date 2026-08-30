@@ -121,6 +121,44 @@ export default function Home() {
         </div>
       </section>
 
+      <section className="tight">
+        <div className="wrap">
+          <div className="eyebrow">Who signs in</div>
+          <h2 className="section-title">Built for the people at the front desk, not for the people who buy it.</h2>
+          <div className="phases">
+            <div className="phase-card">
+              <div className="phase-num">TRIAGE NURSE</div>
+              <h3>Owns the acuity level</h3>
+              <p>
+                Works the board: accepts or overrides every recommendation, answers alerts,
+                and reassesses at the bedside. Their badge signs every level on the record.
+              </p>
+              <span className="phase-tag">FULL DECISION AUTHORITY</span>
+            </div>
+            <div className="phase-card">
+              <div className="phase-num">MEDICAL ASSISTANT</div>
+              <h3>Keeps the vitals current</h3>
+              <p>
+                Records rechecks and acknowledges alerts, which is what feeds the
+                deterioration trigger. Cannot set or change an acuity level: the console
+                asks for RN sign-off instead of accepting it quietly.
+              </p>
+              <span className="phase-tag">SCOPE ENFORCED IN SOFTWARE</span>
+            </div>
+            <div className="phase-card">
+              <div className="phase-num">CLINICAL ADMINISTRATOR</div>
+              <h3>Answers for the system</h3>
+              <p>
+                Reads the board without touching it, and owns the evidence: the override log,
+                the bias monitor, the component registry, and the configuration that drives
+                every threshold in the department.
+              </p>
+              <span className="phase-tag">READ-ONLY ON PATIENTS</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       <section>
         <div className="wrap">
           <div className="eyebrow">Measured, not promised</div>
@@ -185,6 +223,11 @@ export default function Home() {
               <h3>Open model, your hardware</h3>
               <p>The same pipeline runs against an open, RL-trained clinical model served inside your network. Patient data never crosses your boundary. Quality trade-offs measured and published, and the safety floor holds either way.</p>
             </div>
+          </div>
+          <div className="hero-ctas" style={{ marginTop: 30 }}>
+            <Link className="btn btn-outline" to="/deploy">
+              Deployment models and what a pilot measures<span className="arr">&rsaquo;</span>
+            </Link>
           </div>
         </div>
       </section>

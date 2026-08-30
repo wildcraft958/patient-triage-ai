@@ -16,6 +16,7 @@ function Nav() {
         <div className="nav-links">
           <NavLink to="/product">Product</NavLink>
           <NavLink to="/evidence">Evidence</NavLink>
+          <NavLink to="/deploy">Deploy</NavLink>
           <NavLink to="/security">Security</NavLink>
           <NavLink to="/about">About</NavLink>
           <Link className="btn btn-primary btn-sm" to="/console">
@@ -58,6 +59,7 @@ function Footer() {
           <div style={{ display: 'flex', gap: 36 }}>
             <div><Link to="/product">Product</Link></div>
             <div><Link to="/evidence">Evidence</Link></div>
+            <div><Link to="/deploy">Deploy</Link></div>
             <div><Link to="/security">Security</Link></div>
             <div><Link to="/about">About</Link></div>
             <div><Link to="/console">Console</Link></div>
