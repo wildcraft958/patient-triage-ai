@@ -63,24 +63,42 @@ function Component({ c }) {
           <span className="flex items-center gap-3 text-[11px] text-ink-2 tabular-nums
                            shrink-0 pt-0.5">
             <span>{c.invocations} runs</span>
-            {c.latency_ms > 0 && <span>{c.latency_ms.toFixed(1)} ms</span>}
+            {c.latency_ms > 0 && (
+              // The caveat travels with the figure. A measured millisecond
+              // count that is really a cache read reads as inference time to
+              // anyone who is not told otherwise, so the note is never
+              // separated from the number it qualifies.
+              <span title={c.latency_note ?? undefined}
+                    className={c.latency_note ? 'border-b border-dotted border-ink-3' : ''}>
+                {c.latency_ms.toFixed(1)} ms
+              </span>
+            )}
             <ChevronDown size={14} className={open ? '' : '-rotate-90'} aria-hidden="true" />
           </span>
         </div>
       </button>
 
       {open && (
-        <dl className="px-4 pb-3.5 pt-3 grid sm:grid-cols-3 gap-3 border-t border-line">
-          {[['Decides', c.decides], ['Cannot', c.cannot], ['On failure', c.on_failure]]
-            .map(([term, value]) => (
-              <div key={term}>
-                <dt className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-3 mb-1">
-                  {term}
-                </dt>
-                <dd className="text-[11.5px] leading-relaxed text-ink-2">{value}</dd>
-              </div>
-            ))}
-        </dl>
+        <div className="border-t border-line pb-3.5">
+          <dl className="px-4 pt-3 grid sm:grid-cols-3 gap-3">
+            {[['Decides', c.decides], ['Cannot', c.cannot], ['On failure', c.on_failure]]
+              .map(([term, value]) => (
+                <div key={term}>
+                  <dt className="text-[10px] font-bold uppercase tracking-[0.1em] text-ink-3 mb-1">
+                    {term}
+                  </dt>
+                  <dd className="text-[11.5px] leading-relaxed text-ink-2">{value}</dd>
+                </div>
+              ))}
+          </dl>
+          {c.latency_note && (
+            <p className="mx-4 mt-3 rounded-md bg-warn-bg border border-warn-line
+                          px-3 py-2 text-[11px] leading-relaxed text-ink-2">
+              <b className="text-ink">On the {c.latency_ms?.toFixed(1)} ms figure:</b>
+              {' '}{c.latency_note}.
+            </p>
+          )}
+        </div>
       )}
     </article>
   )

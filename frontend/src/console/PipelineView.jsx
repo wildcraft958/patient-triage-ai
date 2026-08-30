@@ -1,4 +1,6 @@
+import { useEffect, useState } from 'react'
 import { ArrowRight, CornerDownRight, Lock, Send } from 'lucide-react'
+import * as api from '../api'
 import ActivityLog from './ActivityLog'
 import Splitter from './Splitter'
 import { usePaneWidth } from './usePaneWidth'
@@ -83,6 +85,17 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
   const pl = detail?.pipeline
   const fused = detail?.fused
   const [logWidth, setLogWidth] = usePaneWidth('pt.pipelog.width', 380, LOG_MIN, LOG_MAX)
+  // The registry computes this caveat so the Path B figure is not read as
+  // inference time. It is the same number on this screen, so it carries the
+  // same caveat rather than leaving one view honest and the other bare.
+  const [llmNote, setLlmNote] = useState(null)
+
+  useEffect(() => {
+    api.getRegistry()
+      .then((r) => setLlmNote(r.components.find((c) => c.id === 'clinical_reasoning')
+                              ?.latency_note ?? null))
+      .catch(() => {})
+  }, [])
 
   return (
     <div className="h-full flex flex-col gap-3 min-h-0">
@@ -159,7 +172,16 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                 <Stage kind="Path B" name="Clinical reasoning"
                        tone={pl.reasoning_ran ? 'ok' : 'warn'}
                        ms={pl.stage_ms?.llm}
-                       chip={<Pill tone="warn">The only component that leaves this machine</Pill>}
+                       chip={
+                         <span className="flex flex-col gap-1.5 items-start">
+                           <Pill tone="warn">The only component that leaves this machine</Pill>
+                           {llmNote && pl.reasoning_ran && (
+                             <span className="text-[10.5px] leading-relaxed text-ink-3">
+                               The {ms(pl.stage_ms?.llm)} above is {llmNote}.
+                             </span>
+                           )}
+                         </span>
+                       }
                        body={
                          pl.reasoning_ran ? (
                            <>
