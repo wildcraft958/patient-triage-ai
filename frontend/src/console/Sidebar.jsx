@@ -42,7 +42,7 @@ export default function Sidebar({ view, onView, counts, collapsed, onCollapse })
         <Mark size={28} />
         {wide && (
           <span className="text-[13px] font-bold text-rail-fg tracking-tight truncate">
-            PatientTriage<span className="text-brand">.ai</span>
+            PatientTriage<span className="text-brand-rail">.ai</span>
           </span>
         )}
         {wide && (

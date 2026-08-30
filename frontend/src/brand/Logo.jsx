@@ -24,13 +24,17 @@ export function Mark({ size = 28, className = '' }) {
 // Mark plus name. `tone` picks the text colour for the surface it sits on:
 // the dark navigation rail, or an ordinary light or dark page.
 export function Wordmark({ size = 26, tone = 'page', className = '' }) {
-  const text = tone === 'rail' ? 'text-rail-fg' : 'text-ink'
+  const rail = tone === 'rail'
+  const text = rail ? 'text-rail-fg' : 'text-ink'
+  // The brand is a fill colour and reads at 3.5:1 as text on the rail, so the
+  // ".ai" takes the rail's own lighter cut of the hue when it lands there.
+  const dot = rail ? 'text-brand-rail' : 'text-brand'
   return (
     <span className={`inline-flex items-center gap-2.5 font-bold tracking-tight
                       ${text} ${className}`}>
       <Mark size={size} />
       <span className="truncate">
-        PatientTriage<span className="text-brand">.ai</span>
+        PatientTriage<span className={dot}>.ai</span>
       </span>
     </span>
   )

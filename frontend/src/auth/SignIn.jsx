@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Activity, ArrowLeft, ChevronRight, Eye, ShieldCheck } from 'lucide-react'
 import { Wordmark } from '../brand/Logo'
-import { Btn } from '../console/ui'
+import { Btn, Input } from '../console/ui'
 import { DIRECTORY, ROLES } from './roles'
 import { useSession } from './sessionContext'
 
@@ -39,7 +39,7 @@ export default function SignIn() {
         </div>
 
         <div className="mt-14 lg:mt-20 max-w-lg">
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-brand-rail">
             Emergency department
           </p>
           <h1 className="mt-3 text-3xl lg:text-[2.6rem] font-bold leading-[1.12] tracking-tight">
@@ -107,18 +107,16 @@ export default function SignIn() {
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-2">
               Badge ID
             </span>
-            <input value={badge} onChange={(e) => setBadge(e.target.value)}
-                   className="mt-1.5 w-full rounded-sm border border-line bg-card px-3 py-2
-                              text-sm tabular-nums text-ink focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1" />
+            <Input size="md" value={badge} onChange={(e) => setBadge(e.target.value)}
+                   className="mt-1.5 tabular-nums" />
           </label>
 
           <label className="block mt-3.5">
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-2">
               PIN
             </span>
-            <input type="password" defaultValue="4821" readOnly
-                   className="mt-1.5 w-full rounded-sm border border-line bg-app px-3 py-2
-                              text-sm tracking-[0.3em] text-ink-2" />
+            <Input type="password" size="md" defaultValue="4821" readOnly
+                   className="mt-1.5 tracking-[0.3em]" />
           </label>
 
           <Btn variant="primary" size="lg" className="w-full mt-6"

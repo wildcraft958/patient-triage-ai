@@ -87,6 +87,9 @@ const PAIRS = [
   // brand-coloured text on the rail. The brand itself is a fill colour and
   // reads at 3.5:1 there, so the rail gets its own lighter brand ink.
   ['brand-rail', 'rail'], ['brand-rail', 'rail-2'],
+  // The eyebrow on a shift card and the required-field asterisk put the brand
+  // itself on the ordinary surfaces, where it does clear the bar.
+  ['brand', 'card'], ['brand', 'app'],
 ]
 
 // The two themes do not need the same separation to read. An edge on white

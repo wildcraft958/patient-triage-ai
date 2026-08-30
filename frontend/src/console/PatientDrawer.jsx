@@ -5,7 +5,7 @@ import * as api from '../api'
 import { useSession } from '../auth/sessionContext'
 import { RESTRICTED } from '../auth/roles'
 import Splitter from './Splitter'
-import { BeliefPeak, Btn, EsiBadge, Initials, Pill, VitalGauge, VitalTrend } from './ui'
+import { BeliefPeak, Btn, EsiBadge, Initials, Pill, Scrim, VitalGauge, VitalTrend } from './ui'
 import { VITAL_DEFS, VITAL_RANGE, alertLabel, fmt, fmtAge, outcomeLabel } from './format'
 
 const AUDIT_SUMMARY = {
@@ -227,7 +227,7 @@ function AuditTrail({ patientId }) {
 function Shell({ dialog, width, minWidth, maxWidth, onResize, onClose, children }) {
   return (
     <>
-      <div className="fixed inset-0 bg-ink/25 z-40" onClick={onClose} aria-hidden="true" />
+      <Scrim className="z-40 bg-scrim/30" onClick={onClose} />
       <aside role="dialog" aria-modal="true" aria-label="Triage recommendation"
              ref={dialog} tabIndex={-1} style={{ width }}
              className="fixed right-0 top-0 bottom-0 max-w-full bg-card z-50 flex
