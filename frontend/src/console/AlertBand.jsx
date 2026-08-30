@@ -1,4 +1,4 @@
-import { Siren } from 'lucide-react'
+import { Siren, X } from 'lucide-react'
 import { useSession } from '../auth/sessionContext'
 import { Btn, EsiBadge, Pill } from './ui'
 
@@ -75,11 +75,20 @@ export default function AlertBand({ rows, busy, onSelect, onReassess,
                 <Btn size="sm" variant="primary" disabled={busy}
                      onClick={() => onReassess(r.patient_id)}>Reassess</Btn>
               )}
+              {/* Closing the alert is acknowledging it: the row leaves the
+                  band because the server recorded that a clinician saw it,
+                  not because the browser hid it. The title says what that
+                  does and does not do, so closing never reads as resolving. */}
               {can.acknowledge && (
-                <Btn size="sm" disabled={busy} onClick={() => onAcknowledge(r.patient_id)}
-                     title="Records that you have seen this. The patient stays overdue.">
-                  Acknowledge
-                </Btn>
+                <button disabled={busy} onClick={() => onAcknowledge(r.patient_id)}
+                        aria-label={`Dismiss the alert for ${who}`}
+                        title="Records that you have seen this. The patient stays overdue."
+                        className="p-1.5 rounded-sm text-ink-3 cursor-pointer
+                                   hover:bg-app hover:text-ink disabled:opacity-45
+                                   disabled:cursor-default focus-visible:outline-2
+                                   focus-visible:outline-brand focus-visible:outline-offset-1">
+                  <X size={14} aria-hidden="true" />
+                </button>
               )}
             </span>
           </article>

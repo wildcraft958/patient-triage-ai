@@ -78,6 +78,11 @@ export default function Console() {
   // monotonic: a response that is not from the newest request is dropped
   const fetchSeq = useRef(0)
 
+  // A toast expires on its own, but a stack of four sitting over the board
+  // while a nurse is trying to read a row is its own problem.
+  const dismissToast = useCallback(
+    (id) => setToasts((ts) => ts.filter((t) => t.id !== id)), [])
+
   const toast = useCallback((title, text, tone) => {
     const id = ++toastSeq.current
     setToasts((ts) => [...ts.slice(-3), { id, title, text, tone }])
@@ -439,7 +444,7 @@ export default function Console() {
         <VitalsModal detail={shown} onSubmit={onRecordVitals}
                      onClose={() => setShowVitals(false)} />
       )}
-      <ToastStack toasts={toasts} />
+      <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
   )
 }
