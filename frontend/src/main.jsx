@@ -12,6 +12,7 @@ import About from './marketing/About'
 import Console from './console/Console'
 import SessionProvider from './auth/Session'
 import ThemeProvider from './theme/ThemeProvider'
+import AppBoundary from './AppBoundary'
 
 const router = createBrowserRouter([
   {
@@ -34,8 +35,10 @@ const router = createBrowserRouter([
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <ThemeProvider>
-      <RouterProvider router={router} />
-    </ThemeProvider>
+    <AppBoundary>
+      <ThemeProvider>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </AppBoundary>
   </StrictMode>,
 )

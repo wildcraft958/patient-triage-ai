@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import * as api from '../api'
+import { clearStaleChunkFlag } from './chunkRecovery'
 import { AcuityChart, BiasChart } from './charts'
 import { Card, CardHead, Empty, EsiBadge, Meter, Pill } from './ui'
 import { fmt, shiftClock } from './format'
@@ -119,6 +120,9 @@ function OverrideLog({ events, names }) {
 export default function Analytics({ metrics, rows, refreshKey }) {
   const [benchmarks, setBenchmarks] = useState([])
   const [events, setEvents] = useState([])
+
+  // this component mounting is the proof that its chunk loaded
+  useEffect(() => { clearStaleChunkFlag() }, [])
 
   useEffect(() => {
     api.getBenchmark().then((r) => setBenchmarks(r.benchmarks)).catch(() => {})
