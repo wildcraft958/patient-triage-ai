@@ -25,6 +25,18 @@ function systemPrefersDark() {
 
 export default function ThemeProvider({ children }) {
   const [choice, setChoice] = useState(read)
+  const [systemDark, setSystemDark] = useState(systemPrefersDark)
+
+  // The OS can flip mid-shift. Without this the stylesheet followed and the
+  // toggle did not, so its label read backwards and the first click was a
+  // no-op the user could not explain.
+  useEffect(() => {
+    let mq
+    try { mq = window.matchMedia('(prefers-color-scheme: dark)') } catch { return }
+    const onChange = (e) => setSystemDark(e.matches)
+    mq.addEventListener('change', onChange)
+    return () => mq.removeEventListener('change', onChange)
+  }, [])
 
   useEffect(() => {
     const root = document.documentElement
@@ -41,14 +53,14 @@ export default function ThemeProvider({ children }) {
   }, [])
 
   const value = useMemo(() => {
-    const dark = choice ? choice === 'dark' : systemPrefersDark()
+    const dark = choice ? choice === 'dark' : systemDark
     return {
       choice,                                   // 'light' | 'dark' | null
       dark,                                     // what is actually rendered
       setTheme,
       toggle: () => setTheme(dark ? 'light' : 'dark'),
     }
-  }, [choice, setTheme])
+  }, [choice, systemDark, setTheme])
 
   return <ThemeContext value={value}>{children}</ThemeContext>
 }

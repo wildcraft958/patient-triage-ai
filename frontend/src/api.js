@@ -12,11 +12,15 @@ async function request(path, options = {}) {
   return res.json()
 }
 
+// Record IDs are operator-editable at intake, so an id containing ? # or /
+// would otherwise silently produce a different request than the one intended.
+const ref = (id) => encodeURIComponent(id)
+
 export const addPatient = (body) =>
   request('/patients', { method: 'POST', body: JSON.stringify(body) })
 export const getQueue = () => request('/queue')
-export const getPatient = (id) => request(`/patients/${id}`)
-export const getAudit = (id) => request(`/patients/${id}/audit`)
+export const getPatient = (id) => request(`/patients/${ref(id)}`)
+export const getAudit = (id) => request(`/patients/${ref(id)}/audit`)
 export const getRecentAudit = () => request('/audit')
 export const getMetrics = () => request('/metrics')
 
@@ -29,29 +33,32 @@ export const setSurge = (forced) =>
   request('/surge', { method: 'POST', body: JSON.stringify({ forced }) })
 
 export const acceptPatient = (id, clinician_id) =>
-  request(`/patients/${id}/accept`, {
+  request(`/patients/${ref(id)}/accept`, {
     method: 'POST',
     body: JSON.stringify({ clinician_id }),
   })
 export const overridePatient = (id, body) =>
-  request(`/patients/${id}/override`, { method: 'POST', body: JSON.stringify(body) })
+  request(`/patients/${ref(id)}/override`, { method: 'POST', body: JSON.stringify(body) })
 export const reassessPatient = (id, clinician_id) =>
-  request(`/patients/${id}/reassess`, {
+  request(`/patients/${ref(id)}/reassess`, {
     method: 'POST',
     body: JSON.stringify({ clinician_id }),
   })
 export const acknowledgeAlert = (id, clinician_id) =>
-  request(`/patients/${id}/acknowledge`, {
+  request(`/patients/${ref(id)}/acknowledge`, {
     method: 'POST',
     body: JSON.stringify({ clinician_id }),
   })
 export const getBenchmark = () => request('/benchmark')
 export const getRegistry = () => request('/system/registry')
 export const getProfile = () => request('/profile')
-// the endpoint takes the vitals object as the body and the observation
-// channel as a query parameter
-export const recordVitals = (id, vitals) =>
-  request(`/patients/${id}/vitals?source=nurse`, {
+// The endpoint takes the vitals object as the body; the observation channel
+// and the badge that took the reading are query parameters. The channel says
+// how the reading arrived, the badge says who took it, and a staff spot-check
+// owes the audit trail both.
+export const recordVitals = (id, vitals, clinician_id) =>
+  request(`/patients/${ref(id)}/vitals?source=nurse`
+          + `&clinician_id=${encodeURIComponent(clinician_id)}`, {
     method: 'POST',
     body: JSON.stringify(vitals),
   })

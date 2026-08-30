@@ -7,7 +7,11 @@ const KEY = 'pt.session'
 function read() {
   try {
     const raw = sessionStorage.getItem(KEY)
-    return raw ? JSON.parse(raw) : null
+    const parsed = raw ? JSON.parse(raw) : null
+    // A persisted role that is no longer a role would throw during render and
+    // take the whole application with it. An unrecognised session is no
+    // session; the worst case is signing in again.
+    return parsed && ROLES[parsed.role] ? parsed : null
   } catch {
     return null  // private browsing, blocked storage: sign in again, no crash
   }

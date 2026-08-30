@@ -7,6 +7,15 @@
     <meta name="theme-color" content="#A100FF" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PatientTriage.ai · Emergency triage console</title>
+    <script>
+      // Stamped before first paint. Without it a saved dark choice renders one
+      // light frame while the bundle loads, which on a night shift is a flash
+      // in a dim room.
+      try {
+        var t = localStorage.getItem('pt.theme')
+        if (t === 'dark' || t === 'light') document.documentElement.dataset.theme = t
+      } catch (e) { /* storage blocked */ }
+    </script>
   </head>
   <body>
     <div id="root"></div>

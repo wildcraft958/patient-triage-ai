@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
 import { Activity, ArrowLeft, ChevronRight, Eye, ShieldCheck } from 'lucide-react'
-import { Mark } from '../brand/Logo'
+import { Wordmark } from '../brand/Logo'
 import { Btn } from '../console/ui'
 import { DIRECTORY, ROLES } from './roles'
 import { useSession } from './sessionContext'
@@ -35,12 +35,7 @@ export default function SignIn() {
                            hover:bg-rail-2 focus-visible:outline-2 focus-visible:outline-brand">
             <ArrowLeft size={17} aria-hidden="true" />
           </Link>
-          <span className="inline-flex items-center gap-2.5">
-            <Mark size={32} />
-            <span className="text-base font-bold tracking-tight">
-              PatientTriage<span className="text-brand">.ai</span>
-            </span>
-          </span>
+          <Wordmark size={32} tone="rail" className="text-base" />
         </div>
 
         <div className="mt-14 lg:mt-20 max-w-lg">
@@ -114,7 +109,7 @@ export default function SignIn() {
             </span>
             <input value={badge} onChange={(e) => setBadge(e.target.value)}
                    className="mt-1.5 w-full rounded-sm border border-line bg-card px-3 py-2
-                              text-sm tabular-nums text-ink focus:border-brand focus:outline-none" />
+                              text-sm tabular-nums text-ink focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1" />
           </label>
 
           <label className="block mt-3.5">
@@ -132,7 +127,7 @@ export default function SignIn() {
           </Btn>
 
           <Btn variant="outline" size="lg" className="w-full mt-2.5"
-               onClick={() => signIn(role, { badge_id: badge.trim() || DIRECTORY[role].badge_id })}>
+               onClick={() => signIn(role, { badge_id: DIRECTORY[role].badge_id })}>
             Continue with hospital directory
           </Btn>
 
