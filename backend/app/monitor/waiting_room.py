@@ -56,6 +56,12 @@ def _who(entry) -> str:
     return intake.display_name or f"Patient {intake.patient_id}"
 
 
+def _complaint(entry) -> str:
+    """The complaint as a nurse says it. The category is a routing key, and
+    interpolating it verbatim put `chest_pain` in front of clinicians."""
+    return entry.intake.complaint_category.replace("_", " ")
+
+
 class SimClock:
     def __init__(self, now_min: float = 0.0):
         self.now_min = now_min
@@ -139,7 +145,7 @@ class WaitingRoom:
                     reasons=[f"waiting {waited:.0f} min exceeds the {limit} min "
                              f"limit for ESI-{entry.fused.esi}"],
                     message=(f"{_who(entry)} "
-                             f"(ESI-{entry.fused.esi}, {entry.intake.complaint_category}, "
+                             f"(ESI-{entry.fused.esi}, {_complaint(entry)}, "
                              f"{waited:.0f} min wait) - safe wait limit exceeded. "
                              f"Consider reassessment."),
                 )
@@ -188,7 +194,7 @@ class WaitingRoom:
                 patient_id=patient_id, at_min=now, kind="DETERIORATION",
                 reasons=reasons, needs_retriage=True,
                 message=(f"{_who(entry)} (ESI-{entry.fused.esi}, "
-                         f"{entry.intake.complaint_category}, {waited:.0f} min wait) - "
+                         f"{_complaint(entry)}, {waited:.0f} min wait) - "
                          f"{'; '.join(reasons)}. Recommend immediate reassessment."),
             )
             entry.status = "deteriorating"

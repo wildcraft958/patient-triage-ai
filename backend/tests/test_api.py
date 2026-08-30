@@ -49,6 +49,18 @@ def test_wait_breach_alert_after_clock_advance():
     assert len(alerts) == 1 and alerts[0]["kind"] == "WAIT_BREACH"
 
 
+def test_alert_text_names_the_complaint_in_words():
+    """The alert band is read by a nurse mid-shift, so the message carries the
+    complaint the way it is spoken, not the way it is keyed. Interpolating the
+    category verbatim put `chest_pain` in front of clinicians."""
+    client.post("/patients", json=patient("WORDS", complaint_category="chest_pain",
+                                          chief_complaint="chest pain since this morning"))
+    r = client.post("/clock/advance", json={"minutes": 35})
+    message = r.json()["alerts"][0]["message"]
+    assert "chest pain" in message
+    assert "chest_pain" not in message
+
+
 def test_deterioration_triggers_retriage_and_audit():
     client.post("/patients", json=patient())
     client.post("/clock/advance", json={"minutes": 20})

@@ -286,7 +286,7 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
             <BeliefPeak peak={detail.belief && {
               esi: detail.belief.indexOf(Math.max(...detail.belief)) + 1,
               p: Math.max(...detail.belief),
-            }} pathsAgree={fused.paths_agree} confidence={fused.confidence} />
+            }} assigned={fused.esi} pathsAgree={fused.paths_agree} confidence={fused.confidence} />
             <Pill tone={fused.paths_agree ? 'ok' : 'warn'}>
               {fused.paths_agree ? 'Paths agree' : 'Paths disagree'}
             </Pill>

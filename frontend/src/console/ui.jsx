@@ -143,15 +143,22 @@ export function TrendArrows({ worsening }) {
 // never off the percentage. A belief spread over five levels peaks in the
 // sixties for a perfectly ordinary patient, so a raw threshold would flag
 // the whole board and the flag would stop meaning anything.
-export function BeliefPeak({ peak, pathsAgree, confidence }) {
+export function BeliefPeak({ peak, assigned, pathsAgree, confidence }) {
   if (!peak) return null
   const shaky = pathsAgree === false || confidence === 'low'
+  const pct = (peak.p * 100).toFixed(0)
+  // Naming the level is only news when the monitor's belief peaks somewhere
+  // other than the level on the badge beside it. Writing P(ESI-n) on every row
+  // spent the space on notation and buried the one case worth noticing.
+  const diverges = assigned != null && peak.esi !== assigned
   return (
-    <span title={`Acuity belief: P(true acuity is ESI-${peak.esi}) = ${(peak.p * 100).toFixed(0)}%`}
+    <span title={`Acuity belief: P(true acuity is ESI-${peak.esi}) = ${pct}%`}
           className={`inline-flex items-center gap-1 text-[11px] tabular-nums
                       ${shaky ? 'text-warn-ink font-bold' : 'text-ink-2'}`}>
-      <b className="text-xs">{(peak.p * 100).toFixed(0)}%</b>
-      <span className="text-[10px] text-ink-3">P(ESI-{peak.esi})</span>
+      <b className="text-xs">{pct}%</b>
+      <span className="text-[10px] text-ink-3">
+        {diverges ? `most likely ESI-${peak.esi}` : 'confident'}
+      </span>
       {shaky && <span aria-hidden="true">⚠</span>}
     </span>
   )

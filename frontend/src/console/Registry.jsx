@@ -22,6 +22,27 @@ const FILTERS = [
 // llm, fuse, each wrapped and timed.
 const GRAPH_NODES = 4
 
+// A token is a real identifier if it is one you would have to type exactly:
+// a namespaced model id, a package name. Hyphenated English ("hand-coded",
+// "more-acute-wins") is not, and setting the whole line in monospace was most
+// of why this screen read like a terminal.
+const IDENTIFIER = /^(?:[\w.-]*[/_][\w./-]*|[a-z0-9]+(?:\.[a-z0-9-]+)+)$/
+
+function Implementation({ text }) {
+  return (
+    <p className="mt-1.5 text-[11px] leading-relaxed text-ink-2">
+      {text.split(' ').map((word, i) => (
+        <span key={i}>
+          {i > 0 && ' '}
+          {IDENTIFIER.test(word)
+            ? <code className="font-mono text-[10.5px] text-brand-ink break-all">{word}</code>
+            : word}
+        </span>
+      ))}
+    </p>
+  )
+}
+
 function Stat({ label, value, tone }) {
   return (
     <div className="bg-card px-4 py-3.5">
@@ -55,9 +76,7 @@ function Component({ c }) {
               <Pill tone="neutral">{c.stage}</Pill>
               {c.egress && <Pill tone="warn">Leaves this machine</Pill>}
             </div>
-            <p className="mt-1.5 text-[11px] font-mono text-brand-ink break-all">
-              {c.implementation}
-            </p>
+            <Implementation text={c.implementation} />
             <p className="mt-1 text-[11.5px] leading-relaxed text-ink-2">{c.summary}</p>
           </div>
           <span className="flex items-center gap-3 text-[11px] text-ink-2 tabular-nums

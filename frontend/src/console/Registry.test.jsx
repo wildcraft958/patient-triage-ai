@@ -35,6 +35,14 @@ const REGISTRY = {
       cannot: 'see a name', on_failure: 'falls back to Path A',
       invocations: 3, latency_ms: 2.1, latency_note: NOTE, egress: true,
     },
+    {
+      id: 'phi_redactor', code: 'RDX', name: 'PHI redaction',
+      kind: 'deterministic', stage: 'Redaction', boundary: 'phi', status: 'active',
+      implementation: 'Microsoft Presidio on spaCy en_core_web_lg',
+      summary: 'Removes identifiers.', decides: 'what leaves the building',
+      cannot: 'remove clinical signal', on_failure: 'triage stops',
+      invocations: 3, latency_ms: 5.0, egress: false,
+    },
   ],
 }
 
@@ -61,10 +69,23 @@ describe('the component registry', () => {
     expect(screen.queryByText(/On the 0.4 ms figure/i)).not.toBeInTheDocument()
   })
 
+  it('sets only real identifiers as code, not the English around them', async () => {
+    // The implementation line is mostly prose. Rendering all of it monospace
+    // was most of why the console read like a terminal, and it made the two
+    // values that genuinely are identifiers indistinguishable from the rest.
+    const { container } = renderSignedIn(<Registry refreshKey={0} />)
+    await screen.findByText(/PHI redaction/i)
+
+    const code = [...container.querySelectorAll('code')].map((e) => e.textContent)
+    expect(code).toContain('en_core_web_lg')
+    expect(code).not.toContain('Presidio')
+    expect(code.join(' ')).not.toMatch(/hand-coded|Microsoft|spaCy/)
+  })
+
   it('counts the components it publishes', async () => {
     renderSignedIn(<Registry refreshKey={0} />)
     await waitFor(() => expect(screen.getByText('Components')).toBeInTheDocument())
     const stat = screen.getByText('Components').parentElement
-    expect(stat).toHaveTextContent('2')
+    expect(stat).toHaveTextContent('3')
   })
 })

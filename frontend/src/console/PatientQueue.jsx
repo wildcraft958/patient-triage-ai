@@ -56,7 +56,7 @@ function Row({ row, rank, selected, pulsing, onSelect }) {
       </td>
       <td className="py-2.5 pr-3"><EsiBadge esi={row.esi} /></td>
       <td className="py-2.5 pr-3">
-        <BeliefPeak peak={row.belief_peak} pathsAgree={row.paths_agree}
+        <BeliefPeak peak={row.belief_peak} assigned={row.esi} pathsAgree={row.paths_agree}
                     confidence={row.confidence} />
       </td>
       <td className="py-2.5 pr-3 w-[92px]">
