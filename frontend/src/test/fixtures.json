@@ -1,0 +1,295 @@
+{
+ "queue": {
+  "queue": [
+   {
+    "patient_id": "A",
+    "display_name": "Alma Whitfield",
+    "action": "Monitor",
+    "icd10": {
+     "code": "R07.9",
+     "label": "Chest pain, unspecified"
+    },
+    "esi": 2,
+    "route": "Acute",
+    "confidence": "low",
+    "paths_agree": false,
+    "clinician_flag": true,
+    "decided_by": null,
+    "status": "waiting",
+    "priority": 0.0,
+    "waited_min": 0.0,
+    "in_ed_min": 0.0,
+    "chief_complaint": "chest pressure since this morning",
+    "age_years": 61,
+    "age_months": null,
+    "category": "chest_pain",
+    "max_wait_min": 10,
+    "vitals_latest": {
+     "hr": 98.0,
+     "rr": 18.0,
+     "spo2": 96.0,
+     "temp_c": 37.1,
+     "sbp": 138.0,
+     "pain": 6
+    },
+    "vitals_worsening": [],
+    "alert": null,
+    "alert_kind": null,
+    "alert_acknowledged": false,
+    "belief_peak": {
+     "esi": 2,
+     "p": 0.479
+    }
+   },
+   {
+    "patient_id": "B",
+    "display_name": "Bianca Reyes",
+    "action": "Monitor",
+    "icd10": {
+     "code": "T14.3",
+     "label": "Dislocation, sprain of unspecified body region"
+    },
+    "esi": 3,
+    "route": "Acute (monitored waiting)",
+    "confidence": "low",
+    "paths_agree": false,
+    "clinician_flag": true,
+    "decided_by": null,
+    "status": "waiting",
+    "priority": 0.0,
+    "waited_min": 0.0,
+    "in_ed_min": 0.0,
+    "chief_complaint": "ankle twisted playing football",
+    "age_years": 34,
+    "age_months": null,
+    "category": "sprain",
+    "max_wait_min": 30,
+    "vitals_latest": {
+     "hr": 78.0,
+     "rr": 14.0,
+     "spo2": 99.0,
+     "temp_c": 36.8,
+     "sbp": 118.0,
+     "pain": 4
+    },
+    "vitals_worsening": [],
+    "alert": null,
+    "alert_kind": null,
+    "alert_acknowledged": false,
+    "belief_peak": {
+     "esi": 4,
+     "p": 0.479
+    }
+   }
+  ],
+  "in_care": [],
+  "state": {
+   "profile": "urban_500",
+   "visits_per_day": 500,
+   "sim_min": 0.0,
+   "surge_mode": false,
+   "waiting": 2,
+   "in_care": 0,
+   "total_patients": 2,
+   "treatment_bays": 18,
+   "beds_available": 18,
+   "avg_wait_min": 0.0,
+   "load": "normal",
+   "surge_queue_threshold": 40,
+   "pending_enrichment": 0
+  },
+  "scenario_remaining": null
+ },
+ "A": {
+  "intake": {
+   "patient_id": "A",
+   "display_name": "Alma Whitfield",
+   "age_years": 61,
+   "age_months": null,
+   "chief_complaint": "chest pressure since this morning",
+   "complaint_category": "chest_pain",
+   "vitals": {
+    "hr": 98.0,
+    "rr": 18.0,
+    "spo2": 96.0,
+    "temp_c": 37.1,
+    "sbp": 138.0,
+    "pain": 6
+   },
+   "responsiveness": "alert",
+   "oldcarts": null,
+   "has_history": false,
+   "medications": [],
+   "conditions": [],
+   "allergies": []
+  },
+  "fused": {
+   "esi": 2,
+   "route": "Acute",
+   "confidence": "low",
+   "paths_agree": false,
+   "clinician_flag": true,
+   "rules": {
+    "esi": 2,
+    "reasons": [
+     "A: no immediate life-saving intervention required",
+     "B: high-risk chest pain (age/cardiac history)"
+    ],
+    "red_flags": [
+     "possible ACS"
+    ],
+    "danger_zone_vitals": false,
+    "resources_estimate": 2
+   },
+   "llm": {
+    "esi": 3,
+    "confidence": 0.9,
+    "reasoning": [
+     "fake"
+    ],
+    "red_flags": []
+   },
+   "notes": [
+    "Paths disagree (rules ESI-2 vs reasoning ESI-3): taking the more acute level from the rules path - uncertainty never downgrades"
+   ]
+  },
+  "status": "waiting",
+  "decided_by": null,
+  "waited_min": 0.0,
+  "in_ed_min": 0.0,
+  "alerts": [],
+  "belief": [
+   0.068,
+   0.479,
+   0.315,
+   0.068,
+   0.068
+  ],
+  "pipeline": {
+   "stage_ms": {
+    "redact": 842.38,
+    "llm": 4.44,
+    "rules": 0.01,
+    "fuse": 0.01
+   },
+   "phi_entities_removed": [],
+   "reasoning_ran": true,
+   "total_ms": 849.2,
+   "surge_path": false,
+   "classifier_ran": false
+  },
+  "icd10": {
+   "code": "R07.9",
+   "label": "Chest pain, unspecified"
+  },
+  "vitals_history": [
+   {
+    "at_min": 0.0,
+    "vitals": {
+     "hr": 98.0,
+     "rr": 18.0,
+     "spo2": 96.0,
+     "temp_c": 37.1,
+     "sbp": 138.0,
+     "pain": 6
+    }
+   }
+  ]
+ },
+ "B": {
+  "intake": {
+   "patient_id": "B",
+   "display_name": "Bianca Reyes",
+   "age_years": 34,
+   "age_months": null,
+   "chief_complaint": "ankle twisted playing football",
+   "complaint_category": "sprain",
+   "vitals": {
+    "hr": 78.0,
+    "rr": 14.0,
+    "spo2": 99.0,
+    "temp_c": 36.8,
+    "sbp": 118.0,
+    "pain": 4
+   },
+   "responsiveness": "alert",
+   "oldcarts": null,
+   "has_history": false,
+   "medications": [],
+   "conditions": [],
+   "allergies": []
+  },
+  "fused": {
+   "esi": 3,
+   "route": "Acute (monitored waiting)",
+   "confidence": "low",
+   "paths_agree": false,
+   "clinician_flag": true,
+   "rules": {
+    "esi": 4,
+    "reasons": [
+     "A: no immediate life-saving intervention required",
+     "B: no high-risk criteria met",
+     "C: estimated resources = 1"
+    ],
+    "red_flags": [],
+    "danger_zone_vitals": false,
+    "resources_estimate": 1
+   },
+   "llm": {
+    "esi": 3,
+    "confidence": 0.9,
+    "reasoning": [
+     "fake"
+    ],
+    "red_flags": []
+   },
+   "notes": [
+    "Complaint auto-categorized as sprain from the chief complaint text",
+    "Paths disagree (rules ESI-4 vs reasoning ESI-3): taking the more acute level from the reasoning path - uncertainty never downgrades"
+   ]
+  },
+  "status": "waiting",
+  "decided_by": null,
+  "waited_min": 0.0,
+  "in_ed_min": 0.0,
+  "alerts": [],
+  "belief": [
+   0.068,
+   0.068,
+   0.315,
+   0.479,
+   0.068
+  ],
+  "pipeline": {
+   "stage_ms": {
+    "redact": 3.63,
+    "llm": 0.24,
+    "rules": 0.02,
+    "fuse": 0.02
+   },
+   "phi_entities_removed": [],
+   "reasoning_ran": true,
+   "total_ms": 723.1,
+   "surge_path": false,
+   "classifier_ran": true
+  },
+  "icd10": {
+   "code": "T14.3",
+   "label": "Dislocation, sprain of unspecified body region"
+  },
+  "vitals_history": [
+   {
+    "at_min": 0.0,
+    "vitals": {
+     "hr": 78.0,
+     "rr": 14.0,
+     "spo2": 99.0,
+     "temp_c": 36.8,
+     "sbp": 118.0,
+     "pain": 4
+    }
+   }
+  ]
+ }
+}

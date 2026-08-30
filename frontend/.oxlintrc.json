@@ -8,5 +8,16 @@
     // A resize handle has to take focus, which <hr> cannot, and role="status"
     // on a div is the live region pattern <output> was never meant to replace.
     "jsx-a11y/prefer-tag-over-role": "off"
-  }
+  },
+  "overrides": [
+    {
+      // Fast refresh is a browser concern. Test files and their helpers are
+      // never hot-reloaded, so mixing a render helper with fixtures in one
+      // file costs nothing there.
+      "files": ["**/*.test.{js,jsx}", "src/test/**"],
+      "rules": {
+        "react/only-export-components": "off"
+      }
+    }
+  ]
 }
