@@ -35,6 +35,48 @@ export function Btn({ variant = 'outline', size = 'md', className = '',
   )
 }
 
+// Form controls. Tailwind's Preflight is deliberately not imported and the
+// base layer sets only `font: inherit; color: inherit` on these elements, so a
+// field that does not paint itself is painted by the browser. Nineteen of them
+// were, and in dark mode they came out as Chrome's grey in the middle of a
+// violet console. Everything a nurse types into goes through here.
+//
+// The field sits one step below the card it is on, in both themes: a well to
+// type into rather than a panel raised off one.
+const FIELD_BASE = 'w-full rounded-sm border bg-field border-field-line text-ink ' +
+  'placeholder:text-ink-3 font-normal normal-case tracking-normal ' +
+  'focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1 ' +
+  'disabled:opacity-55 disabled:cursor-default'
+
+const FIELD_SIZE = {
+  sm: 'text-xs px-2 py-1.5',
+  md: 'text-sm px-3 py-2',
+  lg: 'text-[13px] leading-relaxed px-3 py-2.5',
+}
+
+const field = (size, className) => `${FIELD_BASE} ${FIELD_SIZE[size]} ${className}`
+
+export function Input({ size = 'sm', className = '', ...rest }) {
+  return <input className={field(size, className)} {...rest} />
+}
+
+export function Select({ size = 'sm', className = '', children, ...rest }) {
+  return <select className={field(size, className)} {...rest}>{children}</select>
+}
+
+export function Textarea({ size = 'sm', className = '', ...rest }) {
+  return <textarea className={field(size, className)} {...rest} />
+}
+
+// What a dialog dims the board with. Never the body ink: that token is near
+// white in dark, so bg-ink/45 washed the console out instead of dimming it.
+export function Scrim({ className = '', ...rest }) {
+  return (
+    <div aria-hidden="true"
+         className={`fixed inset-0 bg-scrim/55 ${className}`} {...rest} />
+  )
+}
+
 export function EsiBadge({ esi, size = 'md' }) {
   const dims = {
     sm: 'text-[10px] px-1.5 py-0.5 min-w-[38px]',
