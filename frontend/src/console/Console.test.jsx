@@ -79,6 +79,39 @@ describe('patient selection', () => {
   })
 })
 
+describe('a board nobody has arrived on', () => {
+  // How the deployed demo actually sits between shifts: a scenario is loaded
+  // and its events are queued, but no patient has walked in yet. Treating a
+  // loaded scenario as a started shift suppresses the shift picker and leaves
+  // whoever opens the link looking at one italic line on an empty screen.
+  const loadedNotStepped = {
+    queue: [], in_care: [], scenario_remaining: 27,
+    state: { ...QUEUE.state, total_patients: 0, waiting: 0, in_care: 0 },
+  }
+
+  it('offers the shift picker when a scenario is loaded but not stepped', async () => {
+    api.getQueue.mockResolvedValue(loadedNotStepped)
+    renderSignedIn(<Console />)
+
+    expect(await screen.findByText(/normal shift/i)).toBeInTheDocument()
+    expect(screen.getByText(/surge stress test/i)).toBeInTheDocument()
+    expect(screen.queryByText(/nobody is on the board yet/i)).not.toBeInTheDocument()
+  })
+
+  it('leaves the board up once patients have arrived', async () => {
+    // The other half: the picker must not come back mid-shift just because
+    // the queue momentarily empties while everyone is in a treatment bay.
+    api.getQueue.mockResolvedValue({
+      ...loadedNotStepped,
+      state: { ...loadedNotStepped.state, total_patients: 4, in_care: 4 },
+    })
+    renderSignedIn(<Console />)
+
+    expect(await screen.findByText(/nobody is on the board yet/i)).toBeInTheDocument()
+    expect(screen.queryByText(/normal shift/i)).not.toBeInTheDocument()
+  })
+})
+
 describe('acting on the selected patient', () => {
   it('offers no decision controls until the selected record is on screen', async () => {
     // The wrong-patient vector itself. Both dialogs read the drawer's record

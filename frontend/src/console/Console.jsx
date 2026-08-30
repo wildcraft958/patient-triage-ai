@@ -295,7 +295,14 @@ export default function Console() {
   // reads this, never `detail`.
   const shown = detail?.intake.patient_id === selectedId ? detail : null
 
-  const started = remaining !== null || queue.length > 0 || inCare.length > 0
+  // A shift has started once somebody has actually arrived, not merely because
+  // a scenario is loaded and its events are queued. Keying this off `remaining`
+  // meant the deployed demo, which sits loaded and unstepped between shifts,
+  // suppressed the shift picker and opened on an empty board instead.
+  // total_patients counts the room rather than the queue, so a board where
+  // everyone is in a treatment bay still reads as started.
+  const started = (state?.total_patients ?? 0) > 0
+                  || queue.length > 0 || inCare.length > 0
   const openAlerts = queue.filter((r) => r.alert && !r.alert_acknowledged).length
   const counts = {
     queue: queue.length + inCare.length,
