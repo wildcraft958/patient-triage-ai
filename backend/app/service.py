@@ -74,7 +74,6 @@ class TriageService:
             self._component_runs[cid] = self._component_runs.get(cid, 0) + 1
 
     @_locked
-    @_locked
     def room_snapshot(self) -> list:
         """A stable list of the entries for a reader that is not mutating
         them. Iterating self.room.entries unlocked races an arrival and
@@ -196,6 +195,10 @@ class TriageService:
     def advance_clock(self, minutes: float) -> list[Alert]:
         self.clock.advance(minutes)
         self.process_enrichment()
+        # The sweep is the monitor running, whether or not it finds anything.
+        # Counting the alerts instead would publish zero for a quiet shift and
+        # disagree with the activity log the moment one did fire.
+        self._count("acuity_monitor")
         alerts = self.room.tick()
         for alert in alerts:
             self.audit.log("alert", alert.patient_id, self.clock.now_min,

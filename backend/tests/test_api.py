@@ -632,6 +632,23 @@ def test_component_counts_follow_every_path_that_runs_them():
         assert after[component] == before[component] + 1, component
 
 
+def test_the_clock_driven_sweep_counts_as_a_monitor_run():
+    """The wait-limit sweep is the monitor working with no vitals to prompt
+    it. Counting only the vitals path leaves the registry publishing zero
+    runs for a component the activity log shows raising alerts, so the two
+    screens disagree about the same event."""
+    def monitor_runs():
+        return next(c["invocations"]
+                    for c in client.get("/system/registry").json()["components"]
+                    if c["id"] == "acuity_monitor")
+
+    client.post("/patients", json=patient("SWP1"))
+    before = monitor_runs()
+    r = client.post("/clock/advance", json={"minutes": 35})  # ESI-3 limit is 30
+    assert [a["kind"] for a in r.json()["alerts"]] == ["WAIT_BREACH"]
+    assert monitor_runs() == before + 1
+
+
 def test_the_reasoning_path_is_not_counted_when_surge_skips_it():
     """The surge fast path enters the node and returns without calling the
     model. Counting that as a run, or averaging its near-zero duration into
