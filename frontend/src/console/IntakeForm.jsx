@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDialog } from './useDialog'
-import { Mic, PencilLine } from 'lucide-react'
+import { Mic, PencilLine, RotateCcw, X } from 'lucide-react'
 import ComplaintComposer from './ComplaintComposer'
 import { Btn, Input, Scrim, Select } from './ui'
 import { categoryLabel } from './format'
@@ -20,9 +20,11 @@ const OLDCARTS_FIELDS = [
   ['timing_triggers', 'T', 'Timing / Triggers', 'Constant or comes and goes?'],
 ]
 
+const blank = (nextId) => ({ patient_id: nextId, display_name: '', age_years: '',
+  chief_complaint: '', complaint_category: 'other', responsiveness: 'alert' })
+
 export default function IntakeForm({ onSubmit, onClose, nextId }) {
-  const [f, setF] = useState({ patient_id: nextId, display_name: '', age_years: '',
-    chief_complaint: '', complaint_category: 'other', responsiveness: 'alert' })
+  const [f, setF] = useState(() => blank(nextId))
   const dialog = useDialog(onClose)
   const [vit, setVit] = useState({})
   const [oc, setOc] = useState({})
@@ -31,6 +33,16 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
   const [composing, setComposing] = useState(false)
   const [dictating, setDictating] = useState(false)
   const [busy, setBusy] = useState(false)
+
+  // Leaving and starting over are different intentions. Closing is at the
+  // corner where a dialog is closed; this empties the form and keeps a nurse
+  // in it, which is what happens when the wrong patient was half typed in.
+  const clear = () => {
+    setF(blank(nextId)); setVit({}); setOc({}); setSeverity(''); setError('')
+  }
+  const dirty = f.display_name || f.age_years || f.chief_complaint
+    || Object.values(vit).some(Boolean) || Object.values(oc).some(Boolean)
+    || severity !== ''
 
   const submit = async () => {
     setError('')
@@ -68,7 +80,15 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
            ref={dialog} tabIndex={-1}
            className="relative bg-card rounded-lg w-[680px] max-w-full max-h-[90vh] overflow-y-auto
                       border-t-4 border-brand shadow-lg px-5 py-5">
-        <h2 className="text-lg font-bold tracking-tight text-ink mb-4">New arrival</h2>
+        <div className="flex items-start justify-between gap-3 mb-4">
+          <h2 className="text-lg font-bold tracking-tight text-ink">New arrival</h2>
+          <button type="button" onClick={onClose} aria-label="Close without triaging"
+                  className="-mt-1 -mr-1 shrink-0 p-1.5 rounded-sm text-ink-3 cursor-pointer
+                             hover:bg-app hover:text-ink focus-visible:outline-2
+                             focus-visible:outline-brand focus-visible:outline-offset-1">
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
         <div className="grid grid-cols-3 gap-2.5">
           <label className={FIELD}><span>Patient name</span>
             <Input value={f.display_name} placeholder="M. Chen"
@@ -158,7 +178,10 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
         )}
 
         <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-line">
-          <Btn onClick={onClose}>Cancel</Btn>
+          <Btn onClick={clear} disabled={busy || !dirty}
+               title="Empties every field and keeps this form open">
+            <RotateCcw size={13} aria-hidden="true" /> Clear the form
+          </Btn>
           <Btn variant="primary"
                disabled={busy || !f.patient_id || f.age_years === ''
                          || f.chief_complaint.length < 3}

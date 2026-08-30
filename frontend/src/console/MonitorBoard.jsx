@@ -47,10 +47,11 @@ export default function MonitorBoard({ rows, selectedId, busy, onSelect, onReass
           <table className="w-full min-w-[820px] border-collapse">
             <thead>
               <tr className="border-b border-line">
-                {['Patient', 'Acuity', 'In ED', 'Last check', 'Vitals', 'Priority', ''].map((h, i) => (
-                  <th key={i} className={`text-left text-[10px] font-bold uppercase
+                {['Patient', 'Acuity', 'In ED', 'Last check', 'Vitals', 'Priority', 'Action'].map((h, i) => (
+                  <th key={h} className={`text-[10px] font-bold uppercase
                                           tracking-[0.1em] text-ink-3 pb-2 pt-3
-                                          ${i === 0 ? 'pl-4' : ''} pr-3`}>{h}</th>
+                                          ${i === 0 ? 'pl-4' : ''} pr-3
+                                          ${i === 6 ? 'text-center' : 'text-left'}`}>{h}</th>
                 ))}
               </tr>
             </thead>
@@ -96,7 +97,7 @@ export default function MonitorBoard({ rows, selectedId, busy, onSelect, onReass
                       <Meter value={(row.priority ?? 0) * 100} tone={band(row.priority)}
                              className="mt-1" />
                     </td>
-                    <td className="pr-3 py-2.5">
+                    <td className="pr-4 py-2.5 text-center">
                       {urgent && can.reassess ? (
                         <Btn size="sm" variant="primary" disabled={busy}
                              onClick={(e) => { e.stopPropagation(); onReassess(row.patient_id) }}>
