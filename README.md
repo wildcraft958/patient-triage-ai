@@ -282,3 +282,4 @@ Every minimum prototype expectation from the problem statement, and where it run
 5. NEJM AI study of AI-assisted ED triage across 174,648 visits. (33% time-to-care reduction; 78.8% to 83.1% critical-care identification.)
 6. Kumar et al., duration of hypotension before antimicrobial therapy in septic shock. (The mortality-per-hour figure behind the danger window.)
 7. Emergency Severity Index v4 Implementation Handbook. (Path A rules and the age-banded danger-zone vitals.)
+8. Johnson et al., MIMIC-IV-ED (v2.2), PhysioNet. (The demo subset behind the simulated arrivals; ODbL, not redistributed here.)
