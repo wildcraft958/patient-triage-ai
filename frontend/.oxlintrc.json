@@ -1,6 +1,21 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
   "plugins": ["react", "oxc", "jsx-a11y"],
+  // The console's form controls are design-system components that render the
+  // native element underneath. Without this the accessibility rules stop
+  // seeing them entirely, so a <label> wrapping an <Input> reads as a label
+  // wrapping nothing. Naming them keeps every a11y rule working on them
+  // rather than turning one rule off.
+  "settings": {
+    "jsx-a11y": {
+      "components": {
+        "Input": "input",
+        "Select": "select",
+        "Textarea": "textarea",
+        "Btn": "button"
+      }
+    }
+  },
   "rules": {
     "react/rules-of-hooks": "error",
     "react/only-export-components": ["warn", { "allowConstantExport": true }],

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useDialog } from './useDialog'
-import { Btn } from './ui'
+import { Btn, Scrim, Textarea } from './ui'
 
 // The chief complaint is the field the whole triage turns on and the one a
 // nurse types most into, so it gets a room of its own rather than a two-line
@@ -20,7 +20,7 @@ export default function ComplaintComposer({ value, onSave, onClose }) {
 
   return (
     <div className="fixed inset-0 z-60 grid place-items-center p-5">
-      <div className="fixed inset-0 bg-ink/55" onClick={onClose} aria-hidden="true" />
+      <Scrim onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-label="Chief complaint"
            ref={dialog} tabIndex={-1}
            className="relative bg-card rounded-lg w-[620px] max-w-full border-t-4
@@ -31,11 +31,10 @@ export default function ComplaintComposer({ value, onSave, onClose }) {
           and it is redacted before either of them sees it.
         </p>
 
-        <textarea autoFocus rows={7} value={text} onChange={(e) => setText(e.target.value)}
+        <Textarea autoFocus rows={7} size="lg" value={text}
+                  onChange={(e) => setText(e.target.value)}
                   placeholder="What brought you in today?"
-                  className="mt-4 w-full rounded-sm border border-line bg-card px-3 py-2.5
-                             text-[13px] leading-relaxed text-ink resize-none
-                             focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1" />
+                  className="mt-4 resize-none" />
 
         <div className="flex items-center justify-between gap-3 mt-4 pt-4 border-t border-line">
           <p className="text-[10.5px] text-ink-3 tabular-nums">

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useDialog } from './useDialog'
 import { Mic, PencilLine } from 'lucide-react'
 import ComplaintComposer from './ComplaintComposer'
-import { Btn } from './ui'
+import { Btn, Input, Scrim, Select } from './ui'
 import { categoryLabel } from './format'
 
 const CATEGORIES = ['other', 'chest_pain', 'breathing_difficulty', 'stroke_signs',
@@ -52,19 +52,18 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
   }
 
   const FIELD = 'flex flex-col gap-1 text-[10px] font-bold uppercase tracking-wide text-ink-3'
-  const INPUT = 'rounded-sm border border-line px-2 py-1.5 text-xs font-normal normal-case tracking-normal text-ink focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1 w-full'
 
   const vitField = (key, label) => (
     <label key={key} className={FIELD}>
       <span>{label}</span>
-      <input type="number" className={INPUT} value={vit[key] ?? ''}
+      <Input type="number" value={vit[key] ?? ''}
              onChange={(e) => setVit({ ...vit, [key]: e.target.value })} />
     </label>
   )
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-5">
-      <div className="fixed inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
+      <Scrim onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-label="New arrival"
            ref={dialog} tabIndex={-1}
            className="relative bg-card rounded-lg w-[680px] max-w-full max-h-[90vh] overflow-y-auto
@@ -72,26 +71,26 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
         <h2 className="text-lg font-bold tracking-tight text-ink mb-4">New arrival</h2>
         <div className="grid grid-cols-3 gap-2.5">
           <label className={FIELD}><span>Patient name</span>
-            <input className={INPUT} value={f.display_name} placeholder="M. Chen"
+            <Input value={f.display_name} placeholder="M. Chen"
                    onChange={(e) => setF({ ...f, display_name: e.target.value })} /></label>
           <label className={FIELD}><span>Record ID</span>
-            <input className={INPUT} value={f.patient_id}
+            <Input value={f.patient_id}
                    onChange={(e) => setF({ ...f, patient_id: e.target.value })} /></label>
           <label className={FIELD}><span>Age (years)</span>
-            <input className={INPUT} type="number" value={f.age_years}
+            <Input type="number" value={f.age_years}
                    onChange={(e) => setF({ ...f, age_years: e.target.value })} /></label>
           <label className={FIELD}><span>Category</span>
-            <select className={INPUT} value={f.complaint_category}
+            <Select value={f.complaint_category}
                     onChange={(e) => setF({ ...f, complaint_category: e.target.value })}>
               {CATEGORIES.map((c) =>
                 <option key={c} value={c}>{categoryLabel(c)}</option>)}
-            </select></label>
+            </Select></label>
           <label className={FIELD}><span>Responsiveness (AVPU)</span>
-            <select className={INPUT} value={f.responsiveness}
+            <Select value={f.responsiveness}
                     onChange={(e) => setF({ ...f, responsiveness: e.target.value })}>
               {['alert', 'verbal', 'pain', 'unresponsive'].map((r) =>
                 <option key={r} value={r}>{r}</option>)}
-            </select></label>
+            </Select></label>
         </div>
         <div className="mt-5 mb-2 pb-1.5 border-b border-line text-[11px] font-bold uppercase tracking-[0.1em] text-brand-ink">Chief complaint, in the patient's words</div>
         <div className="flex items-start gap-2">
@@ -138,13 +137,13 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
           {OLDCARTS_FIELDS.map(([key, letter, name, q]) => (
             <label key={key} className={FIELD}>
               <span><b>{letter}</b> {name} · "{q}"</span>
-              <input className={INPUT} value={oc[key] ?? ''}
+              <Input value={oc[key] ?? ''}
                      onChange={(e) => setOc({ ...oc, [key]: e.target.value })} />
             </label>
           ))}
           <label className={FIELD}>
             <span><b>S</b> Severity · 0-10 scale</span>
-            <input className={INPUT} type="number" min={0} max={10} value={severity}
+            <Input type="number" min={0} max={10} value={severity}
                    onChange={(e) => setSeverity(e.target.value)} />
           </label>
         </div>

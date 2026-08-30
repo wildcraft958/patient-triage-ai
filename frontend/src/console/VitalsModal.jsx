@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useDialog } from './useDialog'
-import { Btn } from './ui'
+import { Btn, Input, Scrim } from './ui'
 import { VITAL_DEFS } from './format'
 
 // The medical assistant's action. Posting vitals is what feeds the
@@ -29,7 +29,7 @@ export default function VitalsModal({ detail, onSubmit, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-5">
-      <div className="fixed inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
+      <Scrim onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-label="Record vitals"
            ref={dialog} tabIndex={-1}
            className="relative bg-card rounded-lg w-[460px] max-w-full border-t-4 border-brand shadow-lg">
@@ -47,10 +47,9 @@ export default function VitalsModal({ detail, onSubmit, onClose }) {
               <span className="text-[10px] font-bold uppercase tracking-wide text-ink-3">
                 {label}{unit && ` ${unit}`}
               </span>
-              <input type="number" step="any" value={values[key]}
+              <Input type="number" step="any" size="md" value={values[key]}
                      onChange={(e) => set(key, e.target.value)}
-                     className="mt-1 w-full rounded-sm border border-line px-2 py-1.5 text-sm
-                                tabular-nums focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1" />
+                     className="mt-1 tabular-nums" />
             </label>
           ))}
         </div>

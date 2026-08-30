@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useDialog } from './useDialog'
 import { useSession } from '../auth/sessionContext'
-import { Btn, EsiBadge, Pill } from './ui'
+import { Btn, EsiBadge, Pill, Scrim, Textarea } from './ui'
 import { ESI_BG, ESI_INK, ESI_LABEL } from './format'
 
 const QUICK = ['Clinical judgment', 'Vitals trending', 'Patient report',
@@ -36,7 +36,7 @@ export default function OverrideModal({ detail, onSubmit, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 grid place-items-center p-5">
-      <div className="fixed inset-0 bg-ink/45" onClick={onClose} aria-hidden="true" />
+      <Scrim onClick={onClose} />
       <div role="dialog" aria-modal="true" aria-label="Override triage level"
            ref={dialog} tabIndex={-1}
            className="relative bg-card rounded-lg w-[560px] max-w-full max-h-[90vh] overflow-y-auto
@@ -77,10 +77,9 @@ export default function OverrideModal({ detail, onSubmit, onClose }) {
             <span className="text-[11px] font-bold uppercase tracking-[0.12em] text-ink-2">
               Reason <span className="text-brand">*</span>
             </span>
-            <textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)}
+            <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)}
                       placeholder="The clinical judgment behind the change"
-                      className="mt-1.5 w-full rounded-sm border border-line px-3 py-2 text-xs
-                                 focus:border-brand focus:outline-2 focus:outline-brand focus:outline-offset-1 resize-y" />
+                      className="mt-1.5 resize-y" />
           </label>
 
           <div className="flex flex-wrap gap-1.5 mt-2">
@@ -100,7 +99,7 @@ export default function OverrideModal({ detail, onSubmit, onClose }) {
               {redFlags.length > 0 ? ` with ${redFlags.join(', ')}` : ''}. Moving them
               to ESI-{newEsi} will be recorded as a safety-flagged override.
               <label className="flex gap-2 items-start mt-2 font-semibold cursor-pointer">
-                <input type="checkbox" checked={ack} className="mt-0.5"
+                <input type="checkbox" checked={ack} className="mt-0.5 accent-brand"
                        onChange={(e) => setAck(e.target.checked)} />
                 I have reviewed the flagged risk and confirm this downgrade
               </label>
