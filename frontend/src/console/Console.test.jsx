@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from '../api'
@@ -16,6 +16,13 @@ beforeEach(() => {
   api.getQueue.mockResolvedValue(QUEUE)
   api.getMetrics.mockResolvedValue({ latency: {}, state: {} })
   api.getRecentAudit.mockResolvedValue({ events: [] })
+  // Auto-play and live mode reschedule themselves. A tick that lands before
+  // cleanup would otherwise hit the bare automock, resolve undefined and
+  // reject inside a timeout where no test can see it. Individual tests
+  // override these where the response is the thing under test.
+  api.loadScenario.mockResolvedValue({ events: 0 })
+  api.stepScenario.mockResolvedValue({ remaining: 0, done: true, event: null, alerts: [] })
+  api.advanceClock.mockResolvedValue({ alerts: [], state: {} })
 })
 
 /** getPatient resolves immediately for everyone except `slow`. */
@@ -123,11 +130,15 @@ describe('a board nobody has arrived on', () => {
     const user = userEvent.setup()
     renderSignedIn(<Console />)
 
-    await user.click(await screen.findByText(/normal shift/i))
-    expect(await screen.findByText(/opening the shift/i)).toBeInTheDocument()
+    const card = (await screen.findByText(/normal shift/i)).closest('button')
+    await user.click(card)
+
+    // The card itself, not the toast that announces the same thing beside it.
+    await waitFor(() =>
+      expect(within(card).getByText(/scoring the first arrivals/i)).toBeInTheDocument())
 
     await act(async () => { gate.resolve({ events: 27 }) })
-    expect(screen.queryByText(/opening the shift/i)).not.toBeInTheDocument()
+    expect(within(card).queryByText(/scoring the first arrivals/i)).not.toBeInTheDocument()
   })
 
   it('starts walking the arrivals in without a second click', async () => {

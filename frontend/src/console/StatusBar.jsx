@@ -1,4 +1,4 @@
-import { BedDouble, Bell, Clock, Radio, Users } from 'lucide-react'
+import { BedDouble, Bell, Clock, Pause, Play, Radio, Users } from 'lucide-react'
 import { Btn } from './ui'
 import { UNIT_LABEL, shiftClock } from './format'
 
@@ -20,8 +20,8 @@ function Group({ icon: Icon, children, title, at = 'md' }) {
   )
 }
 
-export default function StatusBar({ state, alerts, live, busy, remaining,
-                                    onLive, onStep, onBell }) {
+export default function StatusBar({ state, alerts, live, busy, remaining, auto,
+                                    onAuto, onLive, onStep, onBell }) {
   const load = state?.load ?? 'normal'
   const [label, dot] = LOAD[load] ?? LOAD.normal
   const surge = load === 'surge'
@@ -79,6 +79,17 @@ export default function StatusBar({ state, alerts, live, busy, remaining,
             </span>
           )}
         </button>
+
+        {/* Arrivals start on their own when a shift opens, so the control that
+            stops them belongs on the board, not only in Settings. */}
+        {remaining > 0 && (
+          <Btn size="sm" variant={auto ? 'danger' : 'outline'} onClick={onAuto}
+               title={auto ? 'Pause the arrivals' : 'Resume the arrivals'}>
+            {auto ? <Pause size={12} aria-hidden="true" />
+                  : <Play size={12} aria-hidden="true" />}
+            {auto ? 'Pause' : 'Play'}
+          </Btn>
+        )}
 
         <Btn size="sm" variant={live ? 'danger' : 'outline'} onClick={onLive}
              title="Advance the department clock in real time">

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { Loader2 } from 'lucide-react'
 import * as api from '../api'
 import { useSession } from '../auth/sessionContext'
 import { RESTRICTED } from '../auth/roles'
@@ -58,7 +59,7 @@ function Config({ profile }) {
   )
 }
 
-export default function Settings({ state, remaining, busy, auto, live,
+export default function Settings({ state, remaining, busy, auto, live, loadingProfile,
                                    onLoad, onAuto, onLive, onAdvance, onSurge, onRestart }) {
   const { user, role, signOut, can } = useSession()
   const [profile, setProfile] = useState(null)
@@ -90,6 +91,13 @@ export default function Settings({ state, remaining, busy, auto, live,
                 </span>
                 <span className="block text-sm font-bold text-ink mt-1.5">{s.title}</span>
                 <span className="block text-[11.5px] leading-relaxed text-ink-2 mt-1">{s.body}</span>
+                {loadingProfile === s.profile && (
+                  <span className="mt-2.5 flex items-center gap-2 text-[11px]
+                                   font-semibold text-brand-ink">
+                    <Loader2 size={12} className="motion-safe:animate-spin" aria-hidden="true" />
+                    Opening the shift and scoring the first arrivals.
+                  </span>
+                )}
               </button>
             )
           })}

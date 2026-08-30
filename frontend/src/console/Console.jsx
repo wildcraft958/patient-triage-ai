@@ -61,6 +61,9 @@ export default function Console() {
   const [showVitals, setShowVitals] = useState(false)
   const [drawerOpen, setDrawerOpen] = useState(false)
   const [opened, setOpened] = useState(false)
+  // Which shift is opening, so both pickers can answer the click. Console
+  // owns it because Settings renders the same list against the same handler.
+  const [loadingProfile, setLoadingProfile] = useState(null)
   const [toasts, setToasts] = useState([])
   const [pulsingId, setPulsingId] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
@@ -137,6 +140,10 @@ export default function Console() {
 
   const onLoad = async (profile, speedup) => {
     setBusy(true)
+    setLoadingProfile(profile)
+    // Announced through the always-mounted toast region: a live region created
+    // in the same render as its first message is not read out.
+    toast('Opening the shift', 'Scoring the first arrivals through both engines.')
     try {
       const r = await api.loadScenario({ profile, speedup, use_llm: true })
       setDetail(null); setFeedback(''); setDrawerOpen(false)
@@ -156,7 +163,7 @@ export default function Console() {
     } catch (err) {
       setOpened(false); setAuto(false); setLive(false)
       toast('Could not open the shift', String(err.message ?? err), 'alarm')
-    } finally { setBusy(false) }
+    } finally { setBusy(false); setLoadingProfile(null) }
   }
 
   const pulse = (id) => {
@@ -325,14 +332,13 @@ export default function Console() {
   // Two ways a shift is under way, and both are needed. `opened` is this
   // operator choosing one: loading a scenario only queues the arrivals, so the
   // board must appear on the click rather than waiting for the first patient
-  // to walk in. The room counts cover a reload mid-shift, and total_patients
+  // to walk in. total_patients covers a reload mid-shift, and counts the room
   // rather than the queue so a board where everyone is in a treatment bay
   // still reads as started. Neither alone is enough: keying off the server's
   // `remaining` suppressed the picker on a demo that sits loaded between
   // shifts, and keying off arrivals alone made the picker look like a dead
   // button for as long as it took the first one to arrive.
   const started = opened || (state?.total_patients ?? 0) > 0
-                  || queue.length > 0 || inCare.length > 0
   const openAlerts = queue.filter((r) => r.alert && !r.alert_acknowledged).length
   const counts = {
     queue: queue.length + inCare.length,
@@ -354,13 +360,15 @@ export default function Console() {
 
       <div className="flex-1 flex flex-col min-w-0">
         <StatusBar state={state} alerts={openAlerts} live={live} busy={busy}
-                   remaining={remaining ?? 0} onLive={() => setLive((l) => !l)}
+                   remaining={remaining ?? 0} auto={auto}
+                   onAuto={() => setAuto((a) => !a)}
+                   onLive={() => setLive((l) => !l)}
                    onStep={onStep} onBell={() => onView('monitor')} />
 
         <main className={`flex-1 min-h-0 p-3 ${view === 'pipeline'
                           ? 'flex flex-col' : 'overflow-y-auto space-y-3'}`}>
           {!started && view !== 'settings' && (
-            <EmptyBoard busy={busy} onLoad={onLoad} />
+            <EmptyBoard busy={busy} loadingProfile={loadingProfile} onLoad={onLoad} />
           )}
 
           {started && (view === 'queue' || view === 'monitor') && (
@@ -393,7 +401,7 @@ export default function Console() {
           )}
           {view === 'settings' && (
             <Settings state={state} remaining={remaining} busy={busy} auto={auto}
-                      live={live} onLoad={onLoad}
+                      live={live} onLoad={onLoad} loadingProfile={loadingProfile}
                       onAuto={() => setAuto((a) => !a)} onLive={() => setLive((l) => !l)}
                       onAdvance={onAdvance} onSurge={onSurge} onRestart={onRestart} />
           )}
