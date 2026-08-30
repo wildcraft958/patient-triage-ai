@@ -8,10 +8,12 @@ const LOAD = {
   surge: ['Surge', 'bg-esi-2 animate-pulse'],
 }
 
-function Group({ icon: Icon, children, title }) {
+function Group({ icon: Icon, children, title, at = 'md' }) {
+  const show = { md: 'hidden md:inline-flex', lg: 'hidden lg:inline-flex',
+                 xl: 'hidden xl:inline-flex' }[at]
   return (
-    <span className="hidden md:inline-flex items-center gap-1.5 text-[11.5px] text-ink-2"
-          title={title}>
+    <span className={`${show} items-center gap-1.5 text-[11.5px] text-ink-2
+                      whitespace-nowrap`} title={title}>
       <Icon size={14} className="text-ink-3 shrink-0" aria-hidden="true" />
       {children}
     </span>
@@ -28,11 +30,12 @@ export default function StatusBar({ state, alerts, live, busy, remaining,
     <header className={`h-12 shrink-0 flex items-center gap-4 px-4 border-b
                         ${surge ? 'bg-alert-bg border-esi-2' : 'bg-card border-line'}`}>
       <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-ink-2
-                       hidden sm:block whitespace-nowrap">
+                       hidden xl:block whitespace-nowrap">
         {UNIT_LABEL[state?.profile] ?? 'Emergency department'}
       </span>
 
-      <span className="flex items-center gap-1.5 text-sm font-bold text-ink tabular-nums">
+      <span className="flex items-center gap-1.5 text-sm font-bold text-ink tabular-nums
+                       whitespace-nowrap shrink-0">
         <Clock size={14} className="text-ink-3" aria-hidden="true" />
         {shiftClock(state?.sim_min)}
       </span>
@@ -45,12 +48,14 @@ export default function StatusBar({ state, alerts, live, busy, remaining,
         <b className="text-ink tabular-nums">{state?.waiting ?? 0}</b> waiting
       </Group>
 
-      <Group icon={BedDouble} title="Treatment bays declared in the hospital profile">
+      <Group icon={BedDouble} at="lg"
+             title="Treatment bays declared in the hospital profile">
         <b className="text-ink tabular-nums">{state?.beds_available ?? 0}</b>
         of {state?.treatment_bays ?? 0} bays free
       </Group>
 
-      <Group icon={Clock} title="Mean time since last assessment, waiting patients only">
+      <Group icon={Clock} at="xl"
+             title="Mean time since last assessment, waiting patients only">
         avg wait <b className="text-ink tabular-nums">
           {Math.round(state?.avg_wait_min ?? 0)} min
         </b>

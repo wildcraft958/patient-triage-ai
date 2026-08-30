@@ -71,7 +71,7 @@ export default function Sidebar({ view, onView, counts, collapsed, onCollapse })
               <div className="min-w-0 flex-1">
                 <p className="text-[12px] font-semibold text-white truncate">{user.name}</p>
                 <p className="text-[10px] text-slate-400 truncate">
-                  {role.title} · {user.badge_id}
+                  <span className="tabular-nums">{user.badge_id}</span> · {role.title}
                 </p>
               </div>
             )}
