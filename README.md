@@ -22,7 +22,7 @@ Triage today is a snapshot: a patient is scored once at arrival and then nobody 
 
 PatientTriage.ai treats the waiting room as part of triage:
 
-1. **Phase 1, Intake.** Structured first-minutes data: chief complaint (typed or voice-dictated), vitals, age, AVPU, medications if on file, and an optional OLDCARTS structured interview (Onset, Location, Duration, Characteristics, Aggravating/Alleviating, Radiation, Timing/Triggers, Severity 1-10) whose severity answer feeds the ESI pain gate. A **two-tier intake classifier** reads the complaint text (`backend/app/engine/complaint.py`): a deterministic rule tier (exact clinical keywords, fuzzy phrases with bounded edit distance over accent-folded tokens for misspellings and Spanish and Hinglish phrasings, and a compound obstetric-emergency predicate) resolved by clinical risk so a high-risk match always beats a benign one; and, only where the rules are silent, a **distilled machine-learned tier** (`complaint_ml.py`): Model2Vec static embeddings (a sentence transformer distilled to a 30MB numpy-only artifact) with a logistic head trained on clinically reviewed real MIMIC-IV-ED chief complaints, speaking only above risk-tiered confidence floors and abstaining otherwise. The category auto-codes to a provisional ICD-10. Half of real patients have no record at all; the system is designed for that.
+1. **Phase 1, Intake.** Structured first-minutes data: chief complaint (free text), vitals, age, AVPU, medications if on file, and an optional OLDCARTS structured interview (Onset, Location, Duration, Characteristics, Aggravating/Alleviating, Radiation, Timing/Triggers, Severity 1-10) whose severity answer feeds the ESI pain gate. A **two-tier intake classifier** reads the complaint text (`backend/app/engine/complaint.py`): a deterministic rule tier (exact clinical keywords, fuzzy phrases with bounded edit distance over accent-folded tokens for misspellings and Spanish and Hinglish phrasings, and a compound obstetric-emergency predicate) resolved by clinical risk so a high-risk match always beats a benign one; and, only where the rules are silent, a **distilled machine-learned tier** (`complaint_ml.py`): Model2Vec static embeddings (a sentence transformer distilled to a 30MB numpy-only artifact) with a logistic head trained on clinically reviewed real MIMIC-IV-ED chief complaints, speaking only above risk-tiered confidence floors and abstaining otherwise. The category auto-codes to a provisional ICD-10. Half of real patients have no record at all; the system is designed for that.
 2. **Phase 2, Dual-path scoring.** Path A is a deterministic ESI v4 rules engine with age-banded vital thresholds. Path B is Claude reasoning over the redacted intake, grounded in retrieved ESI Handbook passages. A FUSE step combines them: agreement means high confidence; disagreement takes the MORE acute level, lowers confidence, and flags the clinician with both reasoning chains.
 3. **Phase 3, Dynamic reassessment (the novel loop).** Triage is formalized as a POMDP: the hidden state is the patient's true acuity, and each patient carries a live belief - a probability distribution over ESI 1-5 - initialized from the two paths (disagreement IS the uncertainty), drifted acute-ward by a deterioration hazard while they wait, and Bayes-updated by every vitals recheck from any channel (nurse spot-check, wearable, kiosk self-report). The policy over that belief ranks the room:
 
@@ -193,14 +193,14 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 212 tests
+uv run pytest                     # 213 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
 # 4. Frontend (new terminal)
 cd frontend
 npm install
-npm test                          # 29 tests
+npm test                          # 41 tests
 npm run dev                       # http://localhost:5173
 
 # 5. localhost:5173 opens the product site; "Launch console" (or /console)
