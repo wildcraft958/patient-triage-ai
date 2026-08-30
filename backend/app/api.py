@@ -62,13 +62,17 @@ def arrive(intake: PatientIntake):
 
 
 @router.post("/patients/{patient_id}/vitals")
-def record_vitals(patient_id: str, vitals: Vitals, source: str = "nurse"):
-    """source: nurse spot-check, wearable stream, or kiosk self-report -
-    the three observation channels that update the acuity belief."""
+def record_vitals(patient_id: str, vitals: Vitals, source: str = "nurse",
+                  clinician_id: str | None = None):
+    """source: nurse spot-check, wearable stream, or kiosk self-report - the
+    three observation channels that update the acuity belief. The channel says
+    how the reading arrived; clinician_id says who took it, and a staff
+    spot-check should carry both."""
     _require(patient_id)
     if source not in ("nurse", "wearable", "kiosk"):
         raise HTTPException(422, f"unknown vitals source '{source}'")
-    result = get_service().record_vitals(patient_id, vitals, source=source)
+    result = get_service().record_vitals(patient_id, vitals, source=source,
+                                         clinician_id=clinician_id)
     return {"alert": result["alert"], "retriaged": result["retriaged"]}
 
 

@@ -59,7 +59,10 @@ def test_deterioration_triggers_retriage_and_audit():
     assert body["alert"]["kind"] == "DETERIORATION"
     assert body["retriaged"]["esi"] == 2  # danger-zone vitals uptriage
     events = client.get("/patients/P1/audit").json()["events"]
-    assert [e["event_type"] for e in events] == ["triage", "alert", "reassessment"]
+    # the observation is logged before the alert it triggers: every reading
+    # goes on the record, whether or not it crosses a threshold
+    assert [e["event_type"] for e in events] == [
+        "triage", "observation", "alert", "reassessment"]
 
 
 def test_override_requires_reason():
@@ -666,3 +669,22 @@ def test_a_profile_without_declared_bays_still_loads():
                        "spo2_drop_points": 3, "temp_rise_c": 0.5},
     )
     assert profile.treatment_bays is None
+
+
+def test_a_vitals_recording_is_attributed_and_logged_even_when_nothing_fires():
+    """Every other clinician action carries a badge into the audit trail. A
+    bedside reading that changes the acuity belief and can trigger a re-triage
+    is not less of one, and a recording that crosses no threshold was
+    previously written nowhere at all."""
+    client.post("/patients", json=patient("OBS1"))
+    r = client.post("/patients/OBS1/vitals?source=nurse&clinician_id=MA-14",
+                    json={"hr": 88, "rr": 16, "spo2": 98, "temp_c": 37.1,
+                          "sbp": 124, "pain": 4})
+    assert r.status_code == 200
+    assert r.json()["alert"] is None, "this reading should cross no threshold"
+
+    events = client.get("/patients/OBS1/audit").json()["events"]
+    obs = [e for e in events if e["event_type"] == "observation"]
+    assert len(obs) == 1, "a recording with no alert still belongs on the record"
+    assert obs[0]["payload"]["clinician_id"] == "MA-14"
+    assert obs[0]["payload"]["source"] == "nurse"

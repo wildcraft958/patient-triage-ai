@@ -147,14 +147,22 @@ class TriageService:
 
     @_locked
     def record_vitals(self, patient_id: str, vitals: Vitals,
-                      source: str = "nurse") -> dict:
+                      source: str = "nurse",
+                      clinician_id: str | None = None) -> dict:
         self._count("acuity_monitor")
         alert = self.room.record_vitals(patient_id, vitals)
+        # Every reading goes on the record, not only the ones that fire. A
+        # recording that crossed no threshold is still an observation a
+        # clinician made, and it still moved the acuity belief.
+        self.audit.log("observation", patient_id, self.clock.now_min,
+                       {"source": source, "clinician_id": clinician_id,
+                        "vitals": vitals.model_dump(),
+                        "triggered_alert": alert.kind if alert else None})
         result: dict = {"alert": alert, "retriaged": None}
         if alert is not None:
             self.audit.log("alert", patient_id, self.clock.now_min,
                            {"kind": alert.kind, "reasons": alert.reasons,
-                            "source": source})
+                            "source": source, "clinician_id": clinician_id})
             if alert.needs_retriage:
                 entry = self.room.entries[patient_id]
                 intake = entry.intake.model_copy(update={"vitals": vitals})
