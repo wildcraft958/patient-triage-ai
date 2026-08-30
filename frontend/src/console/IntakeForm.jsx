@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { Mic } from 'lucide-react'
+import { PencilLine } from 'lucide-react'
+import ComplaintComposer from './ComplaintComposer'
 import { Btn } from './ui'
 
 const CATEGORIES = ['other', 'chest_pain', 'breathing_difficulty', 'stroke_signs',
@@ -23,23 +24,8 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
   const [vit, setVit] = useState({})
   const [oc, setOc] = useState({})
   const [severity, setSeverity] = useState('')
-  const [listening, setListening] = useState(false)
   const [error, setError] = useState('')
-
-  const dictate = () => {
-    const SR = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!SR) { setError('Voice dictation is not supported in this browser'); return }
-    const rec = new SR()
-    rec.lang = 'en-US'
-    rec.onresult = (e) => {
-      const heard = e.results[0][0].transcript
-      setF((prev) => ({ ...prev, chief_complaint: (prev.chief_complaint + ' ' + heard).trim() }))
-    }
-    rec.onend = () => setListening(false)
-    rec.onerror = () => setListening(false)
-    setListening(true)
-    rec.start()
-  }
+  const [composing, setComposing] = useState(false)
 
   const submit = async () => {
     setError('')
@@ -101,17 +87,19 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
                 <option key={r} value={r}>{r}</option>)}
             </select></label>
         </div>
-        <label className={FIELD}><span>Chief complaint, in the patient's words</span>
-          <div className="flex gap-2 items-stretch">
-            <textarea rows={2} className={`${INPUT} resize-y`} value={f.chief_complaint}
-                      onChange={(e) => setF({ ...f, chief_complaint: e.target.value })}
-                      placeholder="What brought you in today?" />
-            <Btn variant={listening ? 'primary' : 'outline'} onClick={dictate}
-                 title="Dictate with your voice">
-              <Mic size={13} aria-hidden="true" />{listening ? 'Listening…' : 'Voice'}
-            </Btn>
-          </div>
-        </label>
+        <div className="mt-5 mb-2 pb-1.5 border-b border-line text-[11px] font-bold uppercase tracking-[0.1em] text-brand-ink">Chief complaint, in the patient's words</div>
+        <button type="button" onClick={() => setComposing(true)}
+                className={`w-full text-left rounded-sm border px-3 py-2.5 cursor-pointer
+                            transition-colors flex items-start gap-2.5
+                            ${f.chief_complaint
+                              ? 'border-line bg-card hover:border-brand'
+                              : 'border-dashed border-line-2 bg-app hover:border-brand'}`}>
+          <PencilLine size={14} className="text-brand shrink-0 mt-0.5" aria-hidden="true" />
+          <span className={`text-[12.5px] leading-relaxed
+                            ${f.chief_complaint ? 'text-ink' : 'text-ink-3'}`}>
+            {f.chief_complaint || 'What brought you in today? Click to write it down.'}
+          </span>
+        </button>
         <div className="mt-5 mb-2 pb-1.5 border-b border-line text-[11px] font-bold uppercase tracking-[0.1em] text-brand-ink">Vitals (leave blank if not yet recorded)</div>
         <div className="grid grid-cols-3 gap-2.5">
           {vitField('hr', 'HR')}{vitField('rr', 'RR')}{vitField('spo2', 'SpO2 %')}
@@ -136,6 +124,12 @@ export default function IntakeForm({ onSubmit, onClose, nextId }) {
           <p className="mt-4 rounded-md border border-esi-2 border-l-4 bg-alert-bg px-3 py-2
                         text-[11.5px] font-semibold text-alert-ink">{error}</p>
         )}
+        {composing && (
+          <ComplaintComposer value={f.chief_complaint}
+                             onSave={(text) => { setF({ ...f, chief_complaint: text }); setComposing(false) }}
+                             onClose={() => setComposing(false)} />
+        )}
+
         <div className="flex justify-end gap-2 mt-5 pt-4 border-t border-line">
           <Btn onClick={onClose}>Cancel</Btn>
           <Btn variant="primary"
