@@ -329,15 +329,60 @@ the model's input contract, so anything that changes its output changes the
 prompt. Pinning the NLP model per environment is the deployment answer;
 making the clinically material fields model-independent is the better one.
 
-## Why does the status bar not show bed availability?
+## Where does the bed count come from?
 
-Because we do not model beds. Every number in that bar is one the service
-actually tracks: patients on the board, patients in care, patients waiting,
-and the load state, which is the same surge threshold the triage path reads
-from the hospital profile. A bed count would have been three characters of
-UI and a fabricated number, and the first question a real ED director asks
-about a capacity figure is where it came from. Bed and staff rostering hang
-off the FHIR seam when a site connects one.
+`treatment_bays` in the hospital profile YAML, beside the wait limits and the
+surge threshold that already lived there: 18 for the urban trauma center, 6
+for the rural department. Available bays is that number minus the patients
+currently in treatment, so it moves when a nurse accepts someone and it feeds
+the load state alongside the queue depth. It is department configuration a
+site declares, not a figure the UI invented, and the settings screen shows it
+next to every other threshold read from the same file. Bed and staff
+rostering proper hang off the FHIR seam when a site connects one.
+
+## The sign-in screen. Is that real authentication?
+
+No, and the card says so on its face: it is a demonstration of the identity
+layer, and it validates nothing. What it does is real, though, and it is the
+part that matters for a clinical system. The badge you sign in with is the
+`clinician_id` written into every override, acceptance, bedside check and
+acknowledgment in the audit trail, replacing a hardcoded constant. And the
+role you pick changes what the board permits, not just what it says: a
+medical assistant can record vitals and acknowledge alerts but the accept
+and override controls are disabled with an explicit "requires RN sign-off",
+and an administrator reads the board without touching a patient. A
+deployment binds the same session object to the hospital directory over SAML
+or OIDC; nothing downstream of the session changes.
+
+## The pipeline view shows milliseconds per stage. Where do those come from?
+
+Wall time measured around each node of the LangGraph pipeline on that
+patient's actual run, carried on the queue entry and returned with the
+patient record. They are not estimates and not averages: select two patients
+and the numbers differ. The one wrinkle worth knowing is that redaction and
+the reasoning path both show a large first-call figure because spaCy and the
+retrieval index load lazily; the shift-level median and 95th percentile above
+the diagram tell you what steady state looks like.
+
+The instrumentation needed one non-obvious thing. Rules and reasoning run as
+concurrent branches after redaction, so two nodes write the timing channel in
+the same superstep. Without a reducer on that channel LangGraph rejects the
+second writer and the whole triage fails, which is a worse outcome than
+losing a number, so the merge is explicit and a test pins it.
+
+## Why does the registry read model ids from configuration instead of listing them?
+
+Because a page that restates its own architecture drifts from it, and we have
+already been bitten by exactly that. The registry reads `settings.spacy_model`,
+`settings.llm_model`, the entity list, the score floor and the escalation
+threshold from the running process, so it cannot claim the container is doing
+something the container is not. A test asserts the ids on screen are the ones
+the service is actually configured with.
+
+It also publishes one flag worth more than the rest of the page: exactly one
+component ever sends anything off the machine. That is the clinical reasoning
+path, and it is the one component that has only ever seen a de-identified
+copy. A test pins both halves of that sentence together.
 
 ## Why a simulation clock instead of a background scheduler?
 
