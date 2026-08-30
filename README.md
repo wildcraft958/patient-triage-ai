@@ -12,6 +12,26 @@ Team **NamoFans** (IIT Kharagpur): Monika Kumari (Team Leader) and Animesh Raj. 
 
 The console is a signed-in clinical workstation, not a dashboard. You sign in with a badge and a role, and the role changes what the board allows: a triage nurse sets acuity levels, a medical assistant records vitals but cannot, an administrator reads without touching. Six sections. **Patient queue** ranks by acuity and shows each patient's level, belief, wait against the safe limit for that level, and vitals trend. **Monitoring** ranks the same people by reassessment priority, which is a different question and gets its own screen. **Pipeline** traces the run that produced the selected patient's recommendation, with measured time per stage and the identifier classes redaction removed. **Registry** lists every component with the model ids read from live configuration. **Analytics** carries the held-out benchmark, the bias monitor, and every clinician decision with the badge attached. **Settings** shows a department its own thresholds. Alerts sit above all of it, and answering one is two clicks: reassess, or acknowledge. Both are written to the audit trail. The rail and the patient record drag to whatever width the workstation has, and the whole surface has a night theme, because a twelve-hour shift is not always a daytime one.
 
+## Table of contents
+
+- [Why this exists](#why-this-exists)
+- [Safety by construction](#safety-by-construction)
+- [Results against published benchmarks](#results-against-published-benchmarks)
+- [The learning loop](#the-learning-loop-clinician-actions-as-rl-training-signal)
+- [Hospital-local mode and PHI protection](#hospital-local-mode-privacy-and-phi-protection)
+- [Scalability: one YAML per hospital](#scalability-one-yaml-per-hospital)
+- [Adoption and change management](#adoption-and-change-management)
+- [Architecture](#architecture)
+- [Requirements](#requirements)
+- [Quick start](#quick-start)
+- [Configuration](#configuration)
+- [Deploying](#deploying)
+- [Data and licenses](#data-and-licenses)
+- [Brief compliance, mapped](#brief-compliance-mapped)
+- [Key risks and mitigations](#key-risks-and-mitigations)
+- [Maintainers](#maintainers)
+- [References](#references)
+
 ---
 
 ## Why this exists
@@ -177,9 +197,20 @@ What ships instead: a deterministic rule tier that is the guaranteed-recall cont
 
 The pattern is the same one that runs through the whole system: Claude's reasoning is distilled into the replay corpus, Doctor-R1 is a distilled clinician for the hospital-local option, and the intake classifier is a transformer distilled into an artifact small enough to run anywhere - with the deterministic layers as the safety floor and the dual-path fusion as the net beneath everything.
 
-## Quick start
+## Requirements
 
-Prerequisites: Python 3.12+ with [uv](https://docs.astral.sh/uv/), Node 20+.
+| | |
+|---|---|
+| Python | 3.12 or newer, with [uv](https://docs.astral.sh/uv/) |
+| Node | 20 or newer |
+| Disk | ~3 MB of datasets fetched by `scripts/fetch_data.py`, plus a ~30 MB classifier artefact |
+| LLM access | Optional. Path B replays from the response cache committed to this repo, so the demo, the benchmarks and the tests all run with no key and no network. A key is needed only to score a complaint the cache has never seen. |
+
+Nothing else is required. Everything the pipeline depends on at runtime -- the
+ESI rules, the redaction models, the intake classifier, the belief filter --
+runs locally.
+
+## Quick start
 
 ```bash
 git clone https://github.com/wildcraft958/patient-triage-ai
@@ -221,6 +252,33 @@ uv run python ../scripts/replay_demo.py                          # full timeline
 uv run python ../scripts/replay_demo.py --speedup 3 --profile rural_100   # 3x surge
 uv run python ../eval/run_eval.py --sets test_1 test_2 test_3    # 216-case benchmark
 ```
+
+## Configuration
+
+Two files, and nothing hidden between them.
+
+**Environment** (`env.example` -> `.env`, gitignored):
+
+| Variable | What it does |
+|---|---|
+| `LLM_API_KEY` | Bedrock key for Path B. Blank is a supported configuration: uncached complaints fall back to the rules path and every recommendation says so on its face. |
+| `LLM_REGION`, `LLM_MODEL` | Where Path B runs and which model. The response cache is keyed by model id, so changing it means new prompts rather than cached ones. |
+| `HOSPITAL_PROFILE` | Which YAML below the department runs on. |
+| `SPACY_MODEL` | Redaction model. `en_core_web_lg` by default; the free-tier deploy uses `en_core_web_sm` to fit in 512 MB. |
+| `HF_TOKEN` | Optional, for dataset pulls only. |
+
+**Hospital profile** (`config/urban_500.yaml`, `config/rural_100.yaml`): the
+clinical thresholds a department runs on, not code. Safe wait limits per acuity
+level, the reassessment sweep interval, the queue length at which triage takes
+the surge fast path, treatment bays, the alert cooldown, and the deterioration
+thresholds that decide when a trend counts as getting worse. A new hospital is
+a new YAML file, and the Settings screen shows a department the values it is
+actually running.
+
+Roles are configuration too, in the sense that they decide what the API allows:
+a triage nurse sets acuity, a medical assistant records vitals but cannot, an
+administrator reads without touching. That decision is enforced server-side, in
+`backend/app/auth.py`, not by a disabled button.
 
 ## Deploying
 
@@ -272,6 +330,13 @@ Every minimum prototype expectation from the problem statement, and where it run
 | Alert fatigue kills adoption | Passive priority queue, only two hard triggers, per-profile alert cooldown, thresholds in hospital YAML not code |
 | Demographic skew in recommendations | Per-age-band bias monitor with a deviation alert; protected-attribute auditing is governance work a pilot adds |
 | Patient data leaves the boundary | Presidio redaction on all free text pre-LLM, schema collects no direct identifiers, fully on-premises model option evaluated and shipped |
+
+## Maintainers
+
+Team **NamoFans**, IIT Kharagpur, for the Accenture Innovation Challenge 2026.
+
+- **Monika Kumari** (Team Leader)
+- **Animesh Raj**
 
 ## References
 
