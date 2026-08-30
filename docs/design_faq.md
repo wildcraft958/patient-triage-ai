@@ -463,3 +463,22 @@ show the caveat with it: the component card in the registry, and the Path B
 stage in the pipeline view. It used to be computed and never rendered, which
 is the same as not having it, since the only person it protects is the one
 reading the number.
+
+## What happens if we type a complaint your response cache has never seen?
+
+Path A scores it normally. Path B calls the model, and if there is no funded key
+in the environment it does not return, so the recommendation is the
+deterministic engine alone. That is the designed fail-safe, and the board says
+so in those words: the drawer and the pipeline view both read "did not return"
+rather than claiming the reasoning pass was queued. Where the rules put the
+patient at ESI-2 or worse, the recommendation is also flagged for clinician
+review.
+
+Worth being plain about the demo build: it ships a committed response cache so
+the walkthrough is deterministic, costs nothing to run and reproduces on a
+machine with no credentials at all. Every benchmark number in this repo comes
+from that cache and was regenerated with a deliberately invalid key, so a cache
+miss fails loudly instead of quietly succeeding. The trade is that a genuinely
+novel complaint typed live exercises Path A only, unless a key is configured.
+The dual-path behaviour itself is not a demo artifact: it is the same code path
+either way, and the 216-case and 60-case evaluations both ran it end to end.
