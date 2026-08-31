@@ -1,10 +1,11 @@
+import { useState } from 'react'
 import { House, LogOut, Moon, PanelLeft, Sun } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { VIEWS } from './views'
 import { useSession } from '../auth/sessionContext'
 import { useTheme } from '../theme/themeContext'
 import { Mark } from '../brand/Logo'
-import { Initials } from './ui'
+import { Btn, Initials } from './ui'
 
 function Badge({ count, tone }) {
   if (!count) return null
@@ -32,6 +33,7 @@ export default function Sidebar({ counts, collapsed, onCollapse }) {
   const { dark, toggle } = useTheme()
   const navigate = useNavigate()
   const wide = !collapsed
+  const [confirm, setConfirm] = useState(null)
 
   return (
     <nav aria-label="Console sections"
@@ -97,17 +99,47 @@ export default function Sidebar({ counts, collapsed, onCollapse }) {
         )}
         <div className={`flex items-center gap-1 ${wide ? '' : 'flex-col'}`}>
           <IconButton icon={House} label="Back to the product site"
-                      onClick={() => navigate('/')} />
+                      onClick={() => setConfirm('leave')} />
           <IconButton icon={dark ? Sun : Moon}
                       label={dark ? 'Switch to the light theme' : 'Switch to the dark theme'}
                       onClick={toggle} />
           {user && (
             <span className={wide ? 'ml-auto' : ''}>
-              <IconButton icon={LogOut} label="Sign out" onClick={signOut} />
+              <IconButton icon={LogOut} label="Sign out"
+                          onClick={() => setConfirm('signout')} />
             </span>
           )}
         </div>
       </div>
+
+      {confirm && (
+        <div className="fixed inset-0 z-50 grid place-items-center p-5">
+          <div className="absolute inset-0 bg-scrim-full" onClick={() => setConfirm(null)} />
+          <div role="alertdialog" aria-modal="true"
+               aria-label={confirm === 'signout' ? 'Sign out' : 'Leave console'}
+               className="relative bg-card rounded-lg w-[360px] max-w-full shadow-lg
+                          border-t-4 border-brand p-5 space-y-4">
+            <h3 className="text-sm font-bold text-ink">
+              {confirm === 'signout' ? 'Sign out of your shift?' : 'Leave the console?'}
+            </h3>
+            <p className="text-xs text-ink-2 leading-relaxed">
+              {confirm === 'signout'
+                ? 'Your current shift will end. You will need to sign in again to continue.'
+                : 'You will return to the product site. Your shift stays active until you sign out.'}
+            </p>
+            <div className="flex gap-2 justify-end">
+              <Btn variant="outline" size="sm" onClick={() => setConfirm(null)}>Cancel</Btn>
+              <Btn variant="primary" size="sm" onClick={() => {
+                setConfirm(null)
+                if (confirm === 'signout') { signOut(); navigate('/signin') }
+                else navigate('/')
+              }}>
+                {confirm === 'signout' ? 'Sign out' : 'Leave'}
+              </Btn>
+            </div>
+          </div>
+        </div>
+      )}
     </nav>
   )
 }

@@ -1,14 +1,13 @@
-import { useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
 import SessionProvider from './Session'
 import SignIn from './SignIn'
 import { useSession } from './sessionContext'
 
 function Gate() {
-  const { signOut } = useSession()
+  const { user } = useSession()
   const navigate = useNavigate()
 
-  useEffect(() => { signOut() }, [signOut])
+  if (user) return <Navigate to="/console/queue" replace />
 
   return <SignIn onAuthenticated={() => navigate('/console/queue')} />
 }
