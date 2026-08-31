@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Branch, Edge, Node } from '../console/flow'
+import { Branch, Node } from '../console/flow'
 import { STEP, feed } from '../console/flowClock'
 
 // How a triage is produced, drawn with the console's own flow chart engine so
@@ -33,15 +33,15 @@ export default function HeroPipeline() {
 
   return (
     <div className="flow-figure" aria-label="How one triage is produced">
-      <div className="flex items-stretch gap-0">
-        <Node kind="Intake" dart={dart} delay={AT.intake} className="flex-1 basis-0"
-              name="Arrival record"
-              body="Chief complaint, vitals, age, and whatever history exists." />
-        <Edge dart={dart} delay={feed(AT.redact)} />
-        <Node kind="Redaction" dart={dart} delay={AT.redact} tone="brand" boundary="phi"
-              className="flex-1 basis-0" name="PHI removal"
-              body="Names, numbers and locations are stripped before either path reads a word." />
-      </div>
+      <Node kind="Intake" dart={dart} delay={AT.intake}
+            name="Arrival record"
+            body="Chief complaint, vitals, age, and whatever history exists." />
+
+      <Branch straight dart={dart} delay={feed(AT.redact)} />
+
+      <Node kind="Redaction" dart={dart} delay={AT.redact} tone="brand" boundary="phi"
+            name="PHI removal"
+            body="Names, numbers and locations are stripped before either path reads a word." />
 
       <Branch dart={dart} delay={feed(AT.paths)} />
 
