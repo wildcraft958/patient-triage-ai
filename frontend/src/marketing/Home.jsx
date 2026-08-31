@@ -27,7 +27,7 @@ export default function Home() {
             Two engines score every arrival. Then the waiting room stays watched.
           </p>
           <div className="hero-ctas">
-            <Link className="btn btn-primary" to="/console">Launch the console<span className="arr">&rsaquo;</span></Link>
+            <Link className="btn btn-primary" to="/signin">Launch the console<span className="arr">&rsaquo;</span></Link>
             <Link className="btn btn-outline" to="/evidence">See the evidence</Link>
           </div>
           <HeroQueue />

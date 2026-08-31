@@ -9,6 +9,7 @@ import About from './marketing/About'
 import NotFound from './marketing/NotFound'
 import Console from './console/Console'
 import SessionProvider from './auth/Session'
+import SignInRoute from './auth/SignInRoute'
 
 // The whole address space in one place, so it can be read and tested rather
 // than inferred from where useState happens to live.
@@ -38,6 +39,7 @@ export const routes = [
       { path: '*', element: <NotFound /> },
     ],
   },
+  { path: '/signin', element: <SignInRoute /> },
   { path: '/console', element: <Navigate to="/console/queue" replace /> },
   { path: '/console/:view', element: console_ },
 ]

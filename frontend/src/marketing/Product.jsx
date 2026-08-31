@@ -11,7 +11,7 @@ export default function Product() {
           <p className="lede">
             Everything below is running software, demonstrated on a replayed emergency
             department timeline. Nothing on this page is a mockup:{' '}
-            <Link to="/console" style={{ color: 'var(--purple-deep)', fontWeight: 700 }}>launch it yourself</Link>.
+            <Link to="/signin" style={{ color: 'var(--purple-deep)', fontWeight: 700 }}>launch it yourself</Link>.
           </p>
         </div>
       </header>

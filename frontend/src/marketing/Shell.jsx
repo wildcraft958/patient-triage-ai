@@ -42,7 +42,7 @@ function Nav() {
           <NavLink to="/security">Security</NavLink>
           <NavLink to="/about">About</NavLink>
           <ThemeToggle />
-          <Link className="btn btn-primary btn-sm" to="/console">
+          <Link className="btn btn-primary btn-sm" to="/signin">
             Launch the console<span className="arr">&rsaquo;</span>
           </Link>
         </div>
@@ -59,7 +59,7 @@ export function CtaBand({ title, sub, showConsole = true }) {
         {sub && <p>{sub}</p>}
         <div className="hero-ctas">
           {showConsole && (
-            <Link className="btn btn-invert" to="/console">
+            <Link className="btn btn-invert" to="/signin">
               Launch the console<span className="arr">&rsaquo;</span>
             </Link>
           )}

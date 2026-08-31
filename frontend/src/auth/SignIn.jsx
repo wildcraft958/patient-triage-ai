@@ -17,7 +17,7 @@ const PROOF = [
    'Both reasoning chains, the level, who changed it and why, written as it happens.'],
 ]
 
-export default function SignIn() {
+export default function SignIn({ onAuthenticated }) {
   const { signIn } = useSession()
   const [role, setRole] = useState('nurse')
   const [badge, setBadge] = useState(DIRECTORY.nurse.badge_id)
@@ -120,12 +120,12 @@ export default function SignIn() {
           </label>
 
           <Btn variant="primary" size="lg" className="w-full mt-6"
-               onClick={() => signIn(role, { badge_id: badge.trim() || DIRECTORY[role].badge_id })}>
+               onClick={() => { signIn(role, { badge_id: badge.trim() || DIRECTORY[role].badge_id }); onAuthenticated?.() }}>
             Start shift <ChevronRight size={15} aria-hidden="true" />
           </Btn>
 
           <Btn variant="outline" size="lg" className="w-full mt-2.5"
-               onClick={() => signIn(role, { badge_id: DIRECTORY[role].badge_id })}>
+               onClick={() => { signIn(role, { badge_id: DIRECTORY[role].badge_id }); onAuthenticated?.() }}>
             Continue with hospital directory
           </Btn>
 

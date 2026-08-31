@@ -73,7 +73,7 @@ export default function About() {
             </div>
             <p>
               Or, right here:{' '}
-              <Link to="/console" style={{ color: 'var(--purple-deep)', fontWeight: 700 }}>
+              <Link to="/signin" style={{ color: 'var(--purple-deep)', fontWeight: 700 }}>
                 launch the console
               </Link>{' '}
               and step through a replayed shift: 22 patients, an atypical cardiac
