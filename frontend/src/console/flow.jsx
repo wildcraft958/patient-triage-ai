@@ -40,21 +40,56 @@ export function Edge({ dart, delay = 0 }) {
 export function Branch({ join = false, straight = false, dart, delay = 0 }) {
   // The paths sit in a two-column grid, so the branch drops have to land on
   // 25% and 75% to meet the middle of each node rather than near it.
-  const d = straight ? 'M50 2 V26'
-    : join
+  if (straight) {
+    const d = 'M50 2 V26'
+    return (
+      <svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"
+           data-branch="straight"
+           className="w-full h-7 overflow-visible text-line-2">
+        <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5"
+              vectorEffect="non-scaling-stroke" strokeDasharray="5 4"
+              className="motion-safe:animate-[branch-drift_2.4s_linear_infinite]" />
+        <path key={dart} d={d} fill="none" stroke="var(--color-brand)" strokeWidth="2"
+              vectorEffect="non-scaling-stroke" strokeDasharray="14 240"
+              style={{ animationDelay: `${delay}ms` }}
+              className="opacity-0 motion-safe:animate-[branch-dart_0.7s_cubic-bezier(.4,0,.2,1)_both]" />
+      </svg>
+    )
+  }
+
+  // Fork/join: three independent arms so each dart flows in the correct
+  // direction. A single compound path forces one stroke-dashoffset direction
+  // on the whole shape, which makes one horizontal arm animate backwards.
+  const bg = join
     ? 'M25 2 V14 H75 V2 M50 14 V26'
     : 'M50 2 V14 M25 26 V14 H75 V26'
+
+  // Dart paths drawn so the stroke-dashoffset 240->0 sweep follows the flow.
+  // Fork: stem drops, then each arm leaves the center toward its column.
+  // Join: each arm arrives from its column toward the center, then stem drops.
+  const stem  = join ? 'M50 14 V26' : 'M50 2 V14'
+  const left  = join ? 'M25 2 V14 H50' : 'M50 14 H25 V26'
+  const right = join ? 'M75 2 V14 H50' : 'M50 14 H75 V26'
+
+  const dartCls = 'opacity-0 motion-safe:animate-[branch-dart_0.7s_cubic-bezier(.4,0,.2,1)_both]'
+  const dartProps = {
+    fill: 'none', stroke: 'var(--color-brand)', strokeWidth: 2,
+    vectorEffect: 'non-scaling-stroke', strokeDasharray: '14 240',
+  }
+
   return (
     <svg viewBox="0 0 100 28" preserveAspectRatio="none" aria-hidden="true"
-         data-branch={straight ? 'straight' : join ? 'join' : 'fork'}
+         data-branch={join ? 'join' : 'fork'}
          className="w-full h-7 overflow-visible text-line-2">
-      <path d={d} fill="none" stroke="currentColor" strokeWidth="1.5"
+      <path d={bg} fill="none" stroke="currentColor" strokeWidth="1.5"
             vectorEffect="non-scaling-stroke" strokeDasharray="5 4"
             className="motion-safe:animate-[branch-drift_2.4s_linear_infinite]" />
-      <path key={dart} d={d} fill="none" stroke="var(--color-brand)" strokeWidth="2"
-            vectorEffect="non-scaling-stroke" strokeDasharray="14 240"
-            style={{ animationDelay: `${delay}ms` }}
-            className="opacity-0 motion-safe:animate-[branch-dart_0.7s_cubic-bezier(.4,0,.2,1)_both]" />
+      <path key={`${dart}-s`} d={stem}  {...dartProps}
+            style={{ animationDelay: `${delay}ms` }} className={dartCls} />
+      <path key={`${dart}-l`} d={left}  {...dartProps}
+            style={{ animationDelay: `${delay + 80}ms` }} className={dartCls} />
+      <path key={`${dart}-r`} d={right} {...dartProps}
+            style={{ animationDelay: `${delay + 80}ms` }} className={dartCls} />
     </svg>
   )
 }
