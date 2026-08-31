@@ -5,7 +5,7 @@ import { VIEWS } from './views'
 import { useSession } from '../auth/sessionContext'
 import { useTheme } from '../theme/themeContext'
 import { Mark } from '../brand/Logo'
-import { Btn, Initials } from './ui'
+import { Btn, Initials, Scrim } from './ui'
 
 function Badge({ count, tone }) {
   if (!count) return null
@@ -114,20 +114,24 @@ export default function Sidebar({ counts, collapsed, onCollapse }) {
 
       {confirm && (
         <div className="fixed inset-0 z-50 grid place-items-center p-5">
-          <div className="absolute inset-0 bg-scrim-full" onClick={() => setConfirm(null)} />
+          <Scrim onClick={() => setConfirm(null)} />
           <div role="alertdialog" aria-modal="true"
                aria-label={confirm === 'signout' ? 'Sign out' : 'Leave console'}
-               className="relative bg-card rounded-lg w-[360px] max-w-full shadow-lg
-                          border-t-4 border-brand p-5 space-y-4">
-            <h3 className="text-sm font-bold text-ink">
-              {confirm === 'signout' ? 'Sign out of your shift?' : 'Leave the console?'}
-            </h3>
-            <p className="text-xs text-ink-2 leading-relaxed">
-              {confirm === 'signout'
-                ? 'Your current shift will end. You will need to sign in again to continue.'
-                : 'You will return to the product site. Your shift stays active until you sign out.'}
-            </p>
-            <div className="flex gap-2 justify-end">
+               className="relative bg-card rounded-lg w-[360px] max-w-full
+                          max-h-[90vh] overflow-y-auto border-t-4 border-brand shadow-lg">
+            <header className="px-5 pt-5 pb-4 border-b border-line">
+              <h3 className="text-lg font-bold tracking-tight text-ink">
+                {confirm === 'signout' ? 'Sign out of your shift?' : 'Leave the console?'}
+              </h3>
+            </header>
+            <div className="px-5 py-4">
+              <p className="text-xs text-ink-2 leading-relaxed">
+                {confirm === 'signout'
+                  ? 'Your current shift will end. You will need to sign in again to continue.'
+                  : 'You will return to the product site. Your shift stays active until you sign out.'}
+              </p>
+            </div>
+            <footer className="flex gap-2 justify-end px-5 py-4 border-t border-line">
               <Btn variant="outline" size="sm" onClick={() => setConfirm(null)}>Cancel</Btn>
               <Btn variant="primary" size="sm" onClick={() => {
                 setConfirm(null)
@@ -136,7 +140,7 @@ export default function Sidebar({ counts, collapsed, onCollapse }) {
               }}>
                 {confirm === 'signout' ? 'Sign out' : 'Leave'}
               </Btn>
-            </div>
+            </footer>
           </div>
         </div>
       )}
