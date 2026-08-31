@@ -1,0 +1,9 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "npm --prefix frontend test",
+    "test:frontend": "npm --prefix frontend test",
+    "test:backend": "cd backend && python -m pytest",
+    "dev": "npm --prefix frontend run dev"
+  }
+}
