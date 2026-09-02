@@ -308,6 +308,17 @@ describe('finding a patient from anywhere', () => {
     expect(screen.getByRole('dialog', { name: /find a patient/i })).toBeInTheDocument()
   })
 
+  // Both chords work, but printing either one teaches one keyboard and
+  // misleads the other, so the rail names none of them.
+  it('advertises no keyboard chord on the rail control', async () => {
+    renderSignedIn(<Console />)
+    await screen.findByText('Alma Whitfield')
+    const trigger = screen.getByRole('button', { name: /find a patient/i })
+    expect(trigger.querySelector('kbd')).toBeNull()
+    expect(trigger.textContent).not.toMatch(/⌘|Ctrl|Cmd/i)
+    expect(trigger.getAttribute('title')).not.toMatch(/⌘|Ctrl|Cmd/i)
+  })
+
   it('opens on Ctrl+K too, for anyone not on a Mac', async () => {
     const user = userEvent.setup()
     renderSignedIn(<Console />)

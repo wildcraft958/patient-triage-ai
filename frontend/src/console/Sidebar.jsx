@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { House, LogOut, Moon, PanelLeft, Search, Sun } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { VIEWS } from './views'
-import { shortcutLabel } from './format'
+
 import { useSession } from '../auth/sessionContext'
 import { useTheme } from '../theme/themeContext'
 import { Mark } from '../brand/Logo'
@@ -65,11 +65,15 @@ export default function Sidebar({ counts, collapsed, onCollapse, onSearch }) {
       {/* Search sits in the rail rather than the status bar. The bar carries
           the department clock, the census, the load and three controls
           already, and a field squeezed in beside them wrapped onto two lines
-          at ordinary widths. This is also where a reader looks for it. */}
+          at ordinary widths. This is also where a reader looks for it.
+
+          No keyboard chord is printed on it. Cmd+K and Ctrl+K both open it,
+          but naming either one teaches one keyboard and misleads the other,
+          and the control is right here to be clicked. */}
       {onSearch && (
         <div className="px-2.5 pt-2.5 shrink-0">
           <button onClick={onSearch} aria-label="Find a patient"
-                  title={`Find a patient (${shortcutLabel()})`}
+                  title="Find a patient"
                   className={`w-full flex items-center gap-2.5 rounded-sm border
                               border-rail-3 bg-rail-2 text-rail-ink-2 text-[12px]
                               cursor-pointer whitespace-nowrap transition-colors
@@ -78,12 +82,6 @@ export default function Sidebar({ counts, collapsed, onCollapse, onSearch }) {
                               ${wide ? 'px-3 py-1.5' : 'justify-center py-1.5'}`}>
             <Search size={16} className="shrink-0" aria-hidden="true" />
             {wide && <span className="truncate">Find a patient</span>}
-            {wide && (
-              <kbd className="ml-auto px-1 py-px rounded-[3px] border border-rail-3
-                              bg-rail text-[9.5px] font-sans text-rail-ink-2">
-                {shortcutLabel()}
-              </kbd>
-            )}
           </button>
         </div>
       )}
