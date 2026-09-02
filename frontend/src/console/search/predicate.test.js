@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs'
+import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { describePredicate, select } from './predicate'
 
@@ -119,5 +121,25 @@ describe('describing a predicate for the chip', () => {
     const shown = describePredicate({ field: 'decided_by', op: 'isnull' })
     expect(shown).not.toMatch(/_/)
     expect(shown.length).toBeGreaterThan(0)
+  })
+})
+
+// One contract, two evaluators. The console filters the board it is showing;
+// the backend re-evaluates pinned cohorts on the clock sweep. A standing
+// cohort that means one thing on screen and another in the alert is worse
+// than no standing cohort, so both sides are pinned to the same file.
+describe('the shared predicate contract', () => {
+  const contract = JSON.parse(
+    readFileSync(resolve(process.cwd(), '../data/predicate_conformance.json'), 'utf8'))
+
+  it('covers every operator the evaluator implements', () => {
+    const ops = new Set(contract.cases.map((c) => c.predicate.op))
+    expect([...ops].sort()).toEqual(
+      ['eq', 'gt', 'gte', 'in', 'is', 'isnull', 'lt', 'lte', 'ne', 'nonempty'])
+  })
+
+  it.each(contract.cases.map((c) => [c.why, c]))('%s', (_why, c) => {
+    const kept = select([c.row], { predicates: [c.predicate], text: '' })
+    expect(kept.length === 1).toBe(c.holds)
   })
 })

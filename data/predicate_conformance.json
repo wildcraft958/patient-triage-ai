@@ -1,0 +1,335 @@
+{
+  "note": "One contract for two evaluators. Cohort predicates are parsed in the console and evaluated in both places: the browser filters the board it is showing, and the backend re-evaluates pinned cohorts on the clock sweep. Two implementations of the same rules drift, and a standing cohort that means one thing on screen and another in the alert is worse than no standing cohort. Both test suites read this file, so a change to either evaluator has to change this contract first.",
+  "cases": [
+    {
+      "why": "greater than",
+      "row": {
+        "waited_min": 40
+      },
+      "predicate": {
+        "field": "waited_min",
+        "op": "gt",
+        "value": 30
+      },
+      "holds": true
+    },
+    {
+      "why": "greater than, not met",
+      "row": {
+        "waited_min": 30
+      },
+      "predicate": {
+        "field": "waited_min",
+        "op": "gt",
+        "value": 30
+      },
+      "holds": false
+    },
+    {
+      "why": "less than",
+      "row": {
+        "age_years": 8
+      },
+      "predicate": {
+        "field": "age_years",
+        "op": "lt",
+        "value": 18
+      },
+      "holds": true
+    },
+    {
+      "why": "at least, boundary included",
+      "row": {
+        "age_years": 65
+      },
+      "predicate": {
+        "field": "age_years",
+        "op": "gte",
+        "value": 65
+      },
+      "holds": true
+    },
+    {
+      "why": "at most, boundary included",
+      "row": {
+        "esi": 2
+      },
+      "predicate": {
+        "field": "esi",
+        "op": "lte",
+        "value": 2
+      },
+      "holds": true
+    },
+    {
+      "why": "equal",
+      "row": {
+        "esi": 4
+      },
+      "predicate": {
+        "field": "esi",
+        "op": "eq",
+        "value": 4
+      },
+      "holds": true
+    },
+    {
+      "why": "not equal",
+      "row": {
+        "esi": 4
+      },
+      "predicate": {
+        "field": "esi",
+        "op": "ne",
+        "value": 2
+      },
+      "holds": true
+    },
+    {
+      "why": "an age of zero is a real age, not a missing one",
+      "row": {
+        "age_years": 0
+      },
+      "predicate": {
+        "field": "age_years",
+        "op": "lt",
+        "value": 1
+      },
+      "holds": true
+    },
+    {
+      "why": "enum equality",
+      "row": {
+        "category": "chest_pain"
+      },
+      "predicate": {
+        "field": "category",
+        "op": "eq",
+        "value": "chest_pain"
+      },
+      "holds": true
+    },
+    {
+      "why": "one of a set",
+      "row": {
+        "status": "reassess_due"
+      },
+      "predicate": {
+        "field": "status",
+        "op": "in",
+        "value": [
+          "reassess_due",
+          "deteriorating"
+        ]
+      },
+      "holds": true
+    },
+    {
+      "why": "not in the set",
+      "row": {
+        "status": "waiting"
+      },
+      "predicate": {
+        "field": "status",
+        "op": "in",
+        "value": [
+          "reassess_due",
+          "deteriorating"
+        ]
+      },
+      "holds": false
+    },
+    {
+      "why": "boolean false is a recorded answer",
+      "row": {
+        "paths_agree": false
+      },
+      "predicate": {
+        "field": "paths_agree",
+        "op": "is",
+        "value": false
+      },
+      "holds": true
+    },
+    {
+      "why": "boolean true",
+      "row": {
+        "clinician_flag": true
+      },
+      "predicate": {
+        "field": "clinician_flag",
+        "op": "is",
+        "value": true
+      },
+      "holds": true
+    },
+    {
+      "why": "boolean mismatch",
+      "row": {
+        "paths_agree": true
+      },
+      "predicate": {
+        "field": "paths_agree",
+        "op": "is",
+        "value": false
+      },
+      "holds": false
+    },
+    {
+      "why": "a number is not a boolean, so it satisfies neither",
+      "row": {
+        "paths_agree": 1
+      },
+      "predicate": {
+        "field": "paths_agree",
+        "op": "is",
+        "value": true
+      },
+      "holds": false
+    },
+    {
+      "why": "a non-empty list is worsening",
+      "row": {
+        "vitals_worsening": [
+          "HR"
+        ]
+      },
+      "predicate": {
+        "field": "vitals_worsening",
+        "op": "nonempty"
+      },
+      "holds": true
+    },
+    {
+      "why": "an empty list is not",
+      "row": {
+        "vitals_worsening": []
+      },
+      "predicate": {
+        "field": "vitals_worsening",
+        "op": "nonempty"
+      },
+      "holds": false
+    },
+    {
+      "why": "no decision recorded",
+      "row": {
+        "decided_by": null
+      },
+      "predicate": {
+        "field": "decided_by",
+        "op": "isnull"
+      },
+      "holds": true
+    },
+    {
+      "why": "a decision was recorded",
+      "row": {
+        "decided_by": "RN-07"
+      },
+      "predicate": {
+        "field": "decided_by",
+        "op": "isnull"
+      },
+      "holds": false
+    },
+    {
+      "why": "a field the row does not carry at all counts as absent",
+      "row": {},
+      "predicate": {
+        "field": "decided_by",
+        "op": "isnull"
+      },
+      "holds": true
+    },
+    {
+      "why": "an unrecorded wait is not under a threshold either (js coerces null to 0)",
+      "row": {
+        "waited_min": null
+      },
+      "predicate": {
+        "field": "waited_min",
+        "op": "lt",
+        "value": 1
+      },
+      "holds": false
+    },
+    {
+      "why": "nor at least zero, which is where null coercion hides",
+      "row": {
+        "waited_min": null
+      },
+      "predicate": {
+        "field": "waited_min",
+        "op": "gte",
+        "value": 0
+      },
+      "holds": false
+    },
+    {
+      "why": "a missing wait is not at most a threshold",
+      "row": {},
+      "predicate": {
+        "field": "waited_min",
+        "op": "lte",
+        "value": 30
+      },
+      "holds": false
+    },
+    {
+      "why": "an unrecorded value cannot satisfy a claim about it",
+      "row": {
+        "waited_min": null
+      },
+      "predicate": {
+        "field": "waited_min",
+        "op": "gt",
+        "value": 1
+      },
+      "holds": false
+    },
+    {
+      "why": "a missing field cannot satisfy a claim about it",
+      "row": {},
+      "predicate": {
+        "field": "waited_min",
+        "op": "gt",
+        "value": 1
+      },
+      "holds": false
+    },
+    {
+      "why": "an unrecorded agreement is not a disagreement",
+      "row": {
+        "paths_agree": null
+      },
+      "predicate": {
+        "field": "paths_agree",
+        "op": "is",
+        "value": false
+      },
+      "holds": false
+    },
+    {
+      "why": "nor is it an agreement",
+      "row": {
+        "paths_agree": null
+      },
+      "predicate": {
+        "field": "paths_agree",
+        "op": "is",
+        "value": true
+      },
+      "holds": false
+    },
+    {
+      "why": "an absent list is not worsening",
+      "row": {},
+      "predicate": {
+        "field": "vitals_worsening",
+        "op": "nonempty"
+      },
+      "holds": false
+    }
+  ]
+}
