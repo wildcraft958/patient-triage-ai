@@ -1,13 +1,25 @@
 import { useEffect, useRef, useState } from 'react'
 import { Search } from 'lucide-react'
-import { EsiBadge, Initials, Input, Scrim } from '../ui'
+import { EsiBadge, Initials, Input, Pill, Scrim } from '../ui'
 import { rank } from './lookup'
+import { parse } from './parse'
+import { describePredicate, select } from './predicate'
 
 const MATCHED = { patient_id: 'record', display_name: 'name',
                   chief_complaint: 'complaint' }
+const LIMIT = 8
 
-// Lookup over the board the console already holds. Mounting is the caller's
-// job, so every open starts on an empty query without an effect to reset it.
+// Search over the board the console already holds. Two modes off one field:
+// plain words rank patients by how well they match, and a recognised filter
+// term turns the same box into a cohort question.
+//
+// The parse is always shown back as chips before the count is read, and a
+// term that looked like a filter but could not be resolved is named. A board
+// shown without the filter the user asked for answers a different question,
+// and on a triage board that is the failure worth designing against.
+//
+// Mounting is the caller's job, so every open starts on an empty query
+// without an effect to reset it.
 export default function Palette({ rows, onClose, onSelect }) {
   const [query, setQuery] = useState('')
   const [cursor, setCursor] = useState(0)
@@ -15,7 +27,14 @@ export default function Palette({ rows, onClose, onSelect }) {
 
   useEffect(() => { field.current?.focus() }, [])
 
-  const hits = rank(rows ?? [], query)
+  const board = rows ?? []
+  const parsed = parse(query)
+  const cohort = parsed.predicates.length > 0
+  const matched = cohort ? select(board, parsed) : []
+  const hits = cohort
+    ? matched.slice(0, LIMIT).map((row) => ({ row }))
+    : rank(board, parsed.text)
+  const asked = cohort || Boolean(parsed.text) || parsed.unmatched.length > 0
   // Clamped rather than reset, so shrinking the result set under the cursor
   // cannot leave Enter pointing past the end of the list.
   const at = Math.min(cursor, Math.max(hits.length - 1, 0))
@@ -52,16 +71,46 @@ export default function Palette({ rows, onClose, onSelect }) {
                  className="border-0 bg-transparent focus:outline-none px-0" />
         </div>
 
+        {/* What the query was read as. This is the line the user checks
+            before trusting the count, so it is rendered whenever a filter was
+            recognised, not only when something looks wrong. */}
+        {(cohort || parsed.unmatched.length > 0) && (
+          <div className="flex flex-wrap items-center gap-1.5 px-3 py-2 border-b border-line">
+            {parsed.predicates.map((p) => (
+              <Pill key={`${p.field}-${p.op}`} tone="brand">{describePredicate(p)}</Pill>
+            ))}
+            {parsed.text && <Pill tone="neutral">text {parsed.text}</Pill>}
+            {parsed.unmatched.length > 0 && (
+              <span className="flex items-center gap-1.5">
+                <Pill tone="warn">
+                  Could not read {[...new Set(parsed.unmatched)].join(', ')}
+                </Pill>
+                <span className="text-[10.5px] text-ink-2">
+                  so that part was not applied
+                </span>
+              </span>
+            )}
+            {cohort && (
+              <span className="ml-auto text-[11px] text-ink-2 tabular-nums">
+                {matched.length} {matched.length === 1 ? 'patient' : 'patients'}
+              </span>
+            )}
+          </div>
+        )}
+
         {/* An empty box has not been asked anything yet. Saying "no patient
             matches" here would teach the user to discount the times it
             matters, so the two states read differently on purpose. */}
-        {!query.trim() ? (
+        {!asked ? (
           <p className="px-3.5 py-3 text-xs text-ink-3">
-            Search by name, record number or complaint.
+            Search by name, record number or complaint, or ask for a cohort:
+            try &quot;pediatric fever waiting over 20 minutes&quot;.
           </p>
         ) : hits.length === 0 ? (
           <p className="px-3.5 py-3 text-xs text-ink-2">
-            No patient matches <b className="text-ink">{query.trim()}</b> on this board.
+            {cohort
+              ? 'No patient on this board matches those filters.'
+              : <>No patient matches <b className="text-ink">{parsed.text}</b> on this board.</>}
           </p>
         ) : (
           <div id="search-hits" role="listbox" aria-label="Matching patients"
@@ -86,9 +135,16 @@ export default function Palette({ rows, onClose, onSelect }) {
                     {hit.row.chief_complaint}
                   </span>
                 </span>
-                <span className="text-[10px] uppercase tracking-wider text-ink-3 shrink-0">
-                  {MATCHED[hit.field]}
-                </span>
+                {hit.field && (
+                  <span className="text-[10px] uppercase tracking-wider text-ink-3 shrink-0">
+                    {MATCHED[hit.field]}
+                  </span>
+                )}
+                {cohort && hit.row.waited_min !== undefined && (
+                  <span className="text-[10.5px] text-ink-3 shrink-0 tabular-nums">
+                    {Math.round(hit.row.waited_min)} min
+                  </span>
+                )}
                 {hit.row.esi != null && <EsiBadge esi={hit.row.esi} size="sm" />}
               </button>
             ))}
