@@ -81,6 +81,24 @@ describe('the search palette', () => {
     expect(spies.onSelect).toHaveBeenCalledWith('A')
   })
 
+  // Escape and a click outside both close it, but neither is visible. A
+  // dialog with no visible way out reads as stuck.
+  it('closes from a cross in the corner', async () => {
+    const { user, onClose, onSelect } = open()
+    await user.click(screen.getByRole('button', { name: /close search/i }))
+    expect(onClose).toHaveBeenCalled()
+    expect(onSelect).not.toHaveBeenCalled()
+  })
+
+  // The shortcut works on every platform, but naming it does not: any label
+  // teaches one keyboard and misleads the other. So it is not advertised.
+  it('advertises no keyboard chord', () => {
+    open()
+    const dialog = screen.getByRole('dialog')
+    expect(dialog.querySelector('kbd')).toBeNull()
+    expect(dialog.textContent).not.toMatch(/⌘|Ctrl|Cmd/i)
+  })
+
   it('closes on Escape without selecting anyone', async () => {
     const { user, onSelect, onClose } = open()
     await user.keyboard('{Escape}')

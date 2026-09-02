@@ -71,6 +71,14 @@ export default function Palette({ rows, pinned = [], onClose, onSelect,
                  value={query} onKeyDown={onKeyDown}
                  onChange={(e) => { setQuery(e.target.value); setCursor(0) }}
                  className="border-0 bg-transparent focus:outline-none px-0" />
+          {/* Escape and a click outside both close this, and neither is
+              visible. A dialog with no visible way out reads as stuck. */}
+          <button onClick={onClose} aria-label="Close search"
+                  className="p-1 rounded-sm text-ink-3 shrink-0 cursor-pointer
+                             hover:bg-app hover:text-ink
+                             focus-visible:outline-2 focus-visible:outline-brand">
+            <X size={14} aria-hidden="true" />
+          </button>
         </div>
 
         {/* What the query was read as. This is the line the user checks
