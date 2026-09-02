@@ -145,6 +145,8 @@ with the row behind it.
 predicates over the fields the board row already carries, and the parse is
 rendered back as chips before the count is read.
 
+![The search palette: a cohort question read back as two chips, the count of matching patients, and a control to keep watching it](docs/search.png)
+
 No model writes the query. Converting clinical language to structured queries
 shows 15 to 55% hallucination on concept mapping in the published evaluations,
 so the vocabulary is closed: a fixed field set, a fixed operator set, and a
