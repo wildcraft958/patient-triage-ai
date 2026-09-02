@@ -115,6 +115,16 @@ describe('describing a predicate for the chip', () => {
       .toBe('vitals worsening')
   })
 
+  // A comparison with no word renders as the value alone, which reads as
+  // equality: the chip would say the opposite of what it filters on.
+  it('gives every comparison an operator word', () => {
+    for (const op of ['gt', 'lt', 'gte', 'lte', 'ne']) {
+      const shown = describePredicate({ field: 'esi', op, value: 2 })
+      expect(shown, op).not.toBe('ESI 2')
+    }
+    expect(describePredicate({ field: 'esi', op: 'eq', value: 2 })).toBe('ESI 2')
+  })
+
   // The chip is the thing the user checks the parse against, so it can never
   // fall back to something they cannot read.
   it('never renders a raw field name', () => {

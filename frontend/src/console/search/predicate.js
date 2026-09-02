@@ -41,7 +41,10 @@ export function select(rows, { predicates = [], text = '' } = {}) {
     && (!needle || hasText(row, needle)))
 }
 
-const WORDS = { gt: 'over', lt: 'under', gte: 'at least', lte: 'at most', eq: '' }
+// Every comparison the parser can emit needs a word here, or a chip renders
+// the value with no operator and reads as the opposite filter.
+const WORDS = { gt: 'over', lt: 'under', gte: 'at least', lte: 'at most',
+                eq: '', ne: 'other than' }
 const UNIT = { waited_min: ' min', in_ed_min: ' min' }
 const NAMED = {
   waited_min: 'waiting', in_ed_min: 'in the department', esi: 'ESI', age_years: 'age',

@@ -113,3 +113,35 @@ def test_there_is_a_ceiling_on_how_many_can_be_pinned():
         c.pin(f"c{i}", KIDS_OVERDUE, [])
     with pytest.raises(ValueError):
         c.pin("one too many", KIDS_OVERDUE, [])
+
+
+# The cohort sweep reads board rows, and building them runs the belief filter
+# forward. It is called after the clock advance has already built them once, so
+# it relies on reading the board being free of side effects within one tick.
+#
+# Two things make that true today: the filter skips a zero elapsed time, and
+# advancing a belief by zero minutes is the identity anyway. No single edit
+# breaks both, so this is a guard on the property rather than something a
+# mutation can flip. Without it, a pinned cohort would quietly advance every
+# patient's belief a second time on every sweep, moving reassessment priority
+# for a reason nobody asked for.
+def test_reading_the_board_twice_in_one_tick_does_not_move_beliefs():
+    from app.api import reset_service
+    from app.models import PatientIntake, Vitals
+
+    svc = reset_service(
+        profile_name="urban_500", audit_path=":memory:",
+        transport=lambda system, user:
+            '{"esi": 3, "confidence": 0.9, "reasoning": ["fake"]}')
+    svc.arrive(PatientIntake(
+        patient_id="B1", age_years=44, chief_complaint="abdominal pain",
+        complaint_category="abdominal_pain",
+        vitals=Vitals(hr=96, rr=18, spo2=97, temp_c=37.4, sbp=126, pain=6)))
+    svc.advance_clock(12)
+
+    entry = svc.room.entries["B1"]
+    svc.queue_view()
+    after_first = list(entry.belief)
+    svc.queue_view()
+    assert list(entry.belief) == after_first
+    assert entry.belief_at_min == svc.clock.now_min
