@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import * as api from '../api'
 import ActivityLog from './ActivityLog'
-import { Branch, Edge, Node } from './flow'
+import { Branch, Node } from './flow'
 import { AT, feed } from './flowClock'
 import { Card, CardHead, Empty, Pill } from './ui'
 import { fmt, fmtMs as ms } from './format'
@@ -11,10 +11,11 @@ import { fmt, fmtMs as ms } from './format'
 // number here is measured, not modelled: the graph nodes are wrapped and their
 // wall time rides on the queue entry.
 //
-// The shape matters as much as the numbers. After redaction the two paths run
-// as concurrent branches and rejoin at fusion, and only one of them ever sees
-// a de-identified copy. Drawing them in a single line would misstate both, so
-// the fork and the join are real edges rather than a caption.
+// The shape matters as much as the numbers. It runs down one column, the way
+// the product site draws the same pipeline, so the two halves of the product
+// agree. The one place anything sits side by side is the concurrent pair,
+// because there the geometry is making a claim: they run at the same time,
+// and only one of them ever sees a de-identified copy.
 
 // Generous on purpose: scrolling the page down should land on a useful slab of
 // the log, with its own scroll reserved for going further back in the shift.
@@ -90,10 +91,12 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
           )}
 
           {detail && pl && (
-            <div className="p-4">
-              {/* Intake and redaction, in line */}
-              <div className="flex items-stretch gap-0">
-                <Node kind="Intake" dart={dart} delay={AT.intake} name="Arrival record" className="flex-1 basis-0"
+            /* Held to a reading measure and centred, the way the product site
+               draws the same graph. Stretched to the full card, a one-line
+               stage reads as an empty slab and the fork splays so wide the
+               two paths stop looking like a pair. */
+            <div className="p-4 max-w-3xl mx-auto">
+              <Node kind="Intake" dart={dart} delay={AT.intake} name="Arrival record"
                       body={
                         <>
                           {detail.intake.chief_complaint}
@@ -104,9 +107,9 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                           </span>
                         </>
                       } />
-                <Edge dart={dart} delay={feed(AT.redact)} />
-                <Node kind="Redaction" dart={dart} delay={AT.redact} name="PHI removal" tone="brand"
-                      className="flex-1 basis-0" format={ms} ms={pl.stage_ms?.redact}
+              <Branch straight dart={dart} delay={feed(AT.redact)} />
+              <Node kind="Redaction" dart={dart} delay={AT.redact} name="PHI removal" tone="brand"
+                      format={ms} ms={pl.stage_ms?.redact}
                       boundary="phi"
                       body={
                         pl.phi_entities_removed?.length ? (
@@ -120,7 +123,6 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                             every arrival regardless.</>
                         )
                       } />
-              </div>
 
               <p className="text-center text-[9.5px] font-bold uppercase tracking-[0.12em]
                             text-ink-3 mt-2">
@@ -176,10 +178,8 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                 Rejoined
               </p>
 
-              {/* Fusion onward, in line */}
-              <div className="flex items-stretch gap-0">
-                <Node kind="Fusion" dart={dart} delay={AT.fuse} name="More acute wins" format={ms} ms={pl.stage_ms?.fuse}
-                      className="flex-1 basis-0" tone={fused.paths_agree ? 'ok' : 'warn'}
+              <Node kind="Fusion" dart={dart} delay={AT.fuse} name="More acute wins" format={ms} ms={pl.stage_ms?.fuse}
+                      tone={fused.paths_agree ? 'ok' : 'warn'}
                       body={
                         <>
                           <b className="text-ink">ESI-{fused.esi}</b>
@@ -194,19 +194,18 @@ export default function PipelineView({ detail, metrics, refreshKey }) {
                           </span>
                         </>
                       } />
-                <Edge dart={dart} delay={feed(AT.calibrate)} />
-                <Node kind="Calibration" dart={dart} delay={AT.calibrate} name="Learned escalation" className="flex-1 basis-0"
-                      body="Applies patterns clinicians have repeatedly escalated for this complaint and age band." />
-                <Edge dart={dart} delay={feed(AT.safety)} />
-                <Node kind="Safety" dart={dart} delay={AT.safety} name="Guards and bias" className="flex-1 basis-0"
-                      tone={fused.clinician_flag ? 'warn' : 'neutral'}
-                      body={fused.clinician_flag
-                        ? 'Flagged for clinician review before the board shows it as settled.'
-                        : 'Missing-vitals guard clear; age-band drift within range.'} />
-                <Edge dart={dart} delay={feed(AT.audit)} />
-                <Node kind="Audit" dart={dart} delay={AT.audit} name="Append-only write" className="flex-1 basis-0"
-                      body="Both reasoning chains, the level, the confidence and the timestamp, written as the run completed." />
-              </div>
+              <Branch straight dart={dart} delay={feed(AT.calibrate)} />
+              <Node kind="Calibration" dart={dart} delay={AT.calibrate} name="Learned escalation"
+                    body="Applies patterns clinicians have repeatedly escalated for this complaint and age band." />
+              <Branch straight dart={dart} delay={feed(AT.safety)} />
+              <Node kind="Safety" dart={dart} delay={AT.safety} name="Guards and bias"
+                    tone={fused.clinician_flag ? 'warn' : 'neutral'}
+                    body={fused.clinician_flag
+                      ? 'Flagged for clinician review before the board shows it as settled.'
+                      : 'Missing-vitals guard clear; age-band drift within range.'} />
+              <Branch straight dart={dart} delay={feed(AT.audit)} />
+              <Node kind="Audit" dart={dart} delay={AT.audit} name="Append-only write"
+                    body="Both reasoning chains, the level, the confidence and the timestamp, written as the run completed." />
 
               <div className="flex flex-wrap items-center gap-2 px-1 pt-3">
                 <Pill tone="brand">End to end {ms(pl.total_ms)}</Pill>

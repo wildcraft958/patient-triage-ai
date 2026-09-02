@@ -60,3 +60,39 @@ describe('the fusion node', () => {
     expect(screen.getByText(/path a alone/i)).toBeInTheDocument()
   })
 })
+
+// The graph used to read left, then down, then left again: intake and
+// redaction in a row, the fork, then four more stages in a second row. The
+// product site drew the same pipeline as one column, so the two halves of the
+// product disagreed about the shape of their own pipeline.
+describe('the shape of the graph', () => {
+  const follows = (a, b) => !!(screen.getByText(a)
+    .compareDocumentPosition(screen.getByText(b)) & Node.DOCUMENT_POSITION_FOLLOWING)
+
+  it('runs the linear stages down one column', async () => {
+    const { container } = show()
+    await screen.findByText('Redaction')
+    // intake to redaction, then fusion to calibration to safety to audit
+    expect(container.querySelectorAll('[data-branch="straight"]')).toHaveLength(4)
+  })
+
+  it('keeps every stage in the order it runs', async () => {
+    show()
+    await screen.findByText('Redaction')
+    const chain = ['Intake', 'Redaction', 'Path A', 'Fusion',
+                   'Calibration', 'Safety', 'Audit']
+    const wrong = chain.slice(0, -1)
+      .map((k, i) => [k, chain[i + 1]])
+      .filter(([a, b]) => !follows(a, b))
+    expect(wrong, 'stages out of document order').toEqual([])
+  })
+
+  // Only the concurrent pair is side by side, and that is the one place the
+  // geometry is making a claim: they run at the same time.
+  it('keeps the two concurrent paths beside each other', async () => {
+    show()
+    await screen.findByText('Path B')
+    expect(follows('Path A', 'Path B')).toBe(true)
+    expect(screen.getByText('Path A').closest('[class*="grid-cols-2"]')).toBeTruthy()
+  })
+})

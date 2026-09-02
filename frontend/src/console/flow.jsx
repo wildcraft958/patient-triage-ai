@@ -13,29 +13,11 @@ const TONE = {
   ok: 'border-ok-line', warn: 'border-warn-line',
 }
 
-// Dashes drifting along the edge: the graph reads as something running rather
-// than a picture of it. Written out rather than composed, because Tailwind
-// extracts class names statically.
-const EDGE = 'h-0.5 w-12 self-center bg-repeat-x '
-  + 'bg-[linear-gradient(90deg,var(--color-line-2)_58%,transparent_58%)] '
-  + 'bg-[length:12px_100%] motion-safe:animate-[edge-drift-x_2.4s_linear_infinite]'
-
-/** One edge between two nodes. `dart` replays whenever its key changes. */
-export function Edge({ dart, delay = 0 }) {
-  return (
-    <div aria-hidden="true" className={`relative shrink-0 ${EDGE}`}>
-      <span key={dart} style={{ animationDelay: `${delay}ms` }}
-            className="absolute -top-1 size-2.5 rounded-full bg-brand opacity-0
-                       shadow-[0_0_10px_2px_var(--color-brand)] blur-[0.5px]
-                       motion-safe:animate-[edge-dart-x_0.7s_cubic-bezier(.4,0,.2,1)_both]" />
-    </div>
-  )
-}
-
 /**
- * The vertical runs between stacked stages, drawn as one stretched SVG so the
- * geometry survives any column width: the fork after redaction, the join
- * before fusion, and a straight drop where one stage simply feeds the next.
+ * The runs between stacked stages, drawn as one stretched SVG so the geometry
+ * survives any column width: the fork after redaction, the join before
+ * fusion, and a straight drop where one stage simply feeds the next. The
+ * graph is a single column, so this is the only connector there is.
  */
 export function Branch({ join = false, straight = false, dart, delay = 0 }) {
   // The paths sit in a two-column grid, so the branch drops have to land on
