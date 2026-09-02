@@ -1,4 +1,5 @@
-import { render, waitFor, act } from '@testing-library/react'
+import { render, screen, waitFor, act } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { describe, expect, it, vi } from 'vitest'
 import * as api from '../api'
 import { deferred } from '../test/helpers'
@@ -48,5 +49,77 @@ describe('the activity log', () => {
     await act(async () => { slow.resolve({ events: [ev(1, 1), ev(2, 2)] }) })
     expect(rows()).toHaveLength(1)
     expect(rows()[0].dataset.eventId).toBe('9')
+  })
+})
+
+// Governance filters. The unfiltered panel is "what have the components been
+// doing"; with a filter it becomes "show me every override by this clinician",
+// which is a compliance question and has to answer honestly.
+describe('filtering the trail', () => {
+  const override = (id, clinician) => ({
+    id, sim_min: id, patient_id: 'P1', event_type: 'override',
+    payload: { clinician_id: clinician, original_esi: 3, new_esi: 1,
+               reason: 'septic shock picture' },
+  })
+
+  const mount = async (recent = []) => {
+    api.getRecentAudit.mockResolvedValue({ events: recent })
+    api.searchAudit.mockResolvedValue({ events: [], truncated: false })
+    const view = render(<ActivityLog refreshKey={0} />)
+    await waitFor(() => expect(api.getRecentAudit).toHaveBeenCalled())
+    return { ...view, user: userEvent.setup() }
+  }
+
+  it('reads the whole shift until a filter is set', async () => {
+    await mount([ev(1, 10)])
+    expect(api.searchAudit).not.toHaveBeenCalled()
+  })
+
+  it('searches the trail once an event type is chosen', async () => {
+    const { user } = await mount()
+    api.searchAudit.mockResolvedValue({
+      events: [override(1, 'RN-07')], truncated: false })
+    await user.selectOptions(screen.getByLabelText(/event type/i), 'override')
+    await waitFor(() => expect(api.searchAudit)
+      .toHaveBeenCalledWith(expect.objectContaining({ event_type: 'override' })))
+    expect(await screen.findByText(/RN-07 set ESI-1/)).toBeInTheDocument()
+  })
+
+  it('narrows to one clinician', async () => {
+    const { user } = await mount()
+    await user.type(screen.getByLabelText(/clinician/i), 'RN-07')
+    await waitFor(() => expect(api.searchAudit)
+      .toHaveBeenCalledWith(expect.objectContaining({ clinician_id: 'RN-07' })))
+  })
+
+  // A compliance count read off a truncated list is wrong, and nothing on
+  // screen would say so.
+  it('says when the answer was cut short', async () => {
+    const { user } = await mount()
+    api.searchAudit.mockResolvedValue({
+      events: [override(1, 'RN-07')], truncated: true })
+    await user.type(screen.getByLabelText(/clinician/i), 'RN-07')
+    expect(await screen.findByText(/more than this/i)).toBeInTheDocument()
+  })
+
+  // The unfiltered panel deliberately shows only component actions. A
+  // filtered search must not silently drop the rows it was asked for.
+  it('shows a filtered event type it has no description for', async () => {
+    const { user } = await mount()
+    api.searchAudit.mockResolvedValue({
+      events: [{ id: 9, sim_min: 4, patient_id: 'P1',
+                 event_type: 'observation', payload: { hr: 124 } }],
+      truncated: false })
+    await user.selectOptions(screen.getByLabelText(/event type/i), 'observation')
+    await waitFor(() => expect(rows()).toHaveLength(1))
+  })
+
+  it('goes back to the whole shift when the filter is cleared', async () => {
+    const { user } = await mount()
+    await user.type(screen.getByLabelText(/clinician/i), 'RN-07')
+    await waitFor(() => expect(api.searchAudit).toHaveBeenCalled())
+    api.getRecentAudit.mockClear()
+    await user.clear(screen.getByLabelText(/clinician/i))
+    await waitFor(() => expect(api.getRecentAudit).toHaveBeenCalled())
   })
 })

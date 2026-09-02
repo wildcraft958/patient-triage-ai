@@ -79,7 +79,10 @@ describe('searching from a section that has no patient list', () => {
     await waitFor(() => expect(router.state.location.pathname).toBe('/console/pipeline'))
 
     await user.keyboard('{Meta>}k{/Meta}')
-    await user.type(screen.getByRole('combobox'), 'bianca')
+    // The pipeline view now carries the audit filters, so this has to name
+    // the control it means rather than assuming there is only one.
+    await user.type(
+      screen.getByRole('combobox', { name: /find a patient/i }), 'bianca')
     await user.keyboard('{Enter}')
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/console/queue'))
