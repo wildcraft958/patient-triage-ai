@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
-import { Search } from 'lucide-react'
-import { EsiBadge, Initials, Input, Pill, Scrim } from '../ui'
+import { Eye, Search, X } from 'lucide-react'
+import { Btn, EsiBadge, Initials, Input, Pill, Scrim } from '../ui'
 import { rank } from './lookup'
 import { parse } from './parse'
 import { describePredicate, select } from './predicate'
@@ -20,7 +20,8 @@ const LIMIT = 8
 //
 // Mounting is the caller's job, so every open starts on an empty query
 // without an effect to reset it.
-export default function Palette({ rows, onClose, onSelect }) {
+export default function Palette({ rows, pinned = [], onClose, onSelect,
+                                  onPin, onUnpin }) {
   const [query, setQuery] = useState('')
   const [cursor, setCursor] = useState(0)
   const field = useRef(null)
@@ -35,6 +36,7 @@ export default function Palette({ rows, onClose, onSelect }) {
     ? matched.slice(0, LIMIT).map((row) => ({ row }))
     : rank(board, parsed.text)
   const asked = cohort || Boolean(parsed.text) || parsed.unmatched.length > 0
+  const label = parsed.predicates.map(describePredicate).join(', ')
   // Clamped rather than reset, so shrinking the result set under the cursor
   // cannot leave Enter pointing past the end of the list.
   const at = Math.min(cursor, Math.max(hits.length - 1, 0))
@@ -91,8 +93,24 @@ export default function Palette({ rows, onClose, onSelect }) {
               </span>
             )}
             {cohort && (
-              <span className="ml-auto text-[11px] text-ink-2 tabular-nums">
-                {matched.length} {matched.length === 1 ? 'patient' : 'patients'}
+              <span className="ml-auto flex items-center gap-2">
+                <span className="text-[11px] text-ink-2 tabular-nums">
+                  {matched.length} {matched.length === 1 ? 'patient' : 'patients'}
+                </span>
+                {/* The same question, left running. Labelled with the chips
+                    themselves, so what gets watched reads as what was
+                    confirmed rather than as something retyped.
+
+                    Not offered while any term is unresolved. A half-understood
+                    question left running would keep answering something
+                    narrower than what was asked, and unlike a one-off search
+                    nobody is looking at the warning the next time it fires. */}
+                {onPin && parsed.unmatched.length === 0 && (
+                  <Btn size="sm" onClick={() => onPin(label, parsed)}
+                       title="Announce a patient the moment they enter this cohort">
+                    <Eye size={12} aria-hidden="true" /> Keep watching
+                  </Btn>
+                )}
               </span>
             )}
           </div>
@@ -102,10 +120,41 @@ export default function Palette({ rows, onClose, onSelect }) {
             matches" here would teach the user to discount the times it
             matters, so the two states read differently on purpose. */}
         {!asked ? (
-          <p className="px-3.5 py-3 text-xs text-ink-3">
-            Search by name, record number or complaint, or ask for a cohort:
-            try &quot;pediatric fever waiting over 20 minutes&quot;.
-          </p>
+          <>
+            {pinned.length > 0 && (
+              <div className="border-b border-line">
+                <p className="px-3.5 pt-2.5 pb-1 text-[10px] font-bold uppercase
+                              tracking-[0.1em] text-ink-3">Being watched</p>
+                {pinned.map((c) => (
+                  <div key={c.id}
+                       className="flex items-center gap-2 px-3.5 py-1.5">
+                    <Eye size={12} className="text-brand-ink shrink-0" aria-hidden="true" />
+                    <span className="min-w-0 flex-1 text-[11.5px] text-ink truncate">
+                      {c.label}
+                    </span>
+                    <span className="text-[10.5px] text-ink-3 tabular-nums shrink-0">
+                      {c.members.length}{' '}
+                      {c.members.length === 1 ? 'patient' : 'patients'}
+                    </span>
+                    {onUnpin && (
+                      <button onClick={() => onUnpin(c.id)}
+                              aria-label={`Stop watching ${c.label}`}
+                              title="Stop watching this cohort"
+                              className="p-1 rounded-sm text-ink-3 cursor-pointer
+                                         hover:bg-app hover:text-ink
+                                         focus-visible:outline-2 focus-visible:outline-brand">
+                        <X size={12} aria-hidden="true" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+            <p className="px-3.5 py-3 text-xs text-ink-3">
+              Search by name, record number or complaint, or ask for a cohort:
+              try &quot;pediatric fever waiting over 20 minutes&quot;.
+            </p>
+          </>
         ) : hits.length === 0 ? (
           <p className="px-3.5 py-3 text-xs text-ink-2">
             {cohort

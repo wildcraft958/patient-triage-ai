@@ -26,6 +26,11 @@ export const getSimilar = (id, limit = 5) =>
 export const getRecentAudit = () => request('/audit')
 export const searchAudit = (filters) =>
   request(`/search/audit?${new URLSearchParams(filters)}`)
+export const pinCohort = (label, query) =>
+  request('/search/standing', { method: 'POST', body: JSON.stringify({ label, query }) })
+export const listCohorts = () => request('/search/standing')
+export const unpinCohort = (id) =>
+  request(`/search/standing/${ref(id)}`, { method: 'DELETE' })
 export const getMetrics = () => request('/metrics')
 
 export const loadScenario = (body) =>

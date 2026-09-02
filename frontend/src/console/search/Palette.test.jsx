@@ -178,3 +178,77 @@ describe('cohort queries', () => {
     expect(screen.getByText(/no patient on this board matches/i)).toBeInTheDocument()
   })
 })
+
+// A pinned cohort is the same question left running. The palette is where you
+// ask it, so it is also where you see what is already being watched.
+describe('pinning a cohort', () => {
+  const ROOM = [
+    { patient_id: 'P1', display_name: 'A. One', esi: 2, age_years: 8,
+      waited_min: 40, status: 'waiting', category: 'fever',
+      chief_complaint: 'fever since last night' },
+  ]
+  const PINNED = [
+    { id: 'ab12', label: 'age under 18, waiting over 20 min',
+      query: { predicates: [{ field: 'age_years', op: 'lt', value: 18 }] },
+      members: ['P1', 'P4'] },
+  ]
+  const mount = (props = {}) => {
+    const spies = { onClose: vi.fn(), onSelect: vi.fn(),
+                    onPin: vi.fn(), onUnpin: vi.fn() }
+    renderSignedIn(<Palette rows={ROOM} {...spies} {...props} />)
+    return { ...spies, user: userEvent.setup() }
+  }
+
+  it('offers to keep watching a cohort question', async () => {
+    const { user } = mount()
+    await user.type(screen.getByRole('combobox'), 'pediatric waiting over 20 minutes')
+    expect(screen.getByRole('button', { name: /keep watching/i })).toBeInTheDocument()
+  })
+
+  // A plain name lookup is not a cohort, so there is nothing to keep watching.
+  it('does not offer it for a plain text search', async () => {
+    const { user } = mount()
+    await user.type(screen.getByRole('combobox'), 'one')
+    expect(screen.queryByRole('button', { name: /keep watching/i })).toBeNull()
+  })
+
+  // A one-off search shows the warning to whoever typed it. A pinned one
+  // fires later, at nobody in particular, so a half-understood question must
+  // not be allowed to keep running at all.
+  it('refuses to keep watching a half-understood question', async () => {
+    const { user } = mount()
+    await user.type(screen.getByRole('combobox'), 'fever waiting over')
+    expect(screen.getByText(/could not read/i)).toBeInTheDocument()
+    expect(screen.getByText('fever')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /keep watching/i })).toBeNull()
+  })
+
+  it('pins it under the same words the chips showed', async () => {
+    const { user, onPin } = mount()
+    await user.type(screen.getByRole('combobox'), 'pediatric waiting over 20 minutes')
+    await user.click(screen.getByRole('button', { name: /keep watching/i }))
+    expect(onPin).toHaveBeenCalledWith(
+      'waiting over 20 min, age under 18',
+      expect.objectContaining({
+        predicates: expect.arrayContaining([
+          { field: 'age_years', op: 'lt', value: 18 }]),
+      }))
+  })
+
+  it('shows what is already being watched before anything is typed', () => {
+    mount({ pinned: PINNED })
+    expect(screen.getByText(/age under 18, waiting over 20 min/)).toBeInTheDocument()
+    expect(screen.getByText(/2 patients/i)).toBeInTheDocument()
+  })
+
+  it('stops watching one', async () => {
+    const { user, onUnpin } = mount({ pinned: PINNED })
+    await user.click(screen.getByRole('button', { name: /stop watching/i }))
+    expect(onUnpin).toHaveBeenCalledWith('ab12')
+  })
+
+  it('still prompts when nothing is pinned', () => {
+    mount()
+    expect(screen.getByText(/name, record number or complaint/i)).toBeInTheDocument()
+  })
+})
