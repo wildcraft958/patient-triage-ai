@@ -21,6 +21,8 @@ export const addPatient = (body) =>
 export const getQueue = () => request('/queue')
 export const getPatient = (id) => request(`/patients/${ref(id)}`)
 export const getAudit = (id) => request(`/patients/${ref(id)}/audit`)
+export const getSimilar = (id, limit = 5) =>
+  request(`/search/similar/${ref(id)}?limit=${limit}`)
 export const getRecentAudit = () => request('/audit')
 export const getMetrics = () => request('/metrics')
 

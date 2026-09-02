@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 
 from app.auth import require
@@ -231,6 +231,16 @@ def metrics():
         "calibration_cells": svc.calibration.cells,
         "state": svc.state_view(),
     }
+
+
+@router.get("/search/similar/{patient_id}")
+def similar_cases(patient_id: str, limit: int = Query(5, ge=1, le=20)):
+    """Prior cases whose complaint looks like this one, and what each turned
+    out to be. Runs entirely on this machine: the embedding is the classifier's
+    own local encoder, and the reasoning path is not involved."""
+    _require(patient_id)
+    from app.search import similar
+    return similar.find(get_service().room.entries[patient_id].intake, limit=limit)
 
 
 @router.get("/patients/{patient_id}/fhir")

@@ -826,3 +826,39 @@ def test_a_vitals_recording_is_attributed_and_logged_even_when_nothing_fires():
     assert len(obs) == 1, "a recording with no alert still belongs on the record"
     assert obs[0]["payload"]["clinician_id"] == "MA-14"
     assert obs[0]["payload"]["source"] == "nurse"
+
+
+# Similar-case retrieval. The route reads the patient already on the board and
+# compares against the committed case library, so nothing about it depends on
+# a model call: the embedding runs locally and the reasoning path is untouched.
+
+def test_similar_cases_route_returns_neighbours_with_outcomes():
+    client.post("/patients", json=patient("SIMQ", age_years=66,
+                chief_complaint="burning indigestion for 2 hours with nausea and sweating",
+                complaint_category="abdominal_pain"))
+    r = client.get("/search/similar/SIMQ")
+    assert r.status_code == 200
+    body = r.json()
+    assert "cases" in body and "note" in body
+    for case in body["cases"]:
+        assert case["patient_id"] != "SIMQ"
+        assert set(case["agrees"]) == {"category", "age_band"}
+        assert case["outcome_esi"] in (1, 2, 3, 4, 5)
+        assert 0 < case["similarity"] <= 1
+
+
+def test_similar_cases_route_honours_a_limit():
+    client.post("/patients", json=patient("SIMQ"))
+    r = client.get("/search/similar/SIMQ", params={"limit": 2})
+    assert r.status_code == 200
+    assert len(r.json()["cases"]) <= 2
+
+
+def test_similar_cases_route_refuses_an_unknown_patient():
+    assert client.get("/search/similar/NOPE").status_code == 404
+
+
+def test_similar_cases_route_rejects_a_nonsense_limit():
+    client.post("/patients", json=patient("SIMQ"))
+    assert client.get("/search/similar/SIMQ", params={"limit": 0}).status_code == 422
+    assert client.get("/search/similar/SIMQ", params={"limit": 99}).status_code == 422
