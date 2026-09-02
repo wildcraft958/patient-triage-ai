@@ -918,3 +918,91 @@ def test_audit_search_treats_sql_in_a_value_as_a_value():
 
 def test_audit_search_rejects_a_nonsense_limit():
     assert client.get("/search/audit", params={"limit": 0}).status_code == 422
+
+
+# Pinned cohorts. The safety property is that a pinned question stays a
+# question: it announces a patient without touching their acuity, and it never
+# occupies the alert slot the board reads for deterioration.
+
+def _pin(label="Kids overdue", **kw):
+    body = {"label": label, "query": {"predicates": [
+        {"field": "esi", "op": "lte", "value": 3}]}}
+    body.update(kw)
+    return client.post("/search/standing", json=body)
+
+
+def test_pinning_a_cohort_names_who_is_already_in_it():
+    client.post("/patients", json=patient("C1"))
+    r = _pin()
+    assert r.status_code == 200
+    assert r.json()["members"] == ["C1"]
+
+
+def test_a_cohort_announces_a_patient_who_enters_on_the_sweep():
+    _pin()
+    client.post("/patients", json=patient("C2"))
+    r = client.post("/clock/advance", json={"minutes": 1})
+    assert r.status_code == 200
+    entered = r.json()["cohort_matches"]
+    assert [e["patient_id"] for e in entered] == ["C2"]
+    assert entered[0]["label"] == "Kids overdue"
+
+
+def test_a_cohort_announces_a_patient_once_only():
+    _pin()
+    client.post("/patients", json=patient("C2"))
+    assert len(client.post("/clock/advance", json={"minutes": 1})
+               .json()["cohort_matches"]) == 1
+    assert client.post("/clock/advance", json={"minutes": 1}
+                       ).json()["cohort_matches"] == []
+
+
+def test_a_cohort_match_does_not_change_the_patients_level():
+    client.post("/patients", json=patient("C1"))
+    before = client.get("/patients/C1").json()["fused"]["esi"]
+    _pin()
+    client.post("/patients", json=patient("C2"))
+    client.post("/clock/advance", json={"minutes": 1})
+    assert client.get("/patients/C2").json()["fused"]["esi"] == before
+
+
+def test_a_cohort_match_never_occupies_the_board_alert_slot():
+    """The board shows a patient's most recent alert. A cohort match landing
+    there would hide a deterioration alert behind a pinned query."""
+    _pin()
+    client.post("/patients", json=patient("C2"))
+    client.post("/clock/advance", json={"minutes": 1})
+    row = next(r for r in client.get("/queue").json()["queue"]
+               if r["patient_id"] == "C2")
+    assert row["alert"] is None
+    assert row["alert_kind"] is None
+
+
+def test_pinned_cohorts_can_be_listed_and_unpinned():
+    _pin()
+    listed = client.get("/search/standing").json()["cohorts"]
+    assert len(listed) == 1
+    assert client.delete(f"/search/standing/{listed[0]['id']}").status_code == 200
+    assert client.get("/search/standing").json()["cohorts"] == []
+
+
+def test_unpinning_something_that_is_not_pinned_is_a_404():
+    assert client.delete("/search/standing/nope").status_code == 404
+
+
+def test_a_cohort_with_no_filter_is_refused():
+    r = _pin(query={"predicates": [], "text": ""})
+    assert r.status_code == 422
+
+
+def test_a_cohort_with_an_unknown_operator_is_refused_at_pin_time():
+    r = _pin(query={"predicates": [{"field": "esi", "op": "roughly", "value": 2}]})
+    assert r.status_code == 422
+
+
+def test_a_cohort_match_is_written_to_the_audit_trail():
+    _pin()
+    client.post("/patients", json=patient("C2"))
+    client.post("/clock/advance", json={"minutes": 1})
+    r = client.get("/search/audit", params={"event_type": "cohort_match"})
+    assert [e["patient_id"] for e in r.json()["events"]] == ["C2"]

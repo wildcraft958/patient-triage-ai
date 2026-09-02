@@ -138,8 +138,12 @@ def audit_recent(limit: int = 80):
 
 @router.post("/clock/advance")
 def advance_clock(body: ClockBody):
-    alerts = get_service().advance_clock(body.minutes)
-    return {"alerts": alerts, "state": get_service().state_view()}
+    svc = get_service()
+    alerts = svc.advance_clock(body.minutes)
+    # A separate key from the alerts: a pinned question is a question, and the
+    # console must not render one where a deterioration alert belongs.
+    return {"alerts": alerts, "cohort_matches": svc.sweep_cohorts(),
+            "state": svc.state_view()}
 
 
 @router.post("/surge")
@@ -231,6 +235,35 @@ def metrics():
         "calibration_cells": svc.calibration.cells,
         "state": svc.state_view(),
     }
+
+
+class PinCohort(BaseModel):
+    label: str
+    query: dict
+
+
+@router.post("/search/standing")
+def pin_cohort(body: PinCohort):
+    """Leave a cohort question running. It announces a patient the moment they
+    fall into it, and it moves nobody's acuity level."""
+    svc = get_service()
+    try:
+        return svc.cohorts.pin(body.label, body.query,
+                               [*svc.queue_view(), *svc.in_care_view()])
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
+
+
+@router.get("/search/standing")
+def list_cohorts():
+    return {"cohorts": get_service().cohorts.all()}
+
+
+@router.delete("/search/standing/{cohort_id}")
+def unpin_cohort(cohort_id: str):
+    if not get_service().cohorts.unpin(cohort_id):
+        raise HTTPException(404, f"no cohort pinned as {cohort_id}")
+    return {"unpinned": cohort_id}
 
 
 @router.get("/search/audit")

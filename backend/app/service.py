@@ -18,6 +18,7 @@ from app.models import PatientIntake, Vitals
 from app.monitor.waiting_room import Alert, SimClock, WaitingRoom
 from app.profiles import load_profile
 from app.safety.pipeline import BiasMonitor, check as safety_check
+from app.search.standing import StandingCohorts
 
 from app.config import REPO_ROOT
 
@@ -59,6 +60,10 @@ class TriageService:
         self.transport = transport
         self.surge_forced: bool | None = None
         self.bias = BiasMonitor()
+        # Cohort questions someone left running. Swept beside the room
+        # rather than inside it: a cohort is asked about board rows,
+        # which are this layer's business, not the waiting room's.
+        self.cohorts = StandingCohorts()
         self._enrichment_queue: list[str] = []
         self._latencies_ms: list[float] = []
         self._calibration_escalations = 0
@@ -204,6 +209,22 @@ class TriageService:
             self.audit.log("alert", alert.patient_id, self.clock.now_min,
                            {"kind": alert.kind, "reasons": alert.reasons})
         return alerts
+
+    @_locked
+    def sweep_cohorts(self) -> list[dict]:
+        """Patients who have entered a pinned cohort since the last sweep.
+
+        Deliberately not folded into the alert list. The board renders a
+        patient's most recent alert, so a cohort match landing there would
+        mask a deterioration alert behind a query someone pinned. It is a
+        separate channel and it moves nobody's acuity level.
+        """
+        rows = [*self.queue_view(), *self.in_care_view()]
+        entered = self.cohorts.sweep(rows, self.clock.now_min)
+        for match in entered:
+            self.audit.log("cohort_match", match["patient_id"], self.clock.now_min,
+                           {"cohort_id": match["cohort_id"], "label": match["label"]})
+        return entered
 
     @_locked
     def process_enrichment(self) -> list[dict]:
