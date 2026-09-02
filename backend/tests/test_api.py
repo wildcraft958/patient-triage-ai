@@ -862,3 +862,59 @@ def test_similar_cases_route_rejects_a_nonsense_limit():
     client.post("/patients", json=patient("SIMQ"))
     assert client.get("/search/similar/SIMQ", params={"limit": 0}).status_code == 422
     assert client.get("/search/similar/SIMQ", params={"limit": 99}).status_code == 422
+
+
+# Governance search over the audit trail. Filter names are a closed set at the
+# route as well, so an unknown one is a 422 rather than an unfiltered answer.
+
+def _override_two_patients():
+    for pid, esi in (("G1", 3), ("G2", 3)):
+        client.post("/patients", json=patient(pid))
+    client.post("/patients/G1/override", json={
+        "new_esi": 1, "clinician_id": "RN-07", "reason": "septic shock picture",
+        "acknowledge_risk": True})
+    client.post("/patients/G2/override", json={
+        "new_esi": 2, "clinician_id": "RN-11", "reason": "worse than the score"})
+
+
+def test_audit_search_finds_an_override_by_its_clinician():
+    _override_two_patients()
+    r = client.get("/search/audit", params={"event_type": "override",
+                                            "clinician_id": "RN-07"})
+    assert r.status_code == 200
+    body = r.json()
+    assert [e["patient_id"] for e in body["events"]] == ["G1"]
+    assert body["truncated"] is False
+
+
+def test_audit_search_does_not_attribute_it_to_another_clinician():
+    _override_two_patients()
+    r = client.get("/search/audit", params={"event_type": "override",
+                                            "clinician_id": "RN-11"})
+    assert [e["patient_id"] for e in r.json()["events"]] == ["G2"]
+
+
+def test_audit_search_reports_truncation():
+    _override_two_patients()
+    r = client.get("/search/audit", params={"limit": 1})
+    assert len(r.json()["events"]) == 1
+    assert r.json()["truncated"] is True
+
+
+def test_audit_search_refuses_a_filter_it_does_not_know():
+    r = client.get("/search/audit", params={"clinician": "RN-07"})
+    assert r.status_code == 422
+
+
+def test_audit_search_treats_sql_in_a_value_as_a_value():
+    _override_two_patients()
+    r = client.get("/search/audit",
+                   params={"clinician_id": "RN-07'; DROP TABLE events; --"})
+    assert r.status_code == 200
+    assert r.json()["events"] == []
+    # the trail survived and still answers
+    assert client.get("/search/audit").json()["events"]
+
+
+def test_audit_search_rejects_a_nonsense_limit():
+    assert client.get("/search/audit", params={"limit": 0}).status_code == 422

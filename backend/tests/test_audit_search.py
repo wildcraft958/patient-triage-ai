@@ -112,3 +112,36 @@ def test_returns_the_payload_it_matched_on(log):
 def test_an_empty_trail_is_empty_rather_than_an_error():
     r = audit_query.search(AuditLog(":memory:"))
     assert r["events"] == [] and r["truncated"] is False
+
+
+# Reading a query string. A framework ignores parameters it was not declared
+# to expect, which would turn a typo in a compliance filter into an answer
+# that looks filtered and is not.
+
+def test_parse_query_reads_the_vocabulary():
+    got = audit_query.parse_query({"event_type": "override", "new_esi": "1",
+                                   "under_triage": "true", "since_min": "5",
+                                   "limit": "10"})
+    assert got == {"filters": {"event_type": "override", "new_esi": 1,
+                               "under_triage": True},
+                   "since_min": 5.0, "limit": 10}
+
+
+def test_parse_query_refuses_a_name_outside_the_vocabulary():
+    with pytest.raises(ValueError, match="clinician"):
+        audit_query.parse_query({"clinician": "RN-07"})
+
+
+def test_parse_query_refuses_a_limit_outside_the_range():
+    for bad in ("0", "-1", "5000"):
+        with pytest.raises(ValueError, match="limit"):
+            audit_query.parse_query({"limit": bad})
+
+
+def test_parse_query_refuses_a_boolean_that_is_not_one():
+    with pytest.raises(ValueError, match="true or false"):
+        audit_query.parse_query({"under_triage": "maybe"})
+
+
+def test_parse_query_of_nothing_asks_for_everything():
+    assert audit_query.parse_query({}) == {"filters": {}}

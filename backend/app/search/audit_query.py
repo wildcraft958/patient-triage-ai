@@ -19,23 +19,41 @@ someone is counting overrides.
 
 import json
 
-# name -> SQL expression. Every payload field is read through DuckDB's JSON
-# extraction; nothing is interpolated but these fixed expressions.
+
+def _boolean(raw):
+    if isinstance(raw, bool):
+        return raw
+    word = str(raw).strip().lower()
+    if word in ("true", "1", "yes"):
+        return True
+    if word in ("false", "0", "no"):
+        return False
+    raise ValueError(f"expected true or false, got {raw!r}")
+
+
+# name -> (SQL expression, how to read it off a query string). Payload fields
+# are read through DuckDB's JSON extraction; nothing is interpolated into the
+# statement but these fixed expressions. This table is the whole vocabulary,
+# for the module and for the route, so the two cannot drift.
 FIELDS = {
-    "event_type": "event_type",
-    "patient_id": "patient_id",
-    "clinician_id": "json_extract_string(payload, '$.clinician_id')",
-    "kind": "json_extract_string(payload, '$.kind')",
-    "cell": "json_extract_string(payload, '$.cell')",
-    "confidence": "json_extract_string(payload, '$.confidence')",
-    "esi": "CAST(json_extract(payload, '$.esi') AS BIGINT)",
-    "new_esi": "CAST(json_extract(payload, '$.new_esi') AS BIGINT)",
-    "original_esi": "CAST(json_extract(payload, '$.original_esi') AS BIGINT)",
-    "paths_agree": "CAST(json_extract(payload, '$.paths_agree') AS BOOLEAN)",
-    "clinician_flag": "CAST(json_extract(payload, '$.clinician_flag') AS BOOLEAN)",
-    "surge_mode": "CAST(json_extract(payload, '$.surge_mode') AS BOOLEAN)",
-    "under_triage": "CAST(json_extract(payload, '$.under_triage') AS BOOLEAN)",
+    "event_type": ("event_type", str),
+    "patient_id": ("patient_id", str),
+    "clinician_id": ("json_extract_string(payload, '$.clinician_id')", str),
+    "kind": ("json_extract_string(payload, '$.kind')", str),
+    "cell": ("json_extract_string(payload, '$.cell')", str),
+    "confidence": ("json_extract_string(payload, '$.confidence')", str),
+    "esi": ("CAST(json_extract(payload, '$.esi') AS BIGINT)", int),
+    "new_esi": ("CAST(json_extract(payload, '$.new_esi') AS BIGINT)", int),
+    "original_esi": ("CAST(json_extract(payload, '$.original_esi') AS BIGINT)", int),
+    "paths_agree": ("CAST(json_extract(payload, '$.paths_agree') AS BOOLEAN)", _boolean),
+    "clinician_flag": ("CAST(json_extract(payload, '$.clinician_flag') AS BOOLEAN)",
+                       _boolean),
+    "surge_mode": ("CAST(json_extract(payload, '$.surge_mode') AS BOOLEAN)", _boolean),
+    "under_triage": ("CAST(json_extract(payload, '$.under_triage') AS BOOLEAN)",
+                     _boolean),
 }
+
+WINDOW = {"since_min": float, "until_min": float}
 
 DEFAULT_LIMIT = 50
 MAX_LIMIT = 500
@@ -59,7 +77,7 @@ def search(log, *, filters: dict | None = None, since_min: float | None = None,
     limit = max(1, min(int(limit), MAX_LIMIT))
     where, params = [], []
     for name, value in filters.items():
-        where.append(f"{FIELDS[name]} = ?")
+        where.append(f"{FIELDS[name][0]} = ?")
         params.append(value)
     if since_min is not None:
         where.append("sim_min >= ?")
@@ -86,3 +104,29 @@ def search(log, *, filters: dict | None = None, since_min: float | None = None,
         ],
         "truncated": truncated,
     }
+
+
+def parse_query(params: dict) -> dict:
+    """Read a query string into search() arguments, refusing any name outside
+    the vocabulary.
+
+    The route needs this rather than a parameter per field: a framework
+    ignores query parameters it was not declared to expect, so a typo in a
+    compliance filter would come back as a confidently unfiltered answer.
+    """
+    filters, kwargs = {}, {}
+    for name, raw in params.items():
+        if name in FIELDS:
+            filters[name] = FIELDS[name][1](raw)
+        elif name in WINDOW:
+            kwargs[name] = WINDOW[name](raw)
+        elif name == "limit":
+            kwargs["limit"] = int(raw)
+        else:
+            raise ValueError(
+                f"cannot filter the audit trail on {name!r}; known filters are "
+                f"{', '.join(sorted([*FIELDS, *WINDOW, 'limit']))}")
+    got = kwargs.get("limit", DEFAULT_LIMIT)
+    if not 1 <= got <= MAX_LIMIT:
+        raise ValueError(f"limit must be between 1 and {MAX_LIMIT}")
+    return {"filters": filters, **kwargs}

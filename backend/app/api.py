@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, HTTPException, Query, Request
 from pydantic import BaseModel, Field
 
 from app.auth import require
@@ -231,6 +231,20 @@ def metrics():
         "calibration_cells": svc.calibration.cells,
         "state": svc.state_view(),
     }
+
+
+@router.get("/search/audit")
+def audit_search(request: Request):
+    """Governance questions over the append-only trail. Filter names are a
+    closed set: an unknown one is refused rather than ignored, because an
+    unfiltered answer that looks filtered is the failure that matters when
+    someone is counting overrides."""
+    from app.search import audit_query
+    try:
+        kwargs = audit_query.parse_query(dict(request.query_params))
+    except ValueError as e:
+        raise HTTPException(422, str(e)) from e
+    return audit_query.search(get_service().audit, **kwargs)
 
 
 @router.get("/search/similar/{patient_id}")
