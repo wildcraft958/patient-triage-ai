@@ -31,6 +31,7 @@ Alerts sit above all of it, and answering one is two clicks: reassess, or acknow
 - [The learning loop](#the-learning-loop-clinician-actions-as-rl-training-signal)
 - [Hospital-local mode and PHI protection](#hospital-local-mode-privacy-and-phi-protection)
 - [Scalability: one YAML per hospital](#scalability-one-yaml-per-hospital)
+- [Asking the board questions](#asking-the-board-questions)
 - [Adoption and change management](#adoption-and-change-management)
 - [Architecture](#architecture)
 - [Requirements](#requirements)
@@ -79,7 +80,7 @@ The brief asks for a system "deliberately tuned to bias toward escalation under 
 
 We evaluate on the exact case sets used by two published systems, with their metrics, so the comparison is apples to apples. Under-triage (assigning less acuity than the truth) is the metric that harms patients; it is our hero metric, deliberately traded against over-triage.
 
-**TriageAgent public benchmark** (EMNLP 2024 Findings; three test sets, 216 cases):
+**TriageAgent public benchmark** (EMNLP 2024 Findings; three test sets, 216 case evaluations over 79 distinct scenarios):
 
 | System | Exact | Under-triage | Significant under-triage | High-acuity sensitivity |
 |---|---|---|---|---|
@@ -93,6 +94,8 @@ We evaluate on the exact case sets used by two published systems, with their met
 Three things to read from that table. First, the fused system beats published SOTA on both under-triage (1.4% vs 2.30%) and significant under-triage (0.0% vs 2.80%), catches 100% of ESI-1/2 patients, and matches the human-expert accuracy baseline, all with a general-purpose model and no fine-tuning. Second, the fusion is doing real work: it cuts the LLM path's under-triage from 8.8% to 1.4% (a 6x safety improvement) at the cost of 8.4 points of exact accuracy. Third, that cost shows up as over-triage (30.1% vs SOTA's 17.1%), which is exactly the asymmetric trade the problem brief demands, made explicit and measured. Even the budget Haiku configuration holds 0.0% significant under-triage.
 
 **Reproducibility.** Every number above reproduces offline from response caches committed to this repo, with zero API keys, in one command - anyone can verify the exact table. A live re-run with a different model or sampling will naturally vary; the safety invariants (rules floor, more-acute-wins, escalate-only learning) hold regardless of the model behind Path B. Per-case predictions, agreement flags, and data caveats (26 of 216 cases state no age and are marked `age_defaulted`) are stored alongside the metrics in `eval/results/`.
+
+**Sample-size caveat, stated plainly.** The published sets overlap heavily: `test_2` and `test_3` are largely re-runs of `test_1`, so the 216 evaluations reduce to 79 distinct scenarios, 67 of which appear in all three sets. The rates above are unaffected in any material way, because the duplication is close to uniform across scenarios, but the effective sample is 79 and not 216. Any confidence interval should be computed on 79. `uv run python ../scripts/cache_gate.py` prints distinct prompt counts beside the totals, which is how we found this.
 
 **ESI Handbook 60-case benchmark** (the set ED-Triage-Agent, medRxiv 2026, evaluated on): our fused Sonnet configuration reaches 5.0% under-triage, 0% significant under-triage, and 100% high-acuity sensitivity; exact accuracy (51.7%) is below ETA's multi-agent GPT-4.1-mini pipeline (80% exact, 0% under-triage), whose two-phase interview design is tuned to these narrative teaching cases. On the larger public benchmark above, our single-pass system closes most of that gap while staying safer. Full per-set numbers are in `eval/results/`.
 
@@ -126,6 +129,87 @@ Both learners share one structural invariant: the learned adjustment can only mo
 **Surge behavior (tested at 3x arrivals):** when the waiting count crosses the profile threshold, arrivals switch automatically to the deterministic fast path, clinician flags are preserved, and the monitoring loop keeps firing. Path B is deferred, not dropped: each surge arrival joins an enrichment queue that drains on the next clock tick, attaches the LLM reasoning, and may only hold or escalate the standing level (audited as `surge_enrichment`, escalations surface in the console feed). `scripts/replay_demo.py --speedup 3 --profile rural_100` demonstrates it end to end. In production the same queue would be drained by a background worker instead of the sim clock.
 
 **Latency, measured honestly:** rules scoring is sub-millisecond; the full intake-to-recommendation pipeline (redaction + both paths + calibration + safety) runs in the low tens of milliseconds warm when the LLM answer is cached, and 1 to 3 seconds on a live LLM call; the first request pays a one-time spaCy model load. `/metrics` reports live p50/p95, and every triage audit event records its own `latency_ms`.
+
+## Asking the board questions
+
+A 24-patient board can be read. A real one cannot, so the console takes
+questions. One field, reached from the rail or with Cmd+K (Ctrl+K off a Mac),
+answers four different kinds.
+
+**A patient, fast.** Name, record number or words from the complaint, ranked
+so a name beats a complaint and a whole word beats a fragment. Nothing is
+fetched: it ranks the board already on screen, so a result cannot disagree
+with the row behind it.
+
+**A cohort.** "pediatric fever waiting over 20 minutes" becomes three
+predicates over the fields the board row already carries, and the parse is
+rendered back as chips before the count is read.
+
+No model writes the query. Converting clinical language to structured queries
+shows 15 to 55% hallucination on concept mapping in the published evaluations,
+so the vocabulary is closed: a fixed field set, a fixed operator set, and a
+synonym table. A term that looks like a filter and cannot be resolved is named
+in an amber chip and reported as not applied, because a board shown without
+the filter someone asked for is an answer to a different question. Where
+natural-language flexibility is wanted later, a model's job is to *suggest* a
+predicate a clinician confirms, never to execute one.
+
+**Prior cases that look like this one.** Nearest neighbours by complaint
+embedding, each with the level it turned out to be. It reuses the intake
+classifier's own Model2Vec encoder, so it adds no dependency, no second
+download and no per-request load, and nothing leaves the machine.
+
+Ranked by similarity alone, which is measured rather than assumed. A. Weber's
+"burning indigestion" classifies as `abdominal_pain` while the reasoning path
+reads an atypical cardiac presentation; the classic angina complaint is its
+nearest neighbour at 0.46 but sits in a different category, so tiering the
+results by category agreement would bury the one case worth reading. The
+structured fields are reported instead, as what a clinician discounts a match
+by. `GET /api/search/similar/{patient_id}`.
+
+**The audit trail.** Every override by one clinician, every triage the two
+paths disagreed on, filtered from the activity log or over
+`GET /api/search/audit`. Field names come from an allowlist because a name
+cannot be bound as a SQL parameter and a value can; an unrecognised one is a
+422 rather than a confidently unfiltered answer. A result that was cut short
+says so, because a count read off a capped list is wrong and nothing else on
+screen would mention it.
+
+### A search that keeps watching
+
+The rest of this system exists because triage is a snapshot and nobody looks
+again. Search had the same shape: you ask, you get an answer, and the answer
+goes stale as the clock moves.
+
+A cohort can be pinned. It is then re-evaluated on the sweep that already
+walks the board every tick, and on every arrival, and it announces a patient
+the moment they fall into it. Pinning "any pediatric patient waiting over
+twenty minutes" makes the nurse in charge a tripwire they set themselves.
+
+Three properties hold by construction, each with a test:
+
+- **A match is never an alert.** The board renders a patient's most recent
+  alert, so a cohort match landing there would mask a deterioration alert
+  behind a query somebody pinned that morning. Matches travel on their own
+  channel from the sweep to the toast.
+- **A match moves nobody's acuity.** A pinned question is a question. It
+  carries no re-triage and cannot change an ESI level.
+- **A pin fires on entry, not on every sweep.** Membership is diffed, so a
+  standing cohort is a tripwire and not an alert storm. Pinning seeds itself
+  with whoever already matches and announces nobody for them; the pin response
+  names them instead.
+
+A half-understood question cannot be pinned at all. A one-off search shows its
+warning to whoever typed it; a pinned one fires later, at nobody in
+particular.
+
+**One contract, two evaluators.** The parse happens in the console and pinned
+cohorts are re-evaluated on the server, so the same rules have two
+implementations. Both read `data/predicate_conformance.json`, and changing
+either means changing the contract first. Writing the second one found a real
+divergence: Python raises on `None > 1`, but JavaScript coerces `null` to 0,
+so `null >= 0` is true there. An unrecorded wait would have satisfied "waiting
+at least zero minutes" in the browser and not on the server.
 
 ## Adoption and change management
 
@@ -194,8 +278,11 @@ reads before reading the number survives the theme.
 | Multi-axis rewards | `backend/app/learning/loop.py` | Five ResidencyRL axes; safety dominates; escalate-only calibration |
 | GRPO optimizer | `backend/app/learning/grpo.py` | Group-relative advantages over the experience repository; `scripts/train_policy.py` |
 | ICD-10 coding + FHIR export | `backend/app/engine/icd10.py`, `backend/app/fhir.py` | Provisional encounter codes; FHIR R4 Bundle per episode |
+| Board search + cohorts | `backend/app/search/`, `frontend/src/console/search/` | Closed-vocabulary cohort parser, complaint-embedding case retrieval, SQL governance search over the trail, pinned cohorts swept on the clock |
+| Predicate contract | `data/predicate_conformance.json` | One rule set, two evaluators; both test suites read it so the console and the sweep cannot drift |
 | Evaluation harness | `eval/run_eval.py` | Published-benchmark metrics, reproducible |
-| Product site + nurse console | `frontend/` | React + Vite + Tailwind; product site at `/`, console at `/console`: badge sign-in with three roles enforced server-side, acuity-ranked queue, reassessment board, live pipeline trace, component registry, analytics, one-click override, OLDCARTS intake form, light and dark themes, resizable panes |
+| Prompt-cache gate | `scripts/cache_gate.py` | Recomputes every demo and benchmark prompt key; fails if any has no committed answer |
+| Product site + nurse console | `frontend/` | React + Vite + Tailwind; product site at `/`, console at `/console`: badge sign-in with three roles enforced server-side, acuity-ranked queue, reassessment board, live pipeline trace, component registry, analytics, one-click override, OLDCARTS intake form, board search with pinned cohorts, light and dark themes, resizable panes |
 
 ### The intake classifier: distillation end to end
 
@@ -243,14 +330,14 @@ uv sync
 uv run python ../scripts/fetch_data.py
 
 # 3. Tests and server
-uv run pytest                     # 221 tests
+uv run pytest                     # 321 tests
 cp ../env.example ../.env         # then fill LLM_API_KEY (see below)
 uv run uvicorn app.main:app --port 8000
 
 # 4. Frontend (new terminal)
 cd frontend
 npm install
-npm test                          # 92 tests
+npm test                          # 223 tests
 npm run dev                       # http://localhost:5173
 
 # 5. localhost:5173 opens the product site; "Launch the console" (or /console)
@@ -269,7 +356,8 @@ npm run dev                       # http://localhost:5173
 cd backend
 uv run python ../scripts/replay_demo.py                          # full timeline
 uv run python ../scripts/replay_demo.py --speedup 3 --profile rural_100   # 3x surge
-uv run python ../eval/run_eval.py --sets test_1 test_2 test_3    # 216-case benchmark
+uv run python ../eval/run_eval.py --sets test_1 test_2 test_3    # 216 evaluations, 79 scenarios
+uv run python ../scripts/cache_gate.py                           # every prompt still has an answer
 ```
 
 ## Configuration

@@ -67,15 +67,20 @@ def main() -> int:
     for label, source in (("demo", demo_prompts), ("eval", eval_prompts)):
         gone = []
         n = 0
+        distinct = set()
         for name, key in source():
             n += 1
             seen.add(key)
+            distinct.add(key)
             if key not in committed:
                 gone.append(name)
         total += n
         missing += gone
         state = "ok" if not gone else f"{len(gone)} MISSING"
-        print(f"{label:5} {n:4} prompts   {state}")
+        # Distinct as well as total, because the published eval sets overlap:
+        # counting evaluations as though they were independent scenarios
+        # overstates the sample the metrics rest on.
+        print(f"{label:5} {n:4} prompts, {len(distinct):4} distinct   {state}")
         for name in gone[:10]:
             print(f"        no answer for {name}")
         if len(gone) > 10:

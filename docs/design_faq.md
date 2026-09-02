@@ -492,3 +492,77 @@ miss fails loudly instead of quietly succeeding. The trade is that a genuinely
 novel complaint typed live exercises Path A only, unless a key is configured.
 The dual-path behaviour itself is not a demo artifact: it is the same code path
 either way, and the 216-case and 60-case evaluations both ran it end to end.
+
+## The search box takes plain English. Is a model parsing that?
+
+No, and deliberately not. The parser maps onto a closed vocabulary: a fixed
+field set taken from the board row itself, a fixed operator set, and a synonym
+table. Nothing is generated.
+
+The reason is measurable rather than aesthetic. Converting clinical language
+to structured queries is a published task, and the systems that do it with a
+model report 15 to 55% hallucination when mapping concepts to a standard
+vocabulary. On a triage board a filter that quietly means something other than
+what it says is worse than no filter: the count looks authoritative and the
+patients it dropped are invisible. So the parse is rendered back as chips
+before the count is read, and a term that looks like a filter and cannot be
+resolved gets an amber chip saying it was not applied.
+
+The cost is real. "Anyone who looks a bit off" gets you nothing, and the
+vocabulary has to be extended by hand. If natural language flexibility is
+wanted later, the honest shape is a model that *suggests* a predicate a
+clinician confirms, never one that executes a query directly.
+
+## Your case library is 24 patients. What is similar-case retrieval worth?
+
+Not much yet, and the mechanism is the claim rather than the corpus. The
+library is the curated demo set, which has 24 cases with recorded levels. In a
+deployment it would index the department's own history, which is where the
+value is.
+
+Two things about it are real now. The encoder is the intake classifier's own
+Model2Vec artefact, so retrieval adds no dependency, no second download and no
+per-request load, and nothing leaves the machine. And the ranking choice was
+measured, not assumed: we tried adding the 138 published ESI vignettes to the
+corpus and dropped them, because at a median 52 words against a 9-word
+complaint they sit at mean cosine 0.124 versus 0.216 and rank by length rather
+than by clinical similarity inside their own pool.
+
+We also tried tiering results by complaint-category agreement and removed it.
+A. Weber's "burning indigestion" classifies as `abdominal_pain` while the
+reasoning path reads an atypical cardiac presentation, and the library holds no
+other `chest_pain` case, so category tiering returned nothing useful for the
+single case the feature exists for. Similarity leads; the structured fields are
+reported as what a clinician discounts a match by.
+
+## A pinned cohort raises alerts. Can it move a patient's level?
+
+No. A pinned question stays a question. A cohort match carries no re-triage,
+and there is a test asserting a matched patient's ESI is unchanged.
+
+It also never occupies the patient's alert slot. The board renders a patient's
+most recent alert, so a cohort match appended there would mask a deterioration
+alert behind a query somebody pinned that morning. Matches travel on their own
+channel from the sweep through the response to the toast, and a test asserts
+the matched patient's board alert field stays empty.
+
+Membership is diffed, so a pin announces a patient on entry and not on every
+sweep: a tripwire rather than an alert storm. Pinning seeds itself with whoever
+already matches and announces nobody for them, because the interesting event is
+someone new falling in, and the pin response names the current members so
+nothing is hidden. A query with an unresolved term cannot be pinned at all: a
+one-off search shows its warning to whoever typed it, but a pinned one fires
+later at nobody in particular.
+
+## Cohort rules are evaluated in the browser and on the server. Do they agree?
+
+They are pinned to agree. `data/predicate_conformance.json` holds 28 cases
+covering all ten operators, both test suites read it, and changing either
+evaluator means changing the contract first.
+
+Writing the second implementation found a divergence worth naming. Python
+raises a `TypeError` on `None > 1`, but JavaScript coerces `null` to 0, so
+`null >= 0` is true there. An unrecorded wait would have satisfied "waiting at
+least zero minutes" in the browser and not on the server. The contract now
+carries three coercion cases, and removing the guard in either evaluator turns
+its suite red.
