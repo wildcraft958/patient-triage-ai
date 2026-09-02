@@ -1,22 +1,31 @@
 # Demo video script
 
-**Target 5:48.** The mail sets no limit on length, but it caps the file at
-20 MB, and that is the real constraint. The timings on each section below are
-measured from this script's own word count, at the pace of our last take
-(154 words a minute, pauses included). So they should hold.
+**Target 7:00.** The mail sets no limit on length, but it caps the file at
+20 MB, and that is the real constraint. The timings on each section are
+measured from this script's own word count at 128 words a minute, which is
+the pace of the take that was actually recorded from it (893 words over
+6:57, pauses included).
 
-**Encode it at about 400 kbps, not higher.** At 5:48 that lands near 17 MB and
-leaves headroom. Our last take used 452 kbps and came out 17.7 MB at 5:13, so
-a longer video at the same bitrate would breach the cap. Two-pass x264 with
-`-tune stillimage` holds the text sharp at this bitrate, because a console
-screen is mostly static:
+**Encode it at 280 kbps video and 64 kbps mono audio.** Measured, not
+guessed: that is what took the 6:57 take from 57.3 MB to 18.3 MB, which fits
+the cap with room to spare. SSIM against the source came out at 0.994 mean
+and 0.989 on the worst frame, so nothing visible was lost.
+
+**Halve the frame rate, never the resolution.** A console screencast is
+mostly static, so 15 fps costs nothing and frees the whole budget for
+spatial detail. Downscaling below 1080p is what actually destroys the small
+text, and the text is the thing being demonstrated:
 
 ```
 ffmpeg -y -i take.mov -c:v libx264 -preset slow -tune stillimage \
-       -b:v 400k -pass 1 -an -f mp4 /dev/null
+       -vf fps=15 -pix_fmt yuv420p -b:v 280k -pass 1 -an -f mp4 /dev/null
 ffmpeg -y -i take.mov -c:v libx264 -preset slow -tune stillimage \
-       -b:v 400k -pass 2 -c:a aac -b:a 96k NamoFans_IITKharagpur.mp4
+       -vf fps=15 -pix_fmt yuv420p -b:v 280k -pass 2 \
+       -c:a aac -b:a 64k -ac 1 -movflags +faststart NamoFans_IITKharagpur.mp4
 ```
+
+Check the result with `ffprobe`, and confirm it is under 20,000,000 bytes
+rather than under 20 MiB, since which one the portal means is not stated.
 
 **How to use this page.** Every section has three parts:
 
@@ -34,7 +43,7 @@ requirements are covered by the end:
 
 ---
 
-## 0:00 - 0:25 | The problem
+## 0:00 - 0:30 | The problem
 
 [Start on the sign-in screen, or put a slide here. No clicking yet.]
 
@@ -49,7 +58,7 @@ SAY:
     It scores every patient two separate ways.
     Then it keeps watching the whole waiting room.
 
-## 0:25 - 0:57 | Sign in, and one honest note
+## 0:30 - 1:09 | Sign in, and one honest note
 
 [Leave the role on "Triage nurse". Click "Start shift".]
 
@@ -65,7 +74,7 @@ SAY:
     These are twenty four cases we wrote ourselves.
     So you can see the whole flow properly, end to end.
 
-## 0:57 - 1:45 | The board fills up
+## 1:09 - 2:06 | The board fills up
 
 [Click "Normal shift". Let six or seven patients arrive on their own. Then
 click "Pause" in the status bar so you can talk over a still board.]
@@ -91,7 +100,7 @@ SAY:
 
 NOTE: covers [15-20 records] [confidence always] [pediatric/geriatric] [zero-history]
 
-## 1:45 - 2:36 | The hard case: when the two methods disagree
+## 2:06 - 3:08 | The hard case: when the two methods disagree
 
 [Click the row for A. Weber.]
 
@@ -121,7 +130,7 @@ SAY:
 
 NOTE: covers [ambiguous] [pediatric/geriatric]
 
-## 2:36 - 3:10 | The pipeline, opened up
+## 3:08 - 3:48 | The pipeline, opened up
 
 [With A. Weber still selected, open "Pipeline" in the rail. Hold about eight
 seconds so the animation finishes.]
@@ -141,7 +150,7 @@ SAY:
     And the rules path never waits for the model.
     So even if the model is slow, or down, triage still happens.
 
-## 3:10 - 3:57 | The waiting room watches back
+## 3:48 - 4:45 | The waiting room watches back
 
 [Open "Monitoring" in the rail. The clock is already running. Let it run while
 you talk, and wait for R. Castillo's alert to fire on its own.]
@@ -165,7 +174,7 @@ SAY:
     Right now, that waiting hour is completely unwatched.
     And automatic re triage can only hold or escalate. It can never lower a level.
 
-## 3:57 - 4:41 | The nurse decides, and the system records it
+## 4:45 - 5:38 | The nurse decides, and the system records it
 
 [Click "Reassess" on the alert row. Then open R. Castillo and click
 "Override level". Try to confirm with no reason first, so the disabled button
@@ -195,7 +204,7 @@ SAY:
 
 NOTE: covers [override logged]
 
-## 4:41 - 5:04 | Surge
+## 5:38 - 6:05 | Surge
 
 [Open "Settings", click "Force surge", then go back to "Patient queue" and let
 a few more arrivals land.]
@@ -211,7 +220,7 @@ SAY:
 
 NOTE: covers [surge 3x]
 
-## 5:04 - 5:48 | The evidence, and close
+## 6:05 - 6:59 | The evidence, and close
 
 [Open "Analytics" in the rail.]
 
