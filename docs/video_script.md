@@ -1,172 +1,257 @@
-# Demo video script (target 2:45, max 3:00)
+# Demo video script
 
-Screen recording of the nurse console at http://localhost:5173/console (backend
-on Sonnet 5, cache warm so every step is instant). Record at 1600x1000. One take
-per section is fine; cut in editing. Narration lines are suggestions, speak
-naturally.
+**Target 5:48.** The mail sets no limit on length, but it caps the file at
+20 MB, and that is the real constraint. The timings on each section below are
+measured from this script's own word count, at the pace of our last take
+(154 words a minute, pauses included). So they should hold.
 
-The video follows one patient through a shift rather than touring features.
-Every mandated Round 2 expectation is hit and labeled below:
-[15-20 records] [ambiguous] [pediatric/geriatric] [zero-history] [surge 3x]
-[confidence always] [override logged]
+**Encode it at about 400 kbps, not higher.** At 5:48 that lands near 17 MB and
+leaves headroom. Our last take used 452 kbps and came out 17.7 MB at 5:13, so
+a longer video at the same bitrate would breach the cap. Two-pass x264 with
+`-tune stillimage` holds the text sharp at this bitrate, because a console
+screen is mostly static:
 
-## 0:00 - 0:18 | Hook (slide, or voice over the empty board)
+```
+ffmpeg -y -i take.mov -c:v libx264 -preset slow -tune stillimage \
+       -b:v 400k -pass 1 -an -f mp4 /dev/null
+ffmpeg -y -i take.mov -c:v libx264 -preset slow -tune stillimage \
+       -b:v 400k -pass 2 -c:a aac -b:a 96k NamoFans_IITKharagpur.mp4
+```
 
-> "Triage today is a snapshot. A patient is scored once at arrival, and then
-> nobody systematically checks on them again. In sepsis, every hour of delay
-> raises mortality by about eight percent. PatientTriage.ai scores patients
-> with two independent paths, and then keeps watching everyone in the
-> waiting room."
+**How to use this page.** Every section has three parts:
 
-## 0:18 - 0:32 | Sign in
+- `[square brackets]` are screen cues. What to click, where to point, when to
+  wait. Do not read these out.
+- `SAY:` is your narration. One idea per line. Say a line, breathe, say the
+  next one. If you fumble, just repeat the line and cut it in editing.
+- `NOTE:` is for us, not for the video. It tracks which Round 2 requirement
+  the section covers.
 
-Action: on the sign-in screen, leave the role on **Triage nurse** and click
-**Start shift**. Pick a theme before you start rather than mid-take: the
-console and the product site share one palette and both follow the toggle in
-the rail, so switching on camera restyles everything at once.
+Record the console at 1600x1000. One take per section is fine. All seven
+requirements are covered by the end:
+`[15-20 records] [ambiguous] [pediatric/geriatric] [zero-history] [surge 3x]
+[confidence always] [override logged]`
 
-> "A nurse signs in with her badge, and the badge is not decoration. It signs
-> every level she sets for the rest of the shift. Sign in as a medical
-> assistant instead and the board still takes your vitals, but the acuity
-> controls are disabled: scope enforced in software, not in a policy
-> document."
+---
 
-## 0:32 - 0:55 | Open the shift, watch the board fill
+## 0:00 - 0:25 | The problem
 
-Action: click **Normal shift**. Arrivals start on their own and the department
-clock starts running; let five or six patients land, then hit **Pause** in the
-status bar if you want to talk over a still board.
+[Start on the sign-in screen, or put a slide here. No clicking yet.]
 
-> "This is a shift board in an urban emergency department. Every arrival is
-> scored twice: a deterministic ESI rules engine with age-banded vital
-> thresholds, and Claude reasoning grounded in the ESI handbook. The board
-> ranks by acuity, shows how each patient is tracking against the safe wait
-> limit for their level, and shows what their vitals are doing."
-> [15-20 records] [confidence always]
+SAY:
 
-Point at N. Haddad (three weeks old) and A. Okafor (three years old).
+    Today, triage happens only once.
+    A patient arrives, gets a score, and that is it.
+    After that, nobody checks on them again.
+    But patients get worse while they wait.
+    In sepsis, every hour of delay raises the risk of death by about eight percent.
+    We built PatientTriage dot AI.
+    It scores every patient two separate ways.
+    Then it keeps watching the whole waiting room.
 
-> "Half of these patients have no prior record at all. A three-week-old's
-> fever and a toddler's fever score completely differently, because the
-> thresholds are age-banded."  [pediatric] [zero-history]
+## 0:25 - 0:57 | Sign in, and one honest note
 
-## 0:55 - 1:30 | The ambiguous case: escalate under uncertainty
+[Leave the role on "Triage nurse". Click "Start shift".]
 
-Action: step to **A. Weber** (66, burning indigestion). Click the row.
+SAY:
 
-> "This 66-year-old says it is indigestion. The rules engine says ESI-3.
-> Claude recognises a classic atypical cardiac presentation and says ESI-2.
-> Both chains are on screen, side by side, and the system says in plain
-> words which one it took and why: when the paths disagree it takes the more
-> acute level, drops its confidence, and flags a clinician. Uncertainty never
-> downgrades a patient."  [ambiguous] [geriatric]
+    Let me sign in as a triage nurse.
+    This badge is not just for show.
+    It signs every decision I make this shift.
+    Sign in as a medical assistant instead, and the acuity controls are disabled.
+    That rule lives in the software, not in a policy document.
+    One honest note before we start.
+    Every patient here is simulated. There is no real patient data.
+    These are twenty four cases we wrote ourselves.
+    So you can see the whole flow properly, end to end.
 
-Point at the belief bars.
+## 0:57 - 1:45 | The board fills up
 
-> "The disagreement is not just a flag. It seeds a probability distribution
-> over the patient's true acuity, and that distribution is what drives
-> everything on the next screen."
+[Click "Normal shift". Let six or seven patients arrive on their own. Then
+click "Pause" in the status bar so you can talk over a still board.]
 
-Action: with A. Weber still selected, open **Pipeline** in the rail. Hold for
-about eight seconds.
+SAY:
 
-> "This is that decision taken apart, for this patient, with the time each
-> stage actually took. Redaction runs first and lists what it removed. Then
-> the two paths run concurrently, and only one of them is outside the
-> boundary: the reasoning path is the single component in this system that
-> sends anything off the machine, and it has only ever seen the de-identified
-> copy. They rejoin at fusion, and the whole thing is milliseconds."
+    This is a busy city emergency department.
+    The clock is running. Patients are arriving on their own.
+    Every arrival is scored two ways at once.
+    First a rules engine. It checks vitals against age wise limits.
+    Second, Claude reads the complaint and reasons about it.
+    The board ranks everyone by how sick they are.
+    Each row also shows a confidence value.
+    Every score has one. There is no way to skip it.
 
-## 1:30 - 2:00 | The novel loop: the waiting room watches back
+[Point at N. Haddad, then at A. Okafor.]
 
-Action: open **Monitoring** in the rail and point at the priority column. The
-clock is already running live; let it run while you talk. Wait for R.
-Castillo's deterioration alert to fire on its own.
+    Now look at these two.
+    This baby is twenty three days old. This child is three years old.
+    Both came in with fever. Both score very differently.
+    A baby's normal heart rate is not a child's normal heart rate.
+    Also, half of these patients have no medical history at all.
 
-> "Same patients, different question. The queue asks who is sickest. This
-> board asks who to check on next, which is not the same thing: it ranks by
-> deterioration risk, time since anyone last assessed them, how uncertain we
-> are, and severity."
+NOTE: covers [15-20 records] [confidence always] [pediatric/geriatric] [zero-history]
 
-When the alert appears:
+## 1:45 - 2:36 | The hard case: when the two methods disagree
 
-> "And there it is, with nobody touching the screen. R. Castillo came in with
-> abdominal pain and chills. While he waited, his heart rate climbed
-> seventeen percent and his fever rose, and every one of those numbers is on
-> the alert. The system re-triaged him on the spot, and he goes to the top of
-> this board with a priority of one. Nobody clicked anything. That is the
-> whole point: today, that hour in the waiting room is unwatched."
+[Click the row for A. Weber.]
 
-> "Re-triage can only hold or escalate a level, never lower one, so a patient
-> cannot be quietly downgraded by an automated path while they wait."
+SAY:
 
-## 2:00 - 2:28 | The nurse answers, and the system records it
+    Now the interesting one.
+    A. Weber is sixty six. He says it is just burning indigestion.
+    The rules engine looked at his vitals and said ESI three.
+    But Claude read the whole story.
+    Burning chest pain. Nausea. Sweating. In a sixty six year old.
+    That is a classic silent heart attack presentation.
+    So Claude said ESI two.
+    So the two methods disagree. What now?
 
-Action: click **Reassess** on the alert. Then open R. Castillo, click
-**Override level**, try to confirm with no reason (the button stays disabled),
-pick ESI-1, tap the **Vitals trending** quick reason and add "septic shock
-picture, starting fluids", confirm. Open the audit trail at the foot of the
-record.
+[Point at the fusion line.]
 
-> "Answering an alert is one click. Reassess records that a clinician actually
-> laid eyes on the patient, restarts the safe wait clock, and is logged with
-> their ID. The close button beside it is not a dismiss: it calls the same
-> acknowledge endpoint, so the row leaves the board because the record says a
-> clinician saw it, and the patient deliberately stays overdue. An
-> acknowledgment that quietly cleared the queue would make the board look safe
-> without making it safe."
+    The system took the more serious level.
+    It lowered its own confidence, and it flagged a clinician.
+    This is our main safety rule.
+    When we are not sure, we escalate. We never downgrade.
+    Both chains are on screen, so you can read why each one decided.
 
-Optional, if you have the seconds: hover the close button and read the tooltip
-on camera. It says exactly that.
+[Point at the belief bars.]
 
-> "An override legally has to record who, what, when and why. The form does
-> not submit without a reason, and every one of these lands in an append-only
-> audit trail you can read right here on the patient. Each override is also a
-> reward signal: under-triage costs five times over-triage, and after repeated
-> escalations the system starts escalating that pattern itself. The learned
-> adjustment can only escalate, so learning cannot erode safety."
-> [override logged]
+    These bars are a probability spread over his true acuity.
+    So the disagreement becomes a number, and it drives the next screen.
 
-## 2:28 - 2:42 | Surge
+NOTE: covers [ambiguous] [pediatric/geriatric]
 
-Action: open **Settings**, click **Force surge**, return to the queue and
-step a few arrivals (or run
-`uv run python ../scripts/replay_demo.py --speedup 3 --profile rural_100`).
+## 2:36 - 3:10 | The pipeline, opened up
 
-> "At three times normal arrivals the load flips to SURGE and the system
-> drops to the deterministic fast path: about four milliseconds a triage,
-> monitoring still live. The reasoning pass is not dropped, it is queued, and
-> it catches those patients up on the next tick. It can escalate them. It
-> can never downgrade them."  [surge 3x]
+[With A. Weber still selected, open "Pipeline" in the rail. Hold about eight
+seconds so the animation finishes.]
 
-## 2:42 - 2:57 | Evidence
+SAY:
 
-Action: open **Analytics** in the rail.
+    This is that same decision, taken apart stage by stage.
+    Redaction runs first. It strips personal details, and lists what it removed.
+    Then the two paths run together.
+    Only one of them leaves this machine. That is the Claude path.
+    And it only ever sees the redacted copy.
+    They join back at fusion.
 
-> "This is not a slide. The console reads our benchmark results from the
-> repository: on 216 held-out cases, under-triage of 1.4 percent against the
-> rules engine's 37.5, zero significant under-triage, and every one of the
-> sickest patients caught. Below it, live bias counters by age band and every
-> clinician decision with a name attached. PHI is redacted by
-> Microsoft Presidio before any model call, and the reasoning path can run
-> entirely on-premises."
+[Point at the median figure and read the actual number aloud.]
 
-## 2:57 - 3:00 | Close
+    That timing is measured on this run, not printed on a slide.
+    And the rules path never waits for the model.
+    So even if the model is slow, or down, triage still happens.
 
-> "PatientTriage.ai. The system recommends. The clinician decides. And
-> nobody deteriorates unseen in the waiting room."
+## 3:10 - 3:57 | The waiting room watches back
 
-## Recording checklist
+[Open "Monitoring" in the rail. The clock is already running. Let it run while
+you talk, and wait for R. Castillo's alert to fire on its own.]
 
-- Backend and frontend running, board cleared, signed out (the sign-in screen)
-- Cache warm (already done), so every step is instant
-- Browser zoom 100%, hide the bookmarks bar, 1600x1000 window
-- Widen the patient record by dragging its left edge before you start; it
-  remembers the width, so the two reasoning chains sit side by side on camera
-- The shift starts running the moment you open it: arrivals play through and
-  the department clock advances, so the deterioration alert fires while you are
-  talking. If you need it sooner, Settings has **Advance 15 min**. **Pause** in
-  the status bar stops arrivals without clearing the board
-- macOS: Cmd+Shift+5, record the selected window, mic on for narration or dub
-  afterwards
-- Export mp4, named per the Unstop convention if one is required
+SAY:
+
+    Now the second half. This is the genuinely new part.
+    The queue asks who is the sickest.
+    This board asks a different question. Who should I check next?
+    It ranks by deterioration risk, time since the last check, and uncertainty.
+
+[Wait. When the alert band appears, point at it.]
+
+    And there it is. I did not touch anything.
+    R. Castillo came in with abdominal pain and chills.
+    While he waited, his heart rate climbed seventeen percent.
+    His fever rose too.
+    The system noticed, re triaged him, and moved him to the top.
+    Every number behind that is printed on the alert.
+    This is the gap we are closing.
+    Right now, that waiting hour is completely unwatched.
+    And automatic re triage can only hold or escalate. It can never lower a level.
+
+## 3:57 - 4:41 | The nurse decides, and the system records it
+
+[Click "Reassess" on the alert row. Then open R. Castillo and click
+"Override level". Try to confirm with no reason first, so the disabled button
+shows on camera. Then pick ESI-1, tap the "Vitals trending" quick reason, type
+"septic shock picture, starting fluids", and confirm.]
+
+SAY:
+
+    Answering an alert is one click.
+    Reassess records that a clinician actually saw the patient.
+    It restarts the safe wait clock, and it logs my ID.
+    Now let me disagree with the system. I want ESI one.
+
+[Point at the disabled confirm button.]
+
+    See this. The confirm button will not submit.
+    It needs a reason first.
+    An override legally has to record who, what, when and why.
+    So I pick vitals trending, and I type my own reason.
+
+[Confirm, then scroll to the audit trail at the foot of the record.]
+
+    And here is the full audit trail, right on the patient.
+    It is append only. Nothing here can be edited later.
+    This override is also a learning signal.
+    But it can only ever escalate, so learning cannot erode safety.
+
+NOTE: covers [override logged]
+
+## 4:41 - 5:04 | Surge
+
+[Open "Settings", click "Force surge", then go back to "Patient queue" and let
+a few more arrivals land.]
+
+SAY:
+
+    Last test. What happens when the department floods?
+    At three times the normal arrival rate, the system switches to a fast path.
+    Only the rules engine scores. Monitoring stays fully live.
+    But the Claude pass is not thrown away.
+    It queues up, and catches those patients on the next tick.
+    It can escalate them. It can never downgrade them.
+
+NOTE: covers [surge 3x]
+
+## 5:04 - 5:48 | The evidence, and close
+
+[Open "Analytics" in the rail.]
+
+SAY:
+
+    Finally the numbers. And this is not a slide.
+    The console reads our real benchmark results from the repository.
+    Two hundred and sixteen held out cases.
+    Under triage of one point four percent.
+    The rules engine alone was thirty seven point five percent.
+    Zero significant under triage, and every one of the sickest patients caught.
+    Below that, live bias counters by age band.
+    And every decision has a name on it.
+    Personal data is redacted by Microsoft Presidio before any model call.
+    And the reasoning path can run fully on premises.
+
+[Hold on the board for a beat.]
+
+    So that is PatientTriage dot AI.
+    The system recommends. The clinician decides.
+    And nobody gets worse unseen in the waiting room.
+    Thank you.
+
+---
+
+## Before you hit record
+
+- **Check the board is empty first.** Open the console and confirm it shows the
+  shift picker, with no patients and the clock at zero. If the status bar shows
+  a large average wait, the backend has been running a long time. Restart it
+  and reload before you record.
+- Backend on port 8000, frontend on port 5173, and you are signed out.
+- The prompt cache is already warm, so every step is instant.
+- Browser zoom at 100 percent. Hide the bookmarks bar. Window at 1600x1000.
+- Drag the left edge of the patient record to widen it before you start. It
+  remembers the width, so the two reasoning chains sit side by side on camera.
+- The shift runs on its own once you open it. Arrivals play through and the
+  clock advances, so R. Castillo's alert fires while you are still talking. If
+  you need it sooner, Settings has **Advance 15 min**. **Pause** in the status
+  bar stops arrivals without clearing the board.
+- On macOS press Cmd+Shift+5 and record the selected window. Mic on for live
+  narration, or record silent and dub afterwards.
+- Export as mp4, keep it under 20 MB, and name it per the Unstop convention.
