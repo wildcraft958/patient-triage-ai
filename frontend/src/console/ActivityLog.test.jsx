@@ -100,6 +100,17 @@ describe('filtering the trail', () => {
       events: [override(1, 'RN-07')], truncated: true })
     await user.type(screen.getByLabelText(/clinician/i), 'RN-07')
     expect(await screen.findByText(/more than this/i)).toBeInTheDocument()
+    // and the count beside it must not read as a total
+    expect(screen.getByText(/first 1 matching events/i)).toBeInTheDocument()
+  })
+
+  it('counts without qualification when nothing was cut off', async () => {
+    const { user } = await mount()
+    api.searchAudit.mockResolvedValue({
+      events: [override(1, 'RN-07')], truncated: false })
+    await user.type(screen.getByLabelText(/clinician/i), 'RN-07')
+    expect(await screen.findByText(/^1 matching events, newest first$/i))
+      .toBeInTheDocument()
   })
 
   // The unfiltered panel deliberately shows only component actions. A

@@ -58,7 +58,11 @@ export default function ActivityLog({ refreshKey }) {
     <Card className="h-full flex flex-col min-h-0">
       <CardHead title="Component activity"
                 note={filtering
-                  ? `${rows.length} matching events, newest first`
+                  // "50 matching events" beside "there are more than this"
+                  // reads as a total and a contradiction at once. Truncated,
+                  // the count is a page, so it says so.
+                  ? `${truncated ? 'first ' : ''}${rows.length} matching `
+                    + 'events, newest first'
                   : `${rows.length} events this shift, newest first`} />
 
       <div className="flex flex-wrap items-center gap-2 px-4 pb-2">
