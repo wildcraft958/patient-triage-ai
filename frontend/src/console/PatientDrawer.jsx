@@ -181,6 +181,70 @@ function BeliefStrip({ belief }) {
   )
 }
 
+// Prior cases whose complaint looks like this one, and what each turned out
+// to be: reasoning support, not a second recommendation. Lazy and keyed by
+// patient, exactly like the audit trail beside it, so a fresh instance per
+// patient means no in-flight response can land on a record the clinician has
+// already moved away from.
+function SimilarCases({ patientId }) {
+  const [open, setOpen] = useState(false)
+  const [found, setFound] = useState(null)
+
+  const toggle = async () => {
+    if (!open && found === null) {
+      setFound(await api.getSimilar(patientId).catch(() => ({ cases: [], note: null })))
+    }
+    setOpen(!open)
+  }
+
+  return (
+    <>
+      <button onClick={toggle}
+              className="flex items-center gap-1 text-[11px] font-semibold text-brand-ink
+                         cursor-pointer hover:underline">
+        <ChevronDown size={13} className={open ? '' : '-rotate-90'} aria-hidden="true" />
+        {open ? 'Hide similar cases' : 'Similar prior cases'}
+      </button>
+      {open && found && (found.cases.length === 0 ? (
+        /* An empty list on its own reads as "unlike every prior case", which
+           is a clinical claim. The model being unloadable is not. */
+        <p className="mt-2 text-[10.5px] leading-relaxed text-ink-2">
+          {found.note
+            ?? 'No prior case in the library is close to this complaint.'}
+        </p>
+      ) : (
+        <ul className="mt-2 space-y-1.5">
+          {found.cases.map((c) => (
+            <li key={c.patient_id}
+                className="flex items-start gap-2 py-1.5 border-b border-line last:border-0">
+              <EsiBadge esi={c.outcome_esi} size="sm" />
+              <span className="min-w-0 flex-1">
+                <span className="block text-[11.5px] text-ink">{c.display_name}</span>
+                <span className="block text-[10.5px] text-ink-3">{c.chief_complaint}</span>
+                {/* The similarity number on its own looks more authoritative
+                    than it is. What a clinician discounts a match by is
+                    seeing which structured field disagreed. */}
+                {(!c.agrees.category || !c.agrees.age_band) && (
+                  <span className="block mt-0.5 text-[10px] text-warn-ink">
+                    {[!c.agrees.category && 'different complaint category',
+                      !c.agrees.age_band && 'different age band']
+                      .filter(Boolean).join(', ')}
+                  </span>
+                )}
+              </span>
+              <span className="text-[10.5px] font-bold text-ink-2 tabular-nums shrink-0"
+                    title="Complaint similarity, computed on this machine">
+                {Math.round(c.similarity * 100)}%
+              </span>
+            </li>
+          ))}
+        </ul>
+      ))}
+    </>
+  )
+}
+
+
 function AuditTrail({ patientId }) {
   const [open, setOpen] = useState(false)
   const [events, setEvents] = useState(null)
@@ -407,7 +471,11 @@ export default function PatientDrawer({ detail, feedback, busy, onClose, width,
         )}
 
           <Section title="Record">
-            <AuditTrail key={intake.patient_id} patientId={intake.patient_id} />
+            <SimilarCases key={`sim-${intake.patient_id}`}
+                          patientId={intake.patient_id} />
+            <div className="mt-2.5">
+              <AuditTrail key={intake.patient_id} patientId={intake.patient_id} />
+            </div>
           </Section>
     </Shell>
   )

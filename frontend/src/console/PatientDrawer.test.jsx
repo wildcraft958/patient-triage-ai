@@ -124,3 +124,77 @@ describe('the vitals panel', () => {
     expect(screen.getByLabelText(/rising since triage/i)).toBeInTheDocument()
   })
 })
+
+// Prior cases that look like this one. Lazy behind a disclosure and keyed by
+// patient, which is how the audit trail beside it avoids the same class of
+// bug: a fresh instance per patient means no in-flight response can land on
+// a record the clinician has already moved away from.
+describe('similar prior cases', () => {
+  const CASES = {
+    note: null,
+    cases: [
+      { patient_id: 'SIM-001', display_name: 'M. Chen', similarity: 0.457,
+        outcome_esi: 2, chief_complaint: 'Chest pain radiating to left arm',
+        agrees: { category: false, age_band: true } },
+      { patient_id: 'SIM-018', display_name: 'F. Rahman', similarity: 0.419,
+        outcome_esi: 4, chief_complaint: 'Burning with urination',
+        agrees: { category: true, age_band: true } },
+    ],
+  }
+
+  const open = async (payload = CASES) => {
+    api.getSimilar.mockResolvedValue(payload)
+    render(POINTS)
+    const user = userEvent.setup()
+    await user.click(screen.getByRole('button', { name: /similar/i }))
+    return user
+  }
+
+  it('asks for nothing until it is opened', () => {
+    api.getSimilar.mockResolvedValue(CASES)
+    render(POINTS)
+    expect(api.getSimilar).not.toHaveBeenCalled()
+  })
+
+  it('asks once, not again on every toggle', async () => {
+    const user = await open()
+    await screen.findByText('M. Chen')
+    await user.click(screen.getByRole('button', { name: /hide similar/i }))
+    await user.click(screen.getByRole('button', { name: /similar/i }))
+    expect(api.getSimilar).toHaveBeenCalledTimes(1)
+  })
+
+  it('lists each prior case with what it turned out to be', async () => {
+    await open()
+    expect(await screen.findByText('M. Chen')).toBeInTheDocument()
+    const row = screen.getByText('M. Chen').closest('li')
+    expect(row).toHaveTextContent('ESI-2')
+    expect(row).toHaveTextContent('46%')
+  })
+
+  // The similarity number alone looks more authoritative than it is. The
+  // whole mechanism by which a clinician discounts a match is seeing that the
+  // complaint category disagreed.
+  it('marks a neighbour whose category disagrees', async () => {
+    await open()
+    await screen.findByText('M. Chen')
+    expect(screen.getByText('M. Chen').closest('li'))
+      .toHaveTextContent(/different complaint/i)
+    expect(screen.getByText('F. Rahman').closest('li'))
+      .not.toHaveTextContent(/different complaint/i)
+  })
+
+  // An empty list on its own reads as "unlike every prior case", which is a
+  // clinical claim. The model being unloadable is not that claim.
+  it('gives the reason rather than an empty list', async () => {
+    await open({ cases: [], note: 'The embedding model is unavailable, so '
+                                 + 'similar-case retrieval is off.' })
+    expect(await screen.findByText(/embedding model is unavailable/i))
+      .toBeInTheDocument()
+  })
+
+  it('says plainly when there is genuinely no close case', async () => {
+    await open({ cases: [], note: null })
+    expect(await screen.findByText(/no prior case/i)).toBeInTheDocument()
+  })
+})
