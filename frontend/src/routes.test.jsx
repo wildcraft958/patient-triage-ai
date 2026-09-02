@@ -1,9 +1,10 @@
 import { render, screen, waitFor } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { RouterProvider, createMemoryRouter } from 'react-router-dom'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import * as api from './api'
 import { routes } from './routes'
-import { QUEUE, signIn } from './test/helpers'
+import { DETAIL, QUEUE, drawerRecord, signIn } from './test/helpers'
 import ThemeProvider from './theme/ThemeProvider'
 
 vi.mock('./api')
@@ -63,5 +64,25 @@ describe('the address space', () => {
     expect(await screen.findByText(/that page isn't here/i)).toBeInTheDocument()
     // the site's own navigation, not the router's unstyled error screen
     expect(screen.getByRole('link', { name: /launch/i })).toBeInTheDocument()
+  })
+})
+
+// Search reaches every patient, including from a section that shows no
+// patients at all. Landing on a hit therefore has to move you to the board
+// and open the record, or the search appears to do nothing.
+describe('searching from a section that has no patient list', () => {
+  it('lands on the board with the record open', async () => {
+    api.getPatient.mockImplementation((id) => Promise.resolve(DETAIL[id]))
+    signIn()
+    const user = userEvent.setup()
+    const router = at('/console/pipeline')
+    await waitFor(() => expect(router.state.location.pathname).toBe('/console/pipeline'))
+
+    await user.keyboard('{Meta>}k{/Meta}')
+    await user.type(screen.getByRole('combobox'), 'bianca')
+    await user.keyboard('{Enter}')
+
+    await waitFor(() => expect(router.state.location.pathname).toBe('/console/queue'))
+    await waitFor(() => expect(drawerRecord()).toBe('B'))
   })
 })

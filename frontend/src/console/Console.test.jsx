@@ -294,3 +294,55 @@ describe('when Path B does not return', () => {
     await waitFor(() => expect(drawer).toHaveTextContent(/queued/i))
   })
 })
+
+// Search is reachable from anywhere on the board, which means the shortcut
+// has to be wired at the window and has to stay out of the way of a dialog
+// that already owns focus.
+describe('finding a patient from anywhere', () => {
+  it('opens the palette on Cmd+K once a shift is running', async () => {
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+    await screen.findByText('Alma Whitfield')
+    expect(screen.queryByRole('dialog', { name: /find a patient/i })).toBeNull()
+    await user.keyboard('{Meta>}k{/Meta}')
+    expect(screen.getByRole('dialog', { name: /find a patient/i })).toBeInTheDocument()
+  })
+
+  it('opens on Ctrl+K too, for anyone not on a Mac', async () => {
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+    await screen.findByText('Alma Whitfield')
+    await user.keyboard('{Control>}k{/Control}')
+    expect(screen.getByRole('dialog', { name: /find a patient/i })).toBeInTheDocument()
+  })
+
+  it('closes again on Escape', async () => {
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+    await screen.findByText('Alma Whitfield')
+    await user.keyboard('{Meta>}k{/Meta}')
+    await user.keyboard('{Escape}')
+    expect(screen.queryByRole('dialog', { name: /find a patient/i })).toBeNull()
+  })
+
+  it('selecting a hit opens that patient rather than whoever was selected', async () => {
+    api.getPatient.mockImplementation((id) => Promise.resolve(DETAIL[id]))
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+    await screen.findByText('Alma Whitfield')
+    await user.keyboard('{Meta>}k{/Meta}')
+    await user.type(screen.getByRole('combobox'), 'bianca')
+    await user.keyboard('{Enter}')
+    await waitFor(() => expect(drawerRecord()).toBe('B'))
+  })
+
+  // Two overlays fighting over focus is worse than no shortcut at all.
+  it('stays shut while a dialog already owns the screen', async () => {
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+    await screen.findByText('Alma Whitfield')
+    await user.click(screen.getByRole('button', { name: /new patient/i }))
+    await user.keyboard('{Meta>}k{/Meta}')
+    expect(screen.queryByRole('dialog', { name: /find a patient/i })).toBeNull()
+  })
+})

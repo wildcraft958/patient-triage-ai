@@ -18,6 +18,7 @@ import Settings from './Settings'
 import Sidebar from './Sidebar'
 import Splitter from './Splitter'
 import StatusBar from './StatusBar'
+import Palette from './search/Palette'
 import ToastStack from './Toast'
 import { usePaneWidth } from './usePaneWidth'
 import { VIEWS } from './views'
@@ -72,6 +73,7 @@ export default function Console() {
   const [toasts, setToasts] = useState([])
   const [pulsingId, setPulsingId] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(() => {
     try { return sessionStorage.getItem(RAIL_KEY) === '1' } catch { return false }
   })
@@ -338,6 +340,31 @@ export default function Console() {
     setOpened(false)
   }
 
+  // Two ways a shift is under way, and both are needed. `opened` is this
+  // operator choosing one: loading a scenario only queues the arrivals, so the
+  // board must appear on the click rather than waiting for the first patient
+  // to walk in. total_patients covers a reload mid-shift, and counts the room
+  // rather than the queue so a board where everyone is in a treatment bay
+  // still reads as started. Neither alone is enough: keying off the server's
+  // `remaining` suppressed the picker on a demo that sits loaded between
+  // shifts, and keying off arrivals alone made the picker look like a dead
+  // button for as long as it took the first one to arrive.
+  const started = opened || (state?.total_patients ?? 0) > 0
+
+  // Cmd/Ctrl+K reaches search from any view, so it is bound at the window
+  // rather than to a field. It stays shut while a dialog already owns the
+  // screen: two overlays competing for focus is worse than no shortcut.
+  const dialogOpen = showIntake || showOverride || showVitals
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key.toLowerCase() !== 'k' || !(e.metaKey || e.ctrlKey)) return
+      e.preventDefault()
+      if (started && !dialogOpen) setSearchOpen(true)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [started, dialogOpen])
+
   if (!user) return <SignIn />
 
   // A section nobody has, and a section this role is not allowed, both resolve
@@ -361,16 +388,13 @@ export default function Console() {
   // when the clinician returns to the board.
   const showDrawer = drawerOpen && (view === 'queue' || view === 'monitor')
 
-  // Two ways a shift is under way, and both are needed. `opened` is this
-  // operator choosing one: loading a scenario only queues the arrivals, so the
-  // board must appear on the click rather than waiting for the first patient
-  // to walk in. total_patients covers a reload mid-shift, and counts the room
-  // rather than the queue so a board where everyone is in a treatment bay
-  // still reads as started. Neither alone is enough: keying off the server's
-  // `remaining` suppressed the picker on a demo that sits loaded between
-  // shifts, and keying off arrivals alone made the picker look like a dead
-  // button for as long as it took the first one to arrive.
-  const started = opened || (state?.total_patients ?? 0) > 0
+  // A hit can name a patient who is not on the view you are looking at, so
+  // searching from Analytics lands you on the board with them open.
+  const onSearchSelect = (id) => {
+    if (view !== 'queue' && view !== 'monitor') navigate('/console/queue')
+    setDrawerOpen(true)
+    onSelect(id)
+  }
   const openAlerts = queue.filter((r) => r.alert && !r.alert_acknowledged).length
   const counts = {
     queue: queue.length + inCare.length,
@@ -395,6 +419,7 @@ export default function Console() {
                    remaining={remaining ?? 0} auto={auto}
                    onAuto={() => setAuto((a) => !a)}
                    onLive={() => setLive((l) => !l)}
+                   onSearch={started ? () => setSearchOpen(true) : null}
                    onStep={onStep} onBell={() => onView('monitor')} />
 
         <main className={`flex-1 min-h-0 p-3 ${view === 'pipeline'
@@ -459,6 +484,10 @@ export default function Console() {
       {showVitals && shown && (
         <VitalsModal detail={shown} onSubmit={onRecordVitals}
                      onClose={() => setShowVitals(false)} />
+      )}
+      {searchOpen && (
+        <Palette rows={[...queue, ...inCare]} onClose={() => setSearchOpen(false)}
+                 onSelect={onSearchSelect} />
       )}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>
