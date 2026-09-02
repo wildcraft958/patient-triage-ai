@@ -1,11 +1,6 @@
-import { BedDouble, Bell, Clock, Pause, Play, Radio, Search, Users } from 'lucide-react'
+import { BedDouble, Bell, Clock, Pause, Play, Radio, Users } from 'lucide-react'
 import { Btn } from './ui'
 import { UNIT_LABEL, shiftClock } from './format'
-
-// The shortcut label has to match the keyboard the reader actually has, or
-// it teaches the wrong chord.
-const MOD = typeof navigator !== 'undefined'
-  && /Mac|iPhone|iPad/i.test(navigator.userAgent) ? '\u2318K' : 'Ctrl K'
 
 const LOAD = {
   normal: ['Normal', 'bg-esi-5'],
@@ -26,7 +21,7 @@ function Group({ icon: Icon, children, title, at = 'md' }) {
 }
 
 export default function StatusBar({ state, alerts, live, busy, remaining, auto,
-                                    onAuto, onLive, onStep, onBell, onSearch }) {
+                                    onAuto, onLive, onStep, onBell }) {
   const load = state?.load ?? 'normal'
   const [label, dot] = LOAD[load] ?? LOAD.normal
   const surge = load === 'surge'
@@ -67,21 +62,6 @@ export default function StatusBar({ state, alerts, live, busy, remaining, auto,
       </Group>
 
       <span className="ml-auto flex items-center gap-2">
-        {onSearch && (
-          <button onClick={onSearch} title={`Find a patient (${MOD})`}
-                  className="hidden sm:inline-flex items-center gap-1.5 pl-2 pr-1.5 py-1
-                             rounded-sm border border-line-2 bg-field text-ink-3
-                             text-[11px] cursor-pointer whitespace-nowrap
-                             hover:border-brand hover:text-ink
-                             focus-visible:outline-2 focus-visible:outline-brand">
-            <Search size={13} className="shrink-0" aria-hidden="true" />
-            Find a patient
-            <kbd className="ml-0.5 px-1 py-px rounded-[3px] border border-line-2
-                            bg-card text-[9px] font-sans tabular-nums
-                            hidden lg:inline-block">{MOD}</kbd>
-          </button>
-        )}
-
         <span className="inline-flex items-center gap-1.5 text-[11px] font-bold
                          uppercase tracking-wide text-ink-2">
           <i className={`w-2 h-2 rounded-full ${dot}`} aria-hidden="true" />

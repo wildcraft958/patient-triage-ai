@@ -142,8 +142,13 @@ export default function Console() {
       `${m.patient_id} now matches "${m.label}".`, 'override'))
   }, [toast])
 
+  // Defensive on the shape as well as the failure: an older backend answers
+  // this path with the single-page app rather than a 404, so `cohorts` can be
+  // missing from something that resolved perfectly well.
   const loadCohorts = useCallback(() => {
-    api.listCohorts().then((r) => setPinned(r.cohorts)).catch(() => {})
+    Promise.resolve(api.listCohorts())
+      .then((r) => setPinned(r?.cohorts ?? []))
+      .catch(() => {})
   }, [])
 
   const onPin = (label, query) => attempt('Could not watch that cohort', async () => {
@@ -435,7 +440,10 @@ export default function Console() {
       <div className="shrink-0 transition-[width] duration-150"
            style={{ width: collapsed ? RAIL_COLLAPSED : railWidth }}>
         <Sidebar counts={counts} collapsed={collapsed}
-                 onCollapse={() => setCollapsed((c) => !c)} />
+                 onCollapse={() => setCollapsed((c) => !c)}
+                 onSearch={started
+                   ? () => { setSearchOpen(true); loadCohorts() }
+                   : null} />
       </div>
       {!collapsed && (
         <Splitter value={railWidth} min={RAIL_MIN} max={RAIL_MAX} side="left"
@@ -447,9 +455,6 @@ export default function Console() {
                    remaining={remaining ?? 0} auto={auto}
                    onAuto={() => setAuto((a) => !a)}
                    onLive={() => setLive((l) => !l)}
-                   onSearch={started
-                     ? () => { setSearchOpen(true); loadCohorts() }
-                     : null}
                    onStep={onStep} onBell={() => onView('monitor')} />
 
         <main className={`flex-1 min-h-0 p-3 ${view === 'pipeline'

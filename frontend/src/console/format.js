@@ -30,6 +30,14 @@ export const fmtMs = (v) => {
   return `${n.toFixed(n < 10 ? 1 : 0)} ms`
 }
 
+// The chord label has to match the keyboard the reader actually has, or it
+// teaches the wrong one. A function rather than a constant so the non-Mac
+// branch is reachable in a test instead of only on somebody else's machine.
+export const shortcutLabel = (ua) => {
+  const agent = ua ?? (typeof navigator === 'undefined' ? '' : navigator.userAgent)
+  return /Mac|iPhone|iPad|iPod/i.test(agent) ? '\u2318K' : 'Ctrl K'
+}
+
 export const fmtAge = (years, months) => {
   if (months != null && years === 0) {
     if (months < 1) return `${Math.round(months * 30)}d`

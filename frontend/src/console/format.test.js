@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   ESI_BG, ESI_INK, ESI_LABEL, EVENT_COMPONENT, HUMAN_CODES, alertLabel,
-  categoryLabel, fmtAge, fmtMs, outcomeLabel, shiftClock,
+  categoryLabel, fmtAge, fmtMs, outcomeLabel, shiftClock, shortcutLabel,
 } from './format'
 
 // Tailwind extracts class names statically, so the acuity scale is a literal
@@ -120,5 +120,30 @@ describe('a stage timing', () => {
     expect(fmtMs(0.81)).toBe('0.8 ms')
     expect(fmtMs(36.26)).toBe('36 ms')
     expect(fmtMs(null)).toBe('·')
+  })
+})
+
+// The rail teaches a keyboard chord, and getting it wrong teaches the wrong
+// one. The branch that matters is the one this machine never takes, so it is
+// exercised here against real user-agent strings rather than left to be
+// discovered by somebody on Windows.
+describe('the keyboard chord label', () => {
+  const MAC = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36'
+  const WIN = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+  const LINUX = 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36'
+  const IPAD = 'Mozilla/5.0 (iPad; CPU OS 17_0 like Mac OS X) AppleWebKit/605.1.15'
+
+  it('says command on an Apple keyboard', () => {
+    expect(shortcutLabel(MAC)).toBe('\u2318K')
+    expect(shortcutLabel(IPAD)).toBe('\u2318K')
+  })
+
+  it('says Ctrl everywhere else', () => {
+    expect(shortcutLabel(WIN)).toBe('Ctrl K')
+    expect(shortcutLabel(LINUX)).toBe('Ctrl K')
+  })
+
+  it('falls back to Ctrl rather than guessing when there is no agent', () => {
+    expect(shortcutLabel('')).toBe('Ctrl K')
   })
 })

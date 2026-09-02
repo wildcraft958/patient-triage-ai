@@ -1,7 +1,8 @@
 import { useState } from 'react'
-import { House, LogOut, Moon, PanelLeft, Sun } from 'lucide-react'
+import { House, LogOut, Moon, PanelLeft, Search, Sun } from 'lucide-react'
 import { NavLink, useNavigate } from 'react-router-dom'
 import { VIEWS } from './views'
+import { shortcutLabel } from './format'
 import { useSession } from '../auth/sessionContext'
 import { useTheme } from '../theme/themeContext'
 import { Mark } from '../brand/Logo'
@@ -28,7 +29,7 @@ function IconButton({ icon: Icon, label, onClick }) {
   )
 }
 
-export default function Sidebar({ counts, collapsed, onCollapse }) {
+export default function Sidebar({ counts, collapsed, onCollapse, onSearch }) {
   const { user, role, signOut, can } = useSession()
   const { dark, toggle } = useTheme()
   const navigate = useNavigate()
@@ -58,6 +59,32 @@ export default function Sidebar({ counts, collapsed, onCollapse }) {
       {!wide && (
         <div className="flex justify-center pt-2 shrink-0">
           <IconButton icon={PanelLeft} label="Expand the navigation" onClick={onCollapse} />
+        </div>
+      )}
+
+      {/* Search sits in the rail rather than the status bar. The bar carries
+          the department clock, the census, the load and three controls
+          already, and a field squeezed in beside them wrapped onto two lines
+          at ordinary widths. This is also where a reader looks for it. */}
+      {onSearch && (
+        <div className="px-2.5 pt-2.5 shrink-0">
+          <button onClick={onSearch} aria-label="Find a patient"
+                  title={`Find a patient (${shortcutLabel()})`}
+                  className={`w-full flex items-center gap-2.5 rounded-sm border
+                              border-rail-3 bg-rail-2 text-rail-ink-2 text-[12px]
+                              cursor-pointer whitespace-nowrap transition-colors
+                              hover:border-brand-rail hover:text-rail-fg
+                              focus-visible:outline-2 focus-visible:outline-brand
+                              ${wide ? 'px-3 py-1.5' : 'justify-center py-1.5'}`}>
+            <Search size={16} className="shrink-0" aria-hidden="true" />
+            {wide && <span className="truncate">Find a patient</span>}
+            {wide && (
+              <kbd className="ml-auto px-1 py-px rounded-[3px] border border-rail-3
+                              bg-rail text-[9.5px] font-sans text-rail-ink-2">
+                {shortcutLabel()}
+              </kbd>
+            )}
+          </button>
         </div>
       )}
 
