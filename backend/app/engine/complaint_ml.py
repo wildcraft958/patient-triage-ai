@@ -74,6 +74,37 @@ def available() -> bool:
     return _load() is not None
 
 
+def embed(texts):
+    """L2-normalised embedding vectors for `texts`, or None when the layer is
+    unavailable. Never raises.
+
+    This reuses the classifier's own warmed model instance, so similarity
+    search over complaints costs no second download, no extra memory and no
+    per-request load. It is deliberately separate from predict(): the
+    MAX_TOKENS domain guard is about where the *head* is calibrated, and
+    embedding longer text for comparison is still meaningful.
+    """
+    s = _load()
+    if s is None:
+        return None
+    try:
+        np = s["np"]
+        v = s["model"].encode(list(texts)).astype(np.float64)
+        if v.ndim == 1:
+            v = v.reshape(1, -1)
+        norms = np.linalg.norm(v, axis=1, keepdims=True)
+        # A text the model recognises nothing in embeds to zero. Normalising
+        # that divides by roughly nothing and leaves a vector that scores
+        # highly against everything, which is the worst failure available
+        # here: an unreadable complaint would retrieve the whole board as its
+        # nearest neighbours. Dividing by infinity keeps it at zero instead.
+        return v / np.where(np.isfinite(norms) & (norms > 1e-9), norms, np.inf)
+    except Exception as e:
+        log.warning("embedding failed (%s: %s) - similarity search unavailable",
+                    type(e).__name__, e)
+        return None
+
+
 def predict(text: str) -> tuple[str, float] | None:
     """Best (category, probability) for a short complaint, or None when the
     layer is unavailable, the input is empty or out of domain, or confidence

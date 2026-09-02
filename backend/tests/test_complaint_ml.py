@@ -192,3 +192,53 @@ def test_pathologically_long_input_is_bounded():
 def test_accented_and_uppercase_input():
     assert classify_category("REACCIÓN ALÉRGICA GRAVE") == "allergic_reaction"
     assert classify_category("CHEST PAIN X 2 HOURS") == "chest_pain"
+
+
+# The classifier's embedding model is the only sentence encoder in the stack.
+# Similarity search reuses this same warmed instance rather than loading a
+# second one, so these pin the contract that search depends on.
+
+@needs_model
+def test_embed_returns_one_unit_vector_per_text():
+    v = complaint_ml.embed(["chest pain radiating to the left arm",
+                            "twisted ankle playing football"])
+    assert v is not None
+    assert v.shape[0] == 2
+    for row in v:
+        assert abs(float((row @ row) ** 0.5) - 1.0) < 1e-9
+
+
+@needs_model
+def test_embed_scores_identical_text_as_identical():
+    text = "burning indigestion for 2 hours with nausea and sweating"
+    v = complaint_ml.embed([text, text])
+    assert float(v[0] @ v[1]) > 1 - 1e-9
+
+
+@needs_model
+def test_embed_ranks_a_clinical_neighbour_above_an_unrelated_complaint():
+    """The case this feature exists for: an atypical cardiac presentation
+    that the category classifier reads as abdominal pain. The embedding has
+    to put the classic angina complaint above an unrelated one."""
+    q, *rest = complaint_ml.embed([
+        "burning indigestion for 2 hours with nausea and sweating",
+        "chest pain radiating to left arm for 45 minutes, sweating",
+        "twisted ankle playing football, swollen, can partially bear weight",
+    ])
+    angina, ankle = (float(q @ r) for r in rest)
+    assert angina > ankle
+
+
+@needs_model
+def test_embed_leaves_an_unrecognised_text_at_zero_rather_than_nan():
+    """A text the model recognises nothing in embeds to a zero vector.
+    Normalising that would divide by roughly nothing and make it similar to
+    everything on the board, which is the worst possible failure here."""
+    v = complaint_ml.embed(["", "   "])
+    assert v is not None
+    assert (v == 0).all()
+
+
+def test_embed_reports_unavailable_rather_than_raising(monkeypatch):
+    monkeypatch.setattr(complaint_ml, "_state", {})
+    assert complaint_ml.embed(["chest pain"]) is None
