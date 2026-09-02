@@ -346,3 +346,70 @@ describe('finding a patient from anywhere', () => {
     expect(screen.queryByRole('dialog', { name: /find a patient/i })).toBeNull()
   })
 })
+
+// Pinned cohorts. A match announces a patient without touching their level,
+// so it arrives as its own kind of notification rather than as an alert.
+describe('cohorts left running', () => {
+  const PINNED = [{ id: 'ab12', label: 'age under 18, waiting over 20 min',
+                    query: { predicates: [] }, members: ['B'] }]
+
+  beforeEach(() => {
+    api.listCohorts.mockResolvedValue({ cohorts: [] })
+    api.pinCohort.mockResolvedValue(PINNED[0])
+    api.unpinCohort.mockResolvedValue({ unpinned: 'ab12' })
+  })
+
+  const openPalette = async () => {
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+    await screen.findByText('Alma Whitfield')
+    await user.keyboard('{Meta>}k{/Meta}')
+    return user
+  }
+
+  it('shows what is already being watched when the palette opens', async () => {
+    api.listCohorts.mockResolvedValue({ cohorts: PINNED })
+    await openPalette()
+    expect(await screen.findByText(/age under 18, waiting over 20 min/))
+      .toBeInTheDocument()
+  })
+
+  it('pins a cohort and reloads the list from the server', async () => {
+    const user = await openPalette()
+    await user.type(screen.getByRole('combobox', { name: /find a patient/i }),
+                    'esi 3')
+    // counted before the click, or the assertion is a tautology
+    const before = api.listCohorts.mock.calls.length
+    await user.click(screen.getByRole('button', { name: /keep watching/i }))
+    await waitFor(() => expect(api.pinCohort).toHaveBeenCalled())
+    // reloaded rather than pushed onto local state, so the member counts the
+    // console shows are the ones the server is actually sweeping
+    await waitFor(() => expect(api.listCohorts.mock.calls.length)
+      .toBeGreaterThan(before))
+  })
+
+  it('stops watching one', async () => {
+    api.listCohorts.mockResolvedValue({ cohorts: PINNED })
+    const user = await openPalette()
+    await user.click(await screen.findByRole('button', { name: /stop watching/i }))
+    await waitFor(() => expect(api.unpinCohort).toHaveBeenCalledWith('ab12'))
+  })
+
+  // The distinction the whole design rests on: a cohort match is not an alert
+  // and must not be announced as one.
+  it('announces a match without calling it a deterioration', async () => {
+    api.getQueue.mockResolvedValue({ ...QUEUE, scenario_remaining: 3 })
+    api.stepScenario.mockResolvedValue({
+      remaining: 2, done: false, event: null, alerts: [],
+      cohort_matches: [{ cohort_id: 'ab12', label: 'age under 18',
+                         patient_id: 'B', at_min: 25 }],
+    })
+    const user = userEvent.setup()
+    renderSignedIn(<Console />)
+    await screen.findByText('Alma Whitfield')
+    await user.click(screen.getByRole('button', { name: /next event/i }))
+    expect(await screen.findByText(/entered a watched cohort/i)).toBeInTheDocument()
+    expect(await screen.findByText(/age under 18/)).toBeInTheDocument()
+    expect(screen.queryByText(/deteriorating/i)).toBeNull()
+  })
+})

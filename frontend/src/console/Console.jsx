@@ -74,6 +74,7 @@ export default function Console() {
   const [pulsingId, setPulsingId] = useState(null)
   const [refreshKey, setRefreshKey] = useState(0)
   const [searchOpen, setSearchOpen] = useState(false)
+  const [pinned, setPinned] = useState([])
   const [collapsed, setCollapsed] = useState(() => {
     try { return sessionStorage.getItem(RAIL_KEY) === '1' } catch { return false }
   })
@@ -131,6 +132,30 @@ export default function Console() {
       a.kind === 'WAIT_BREACH' ? 'Wait limit exceeded' : 'Patient deteriorating',
       a.message || a.reasons.join('; '), 'alarm'))
   }, [toast])
+
+  // A cohort match is not an alert and must not be announced as one: it says
+  // a patient now answers a question somebody left running, and it has moved
+  // nothing about their acuity.
+  const reportCohorts = useCallback((matches) => {
+    (matches ?? []).forEach((m) => toast(
+      'Entered a watched cohort',
+      `${m.patient_id} now matches "${m.label}".`, 'override'))
+  }, [toast])
+
+  const loadCohorts = useCallback(() => {
+    api.listCohorts().then((r) => setPinned(r.cohorts)).catch(() => {})
+  }, [])
+
+  const onPin = (label, query) => attempt('Could not watch that cohort', async () => {
+    await api.pinCohort(label, query)
+    loadCohorts()
+    toast('Watching', `Any patient entering "${label}" will be announced.`, 'accept')
+  })
+
+  const onUnpin = (id) => attempt('Could not stop watching', async () => {
+    await api.unpinCohort(id)
+    loadCohorts()
+  })
 
   // reload continuity: a refresh mid-shift lands back on a populated board
   useEffect(() => {
@@ -206,6 +231,7 @@ export default function Console() {
         setLive(true)
       }
       reportAlerts(r.alerts)
+      reportCohorts(r.cohort_matches)
       const e = r.event
       if (e?.kind === 'arrive') {
         const who = e.display_name ?? e.patient_id
@@ -229,7 +255,7 @@ export default function Console() {
       setAuto(false)
       toast('Arrivals stopped', String(err.message ?? err), 'alarm')
     } finally { setBusy(false) }
-  }, [refresh, reportAlerts, toast])
+  }, [refresh, reportAlerts, reportCohorts, toast])
 
   // auto-play and live mode both use a chained timeout so ticks never overlap
   useEffect(() => {
@@ -245,11 +271,12 @@ export default function Console() {
       try {
         const r = await api.advanceClock(1)
         reportAlerts(r.alerts)
+        reportCohorts(r.cohort_matches)
         await refresh()
       } finally { setBusy(false) }
     }, LIVE_TICK_MS)
     return () => clearTimeout(t)
-  }, [live, busy, refresh, reportAlerts])
+  }, [live, busy, refresh, reportAlerts, reportCohorts])
 
   useEffect(() => {
     try { sessionStorage.setItem(RAIL_KEY, collapsed ? '1' : '0') } catch { /* ignore */ }
@@ -260,6 +287,7 @@ export default function Console() {
     try {
       const r = await api.advanceClock(minutes)
       reportAlerts(r.alerts)
+      reportCohorts(r.cohort_matches)
       await refresh()
     } finally { setBusy(false) }
   }
@@ -359,11 +387,11 @@ export default function Console() {
     const onKey = (e) => {
       if (e.key.toLowerCase() !== 'k' || !(e.metaKey || e.ctrlKey)) return
       e.preventDefault()
-      if (started && !dialogOpen) setSearchOpen(true)
+      if (started && !dialogOpen) { setSearchOpen(true); loadCohorts() }
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [started, dialogOpen])
+  }, [started, dialogOpen, loadCohorts])
 
   if (!user) return <SignIn />
 
@@ -419,7 +447,9 @@ export default function Console() {
                    remaining={remaining ?? 0} auto={auto}
                    onAuto={() => setAuto((a) => !a)}
                    onLive={() => setLive((l) => !l)}
-                   onSearch={started ? () => setSearchOpen(true) : null}
+                   onSearch={started
+                     ? () => { setSearchOpen(true); loadCohorts() }
+                     : null}
                    onStep={onStep} onBell={() => onView('monitor')} />
 
         <main className={`flex-1 min-h-0 p-3 ${view === 'pipeline'
@@ -486,8 +516,9 @@ export default function Console() {
                      onClose={() => setShowVitals(false)} />
       )}
       {searchOpen && (
-        <Palette rows={[...queue, ...inCare]} onClose={() => setSearchOpen(false)}
-                 onSelect={onSearchSelect} />
+        <Palette rows={[...queue, ...inCare]} pinned={pinned}
+                 onClose={() => setSearchOpen(false)} onSelect={onSearchSelect}
+                 onPin={onPin} onUnpin={onUnpin} />
       )}
       <ToastStack toasts={toasts} onDismiss={dismissToast} />
     </div>

@@ -1006,3 +1006,23 @@ def test_a_cohort_match_is_written_to_the_audit_trail():
     client.post("/clock/advance", json={"minutes": 1})
     r = client.get("/search/audit", params={"event_type": "cohort_match"})
     assert [e["patient_id"] for e in r.json()["events"]] == ["C2"]
+
+
+def test_a_cohort_announces_an_arrival_on_the_scenario_step():
+    """An arrival is when a patient most often enters a pinned cohort. If only
+    the clock swept, a match would wait for a tick that a paused board never
+    gets.
+
+    The player is built here rather than through /scenario/load, which resets
+    the service onto the real audit database and so would fail or pass
+    depending on whether a server happens to be running.
+    """
+    from app.scenario import ScenarioPlayer
+    api._player = ScenarioPlayer(api.get_service(), speedup=1, use_llm=False)
+    _pin()
+    matches = []
+    for _ in range(8):
+        matches = client.post("/scenario/step").json()["cohort_matches"]
+        if matches:
+            break
+    assert matches, "no arrival ever entered the cohort"

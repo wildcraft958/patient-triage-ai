@@ -177,7 +177,12 @@ def scenario_step():
     if _player is None:
         raise HTTPException(400, "load a scenario first (POST /scenario/load)")
     result = _player.step()
-    result["state"] = get_service().state_view()
+    svc = get_service()
+    result["state"] = svc.state_view()
+    # An arrival is the most natural moment for a patient to enter a pinned
+    # cohort, so the step sweeps too. Without this a match would wait for the
+    # next clock advance, which on a paused board never comes.
+    result["cohort_matches"] = svc.sweep_cohorts()
     return result
 
 
